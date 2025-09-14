@@ -14,6 +14,7 @@ interface User {
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('studentstore_user');
@@ -21,6 +22,7 @@ export default function Navbar() {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
         setUser(parsedUser);
+        fetchWishlistCount();
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
@@ -28,10 +30,45 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
+  const fetchWishlistCount = async () => {
+    try {
+      const token = localStorage.getItem('studentstore_token');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:5000/api/wishlist/count', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+      if (result.status === 'success') {
+        setWishlistCount(result.data.count);
+      }
+    } catch (error) {
+      console.error('Error fetching wishlist count:', error);
+    }
+  };
+
+  // Listen for wishlist changes from other components
+  useEffect(() => {
+    const handleWishlistChange = () => {
+      if (user) {
+        fetchWishlistCount();
+      }
+    };
+
+    window.addEventListener('wishlist-updated', handleWishlistChange);
+    return () => {
+      window.removeEventListener('wishlist-updated', handleWishlistChange);
+    };
+  }, [user]);
+
   const handleLogout = () => {
     localStorage.removeItem('studentstore_token');
     localStorage.removeItem('studentstore_user');
     setUser(null);
+    setWishlistCount(0);
   };
 
   const getInitials = (email: string) => {
@@ -59,6 +96,36 @@ export default function Navbar() {
 
           {/* Auth Section */}
           <div className="flex items-center space-x-4">
+            {/* Wishlist Icon - Show for logged in users */}
+            {user && (
+              <a
+                href="/wishlist"
+                className="relative group p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200"
+                title="My Wishlist"
+              >
+                <svg 
+                  className="w-6 h-6 text-gray-700 group-hover:text-red-500 transition-colors duration-200" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                  />
+                </svg>
+                
+                {/* Count Badge */}
+                {wishlistCount > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px] px-1">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </div>
+                )}
+              </a>
+            )}
+
             {loading ? (
               <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
             ) : user ? (

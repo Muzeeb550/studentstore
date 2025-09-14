@@ -7,6 +7,8 @@ const session = require('express-session');
 const passport = require('./config/passport');
 const { connectRedis } = require('./config/redis');
 const adminRoutes = require('./routes/admin');
+const wishlistRoutes = require('./routes/wishlist');
+
 
 require('dotenv').config();
 
@@ -99,7 +101,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/database', databaseRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/public', publicRoutes); // ADD THIS LINE
+app.use('/api/public', publicRoutes); 
+app.use('/api/wishlist', wishlistRoutes);
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

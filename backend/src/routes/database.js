@@ -312,3 +312,22 @@ router.get('/users', async (req, res) => {
 });
 
 module.exports = router;
+
+
+
+
+// i run this  SQL query manually in Azure SQL database to create the Wishlists table
+// -- SQL to create Wishlists table (run this in your Azure SQL database)
+// CREATE TABLE Wishlists (
+//     id INT IDENTITY(1,1) PRIMARY KEY,
+//     user_id INT NOT NULL,
+//     product_id INT NOT NULL,
+//     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+//     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
+//     FOREIGN KEY (product_id) REFERENCES Products(id) ON DELETE CASCADE,
+//     UNIQUE(user_id, product_id) -- Prevent duplicate entries
+// );
+
+// -- Create index for better performance
+// CREATE INDEX IX_Wishlists_UserId ON Wishlists(user_id);
+// CREATE INDEX IX_Wishlists_ProductId ON Wishlists(product_id);

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import ProductCard from '../../components/ProductCard';
+import WishlistButton from '../../components/WishlistButton';
 import Footer from '../../components/Footer';
 
 interface Product {
@@ -94,6 +95,24 @@ export default function ProductPage() {
 
   const getImageSrc = (imageUrl: string) => {
     return imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMDAgMjYwQzE3MSAyNjAgMTQ4IDIzNyAxNDggMjA4QzE0OCAxNzkgMTcxIDE1NiAyMDAgMTU2QzIyOSAxNTYgMjUyIDE3OSAyNTIgMjA4QzI1MiAyMzcgMjI5IDI2MCAyMDAgMjYwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
+  };
+
+  const handleShare = async () => {
+    if (navigator.share && data?.product) {
+      try {
+        await navigator.share({
+          title: data.product.name,
+          text: data.product.description,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.log('Share failed:', error);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      // You could add a toast notification here
+    }
   };
 
   if (loading) {
@@ -252,6 +271,29 @@ export default function ProductPage() {
                 </svg>
                 <span>{product.views_count.toLocaleString()} views</span>
               </div>
+            </div>
+
+            {/* Wishlist and Share Actions */}
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="flex items-center space-x-2">
+                <WishlistButton 
+                  productId={product.id}
+                  size="lg"
+                  className="shadow-lg"
+                />
+                <span className="text-sm text-gray-600 font-medium">Save for later</span>
+              </div>
+              
+              {/* Share Button */}
+              <button 
+                onClick={handleShare}
+                className="flex items-center space-x-2 text-gray-600 hover:text-indigo-600 transition-colors duration-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                </svg>
+                <span className="text-sm font-medium">Share</span>
+              </button>
             </div>
 
             {/* Description */}
