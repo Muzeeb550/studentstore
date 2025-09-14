@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import SearchBar from './SearchBar';
 
 interface User {
   id: number;
@@ -43,9 +44,17 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-xl font-bold text-xl shadow-lg">
+            <a 
+              href="/"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-xl font-bold text-xl shadow-lg hover:shadow-xl transition-shadow duration-200"
+            >
               🎓 StudentStore
-            </div>
+            </a>
+          </div>
+
+          {/* Search Bar - Center */}
+          <div className="hidden md:flex flex-1 max-w-lg mx-8">
+            <SearchBar className="w-full" />
           </div>
 
           {/* Auth Section */}
@@ -100,6 +109,11 @@ export default function Navbar() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Mobile Search Bar */}
+        <div className="md:hidden pb-4">
+          <SearchBar className="w-full" />
         </div>
       </div>
     </nav>

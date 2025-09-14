@@ -275,4 +275,188 @@ router.get('/products', async (req, res) => {
 });
 
 
+// Public route to search products (no auth required)
+router.get('/search', async (req, res) => {
+    try {
+        const pool = await getPool();
+        const query = req.query.q ? req.query.q.toString().trim() : '';
+        const category = req.query.category ? parseInt(req.query.category.toString()) : null;
+        const sort = req.query.sort ? req.query.sort.toString() : 'relevance';
+        const page = parseInt(req.query.page?.toString() || '1');
+        const limit = parseInt(req.query.limit?.toString() || '12');
+        const offset = (page - 1) * limit;
+
+        // Validate search query
+        if (!query || query.length < 2) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Search query must be at least 2 characters long'
+            });
+        }
+
+        // Build search conditions
+        let searchConditions = [];
+        let searchParams = [];
+        let paramIndex = 0;
+
+        // Search in product name and description
+        searchConditions.push(`(p.name LIKE @searchTerm${paramIndex} OR p.description LIKE @searchTerm${paramIndex})`);
+        searchParams.push({ name: `searchTerm${paramIndex}`, value: `%${query}%` });
+        paramIndex++;
+
+        // Category filter
+        let categoryCondition = '';
+        if (category) {
+            categoryCondition = 'AND p.category_id = @categoryId';
+        }
+
+        // Sort options
+        let orderBy = '';
+        switch (sort) {
+            case 'newest':
+                orderBy = 'ORDER BY p.created_at DESC';
+                break;
+            case 'oldest': 
+                orderBy = 'ORDER BY p.created_at ASC';
+                break;
+            case 'name_asc':
+                orderBy = 'ORDER BY p.name ASC';
+                break;
+            case 'name_desc':
+                orderBy = 'ORDER BY p.name DESC';
+                break;
+            case 'rating':
+                orderBy = 'ORDER BY p.rating_average DESC, p.review_count DESC';
+                break;
+            case 'views':
+                orderBy = 'ORDER BY p.views_count DESC';
+                break;
+            default: // relevance
+                orderBy = `ORDER BY 
+                    CASE 
+                        WHEN p.name LIKE @exactMatch THEN 1
+                        WHEN p.name LIKE @startsWith THEN 2
+                        WHEN p.description LIKE @startsWith THEN 3
+                        ELSE 4
+                    END,
+                    p.rating_average DESC,
+                    p.views_count DESC`;
+                
+                // Add relevance parameters
+                searchParams.push(
+                    { name: 'exactMatch', value: `%${query}%` },
+                    { name: 'startsWith', value: `${query}%` }
+                );
+                break;
+        }
+
+        // Build the main search query
+        const searchQuery = `
+            SELECT 
+                p.id, p.name, p.description, p.image_urls,
+                p.buy_button_1_name, p.buy_button_1_url,
+                p.buy_button_2_name, p.buy_button_2_url,
+                p.buy_button_3_name, p.buy_button_3_url,
+                p.views_count, p.rating_average, p.review_count, p.created_at,
+                c.name as category_name, c.id as category_id
+            FROM Products p
+            INNER JOIN Categories c ON p.category_id = c.id
+            WHERE (${searchConditions.join(' OR ')})
+            ${categoryCondition}
+            ${orderBy}
+            OFFSET @offset ROWS
+            FETCH NEXT @limit ROWS ONLY
+        `;
+
+        // Build the count query
+        const countQuery = `
+            SELECT COUNT(*) as total
+            FROM Products p
+            INNER JOIN Categories c ON p.category_id = c.id
+            WHERE (${searchConditions.join(' OR ')})
+            ${categoryCondition}
+        `;
+
+        // Execute search query
+        let searchRequest = pool.request()
+            .input('offset', sql.Int, offset)
+            .input('limit', sql.Int, limit);
+
+        // Add search parameters
+        searchParams.forEach(param => {
+            searchRequest = searchRequest.input(param.name, sql.NVarChar, param.value);
+        });
+
+        // Add category parameter if provided
+        if (category) {
+            searchRequest = searchRequest.input('categoryId', sql.Int, category);
+        }
+
+        const searchResult = await searchRequest.query(searchQuery);
+
+        // Execute count query
+        let countRequest = pool.request();
+        
+        // Add the same search parameters for count
+        searchParams.slice(0, 1).forEach(param => { // Only need the first search term for count
+            countRequest = countRequest.input(param.name, sql.NVarChar, param.value);
+        });
+
+        if (category) {
+            countRequest = countRequest.input('categoryId', sql.Int, category);
+        }
+
+        const countResult = await countRequest.query(countQuery);
+        const total = countResult.recordset[0].total;
+        const totalPages = Math.ceil(total / limit);
+
+        // Get available categories for filtering (categories that have matching products)
+        const categoriesQuery = `
+            SELECT DISTINCT c.id, c.name, COUNT(p.id) as product_count
+            FROM Categories c
+            INNER JOIN Products p ON c.id = p.category_id
+            WHERE (p.name LIKE @searchTerm0 OR p.description LIKE @searchTerm0)
+            GROUP BY c.id, c.name
+            ORDER BY c.name
+        `;
+
+        const categoriesRequest = pool.request()
+            .input('searchTerm0', sql.NVarChar, `%${query}%`);
+        
+        const categoriesResult = await categoriesRequest.query(categoriesQuery);
+
+        res.json({
+            status: 'success',
+            message: 'Search completed successfully',
+            data: {
+                query: query,
+                results: searchResult.recordset,
+                total: total,
+                categories: categoriesResult.recordset,
+                pagination: {
+                    current_page: page,
+                    per_page: limit,
+                    total: total,
+                    total_pages: totalPages,
+                    has_next: page < totalPages,
+                    has_prev: page > 1
+                },
+                filters: {
+                    category: category,
+                    sort: sort
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Search products error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to search products',
+            error: error.message
+        });
+    }
+});
+
+
 module.exports = router;
