@@ -108,6 +108,20 @@ router.post('/create-tables', async (req, res) => {
                 FOREIGN KEY (user_id) REFERENCES Users(id),
                 FOREIGN KEY (product_id) REFERENCES Products(id),
                 FOREIGN KEY (course_id) REFERENCES Courses(id)
+            )`,
+            
+            // Banners Table (NEW TABLE FOR HOMEPAGE BANNERS)
+            `CREATE TABLE Banners (
+                id INT IDENTITY(1,1) PRIMARY KEY,
+                name NVARCHAR(255) NOT NULL,
+                media_url NVARCHAR(MAX) NOT NULL,
+                link_url NVARCHAR(2048) NOT NULL,
+                display_order INT NOT NULL DEFAULT 0,
+                is_active BIT DEFAULT 1,
+                admin_id INT NOT NULL,
+                created_at DATETIME2 DEFAULT GETDATE(),
+                updated_at DATETIME2 DEFAULT GETDATE(),
+                FOREIGN KEY (admin_id) REFERENCES Users(id)
             )`
         ];
         
@@ -156,7 +170,8 @@ router.post('/create-indexes', async (req, res) => {
             `CREATE INDEX IX_Reviews_Product ON Reviews(product_id, created_at DESC)`,
             `CREATE INDEX IX_Reviews_Course ON Reviews(course_id, created_at DESC)`,
             `CREATE INDEX IX_Users_GoogleId ON Users(google_id)`,
-            `CREATE INDEX IX_Cart_User ON Cart(user_id)`
+            `CREATE INDEX IX_Cart_User ON Cart(user_id)`,
+            `CREATE INDEX IX_Banners_Order ON Banners(display_order ASC, is_active DESC)`
         ];
         
         const results = [];
@@ -267,7 +282,6 @@ router.get('/check-tables', async (req, res) => {
         });
     }
 });
-
 
 // Get all users (for testing)
 router.get('/users', async (req, res) => {

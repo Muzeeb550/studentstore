@@ -6,6 +6,8 @@ const compression = require('compression');
 const session = require('express-session');
 const passport = require('./config/passport');
 const { connectRedis } = require('./config/redis');
+const adminRoutes = require('./routes/admin');
+
 require('dotenv').config();
 
 const app = express();
@@ -84,17 +86,20 @@ app.get('/test-db', async (req, res) => {
     }
 });
 
-// Import route files (MOVED TO CORRECT LOCATION)
+// Import route files
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const productRoutes = require('./routes/products');
 const databaseRoutes = require('./routes/database');
+const publicRoutes = require('./routes/public'); // ADD THIS LINE
 
-// Use routes (MOVED TO CORRECT LOCATION)
+// Use routes
 app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/database', databaseRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/public', publicRoutes); // ADD THIS LINE
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -139,6 +144,7 @@ const startServer = async () => {
 ⚡ Ready for student authentication!
 🧪 Test database: http://localhost:${PORT}/test-db
 🎯 Create tables: http://localhost:${PORT}/api/database/create-tables
+🌐 Public API: http://localhost:${PORT}/api/public/banners
             `);
         });
     } catch (error) {
