@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 interface Category {
   id: number;
   name: string;
@@ -11,7 +13,7 @@ interface CategoryCardProps {
 
 export default function CategoryCard({ category }: CategoryCardProps) {
   return (
-    <div className="group cursor-pointer">
+    <Link href={`/categories/${category.id}`} className="group cursor-pointer">
       <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 text-center group-hover:scale-105 transform">
         {/* Icon */}
         <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center group-hover:from-indigo-200 group-hover:to-purple-200 transition-colors duration-300">
@@ -46,6 +48,6 @@ export default function CategoryCard({ category }: CategoryCardProps) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
