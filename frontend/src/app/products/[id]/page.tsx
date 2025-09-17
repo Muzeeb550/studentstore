@@ -6,6 +6,10 @@ import Navbar from '../../components/Navbar';
 import ProductCard from '../../components/ProductCard';
 import WishlistButton from '../../components/WishlistButton';
 import Footer from '../../components/Footer';
+import StarRating from '../../components/StarRating';
+import ReviewForm from '../../components/ReviewForm';
+import ReviewList from '../../components/ReviewList';
+import ReviewManager from '../../components/ReviewManager';
 
 interface Product {
   id: number;
@@ -54,6 +58,7 @@ export default function ProductPage() {
   const [error, setError] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [images, setImages] = useState<string[]>([]);
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
 
   useEffect(() => {
     if (productId) {
@@ -91,6 +96,13 @@ export default function ProductPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReviewUpdate = () => {
+    // Refresh product data to update rating counts
+    fetchProductDetails();
+    // Trigger review list refresh
+    setReviewRefreshKey(prev => prev + 1);
   };
 
   const getImageSrc = (imageUrl: string) => {
@@ -260,8 +272,12 @@ export default function ProductPage() {
             {/* Rating and Views */}
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <div className="flex items-center">
-                <span className="text-yellow-400 mr-1">★</span>
-                <span>{product.rating_average.toFixed(1)}</span>
+                <StarRating 
+                  rating={product.rating_average} 
+                  showRatingText={false}
+                  size="sm"
+                />
+                <span className="ml-2">{product.rating_average.toFixed(1)}</span>
                 <span className="ml-1">({product.review_count} reviews)</span>
               </div>
               <div className="flex items-center">
@@ -373,6 +389,29 @@ export default function ProductPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Reviews Section */}
+      <section className="max-w-7xl mx-auto px-4 mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Review Manager - Write/Edit Reviews */}
+          <div className="lg:col-span-1">
+            <ReviewManager
+              productId={product.id}
+              productName={product.name}
+              onReviewSubmitted={handleReviewUpdate}
+            />
+          </div>
+
+          {/* Reviews List - Display All Reviews */}
+          <div className="lg:col-span-2">
+            <ReviewList
+              productId={product.id}
+              key={`${product.id}-${reviewRefreshKey}`} // This ensures fresh data when reviews are updated
+              onReviewUpdate={handleReviewUpdate}
+            />
           </div>
         </div>
       </section>

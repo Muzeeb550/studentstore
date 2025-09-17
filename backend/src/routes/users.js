@@ -1,34 +1,48 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit'); // ADD: Rate limiting package
+const rateLimit = require('express-rate-limit');
 const { getPool, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/adminAuth');
 const imagekit = require('../config/imagekit');
 const router = express.Router();
 
-// Profile upload rate limiting - 5 uploads per hour per user
+// Profile upload rate limiting - ONLY for profile pictures (5 per hour)
 const profileUploadLimit = rateLimit({
     windowMs: 60 * 60 * 1000,        // 1 hour window
-    max: 5,                          // Maximum 5 uploads per hour per user
-    keyGenerator: (req) => req.user.id, // Track by user ID (not IP)
+    max: 5,                          // Maximum 5 profile uploads per hour per user
+    keyGenerator: (req) => req.user.id,
     message: {
         status: 'error',
         message: 'Profile picture upload limit reached. You can upload up to 5 pictures per hour. Please try again later.',
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: 3600 // seconds
+        retryAfter: 3600
     },
-    standardHeaders: true,           // Send rate limit info in headers
+    standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-        // Skip rate limiting for testing in development
         return process.env.NODE_ENV === 'development' && req.headers['x-skip-rate-limit'];
     }
 });
 
+// Review image upload rate limiting - MORE generous (30 per hour)
+const reviewImageUploadLimit = rateLimit({
+    windowMs: 60 * 60 * 1000,        // 1 hour window
+    max: 30,                         // Maximum 30 review image uploads per hour per user
+    keyGenerator: (req) => req.user.id,
+    message: {
+        status: 'error',
+        message: 'Review image upload limit reached. You can upload up to 30 images per hour. Please try again later.',
+        code: 'REVIEW_IMAGE_RATE_LIMIT_EXCEEDED',
+        retryAfter: 3600
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
 // General API rate limiting - 100 requests per 15 minutes per user
 const generalApiLimit = rateLimit({
-    windowMs: 15 * 60 * 1000,        // 15 minutes
-    max: 100,                        // Maximum 100 requests per 15 minutes
-    keyGenerator: (req) => req.user?.id || req.ip, // Track by user ID or IP
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    keyGenerator: (req) => req.user?.id || req.ip,
     message: {
         status: 'error',
         message: 'Too many requests. Please try again later.',
@@ -36,7 +50,7 @@ const generalApiLimit = rateLimit({
     }
 });
 
-// Get all users (admin only - we'll add middleware later)
+// Get all users (admin only)
 router.get('/', generalApiLimit, async (req, res) => {
     try {
         res.json({
@@ -52,23 +66,51 @@ router.get('/', generalApiLimit, async (req, res) => {
     }
 });
 
-// SECURE: ImageKit authentication endpoint for regular users
-router.get('/imagekit-auth', authenticateToken, profileUploadLimit, async (req, res) => {
+// ImageKit authentication endpoint - DIFFERENT LIMITS based on usage
+router.get('/imagekit-auth', authenticateToken, async (req, res) => {
     try {
         console.log(`🔑 ImageKit auth request from user ${req.user.id}`);
         
-        // Get clean ImageKit authentication parameters (don't modify them)
-        const authenticationParameters = imagekit.getAuthenticationParameters();
+        // Check the usage type from query parameter or header
+        const usage = req.query.usage || req.headers['x-upload-type'] || 'review'; // Default to review
         
-        // Log for debugging but don't modify the response
-        console.log('🔐 ImageKit auth params generated:', {
-            token: authenticationParameters.token.substring(0, 10) + '...',
-            expire: authenticationParameters.expire,
-            signature: authenticationParameters.signature.substring(0, 10) + '...'
-        });
+        // Apply different rate limits based on usage
+        if (usage === 'profile') {
+            // Apply profile upload limit
+            profileUploadLimit(req, res, (err) => {
+                if (err) return; // Rate limit exceeded, response already sent
+                proceedWithAuth();
+            });
+        } else {
+            // Apply review image upload limit
+            reviewImageUploadLimit(req, res, (err) => {
+                if (err) return; // Rate limit exceeded, response already sent
+                proceedWithAuth();
+            });
+        }
         
-        // Return clean auth parameters without modification
-        res.json(authenticationParameters);
+        function proceedWithAuth() {
+            try {
+                // Get clean ImageKit authentication parameters
+                const authenticationParameters = imagekit.getAuthenticationParameters();
+                
+                console.log('🔐 ImageKit auth params generated for:', usage, {
+                    token: authenticationParameters.token.substring(0, 10) + '...',
+                    expire: authenticationParameters.expire,
+                    signature: authenticationParameters.signature.substring(0, 10) + '...'
+                });
+                
+                res.json(authenticationParameters);
+                
+            } catch (error) {
+                console.error('ImageKit auth error:', error);
+                res.status(500).json({
+                    status: 'error',
+                    message: 'Failed to get ImageKit authentication',
+                    error: process.env.NODE_ENV === 'development' ? error.message : 'Authentication service unavailable'
+                });
+            }
+        }
         
     } catch (error) {
         console.error('ImageKit auth error:', error);
@@ -79,7 +121,6 @@ router.get('/imagekit-auth', authenticateToken, profileUploadLimit, async (req, 
         });
     }
 });
-
 
 // Get user profile (protected route)
 router.get('/profile', authenticateToken, generalApiLimit, async (req, res) => {
@@ -121,7 +162,7 @@ router.get('/profile', authenticateToken, generalApiLimit, async (req, res) => {
     }
 });
 
-// SECURE: Update user profile picture (protected route with enhanced validation)
+// Update user profile picture - ONLY this should have strict profile limits
 router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req, res) => {
     try {
         const pool = await getPool();
@@ -147,7 +188,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Server-side MIME type validation (check URL contains image extensions)
+        // Server-side MIME type validation
         const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
         const urlLower = profile_picture.toLowerCase();
         const isValidImageExtension = allowedExtensions.some(ext => urlLower.includes(ext));
@@ -162,7 +203,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Validate ImageKit domain (prevent external malicious URLs)
+        // Validate ImageKit domain
         if (!profile_picture.includes('ik.imagekit.io')) {
             console.log(`❌ Invalid image source attempt from user ${userId}: ${profile_picture}`);
             return res.status(400).json({
@@ -172,7 +213,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Additional security: Check URL length (prevent extremely long URLs)
+        // Check URL length
         if (profile_picture.length > 2048) {
             return res.status(400).json({
                 status: 'error',
@@ -181,7 +222,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Verify user exists and is active before updating
+        // Verify user exists and is active
         const userCheck = await pool.request()
             .input('userId', sql.Int, userId)
             .query('SELECT id, is_active FROM Users WHERE id = @userId');
@@ -200,7 +241,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Update user profile picture with transaction for data integrity
+        // Update user profile picture
         const result = await pool.request()
             .input('userId', sql.Int, userId)
             .input('profilePicture', sql.VarChar(2048), profile_picture)
@@ -239,7 +280,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
     }
 });
 
-// Get user stats for dashboard (protected route)
+// Get user stats for dashboard
 router.get('/stats', authenticateToken, generalApiLimit, async (req, res) => {
     try {
         const pool = await getPool();
@@ -250,7 +291,7 @@ router.get('/stats', authenticateToken, generalApiLimit, async (req, res) => {
             .input('userId', sql.Int, userId)
             .query('SELECT COUNT(*) as count FROM Wishlists WHERE user_id = @userId');
         
-        // Get user creation date for "member since"
+        // Get user creation date
         const userResult = await pool.request()
             .input('userId', sql.Int, userId)
             .query('SELECT created_at FROM Users WHERE id = @userId AND is_active = 1');
@@ -269,8 +310,8 @@ router.get('/stats', authenticateToken, generalApiLimit, async (req, res) => {
             message: 'User stats retrieved successfully',
             data: {
                 wishlist_count: wishlistResult.recordset[0].count,
-                products_viewed: 0, // Will add later with activity tracking
-                member_since: memberSince.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                products_viewed: 0,
+                member_since: memberSince.toISOString().split('T')[0],
                 account_status: 'active'
             }
         });

@@ -29,3 +29,25 @@ uploads/
 # OneDrive or other system files (optional)
 *.lnk
 *.ini
+
+
+
+# Backend Files 
+# src/config/database.js
+# src/routes/products.js
+# src/routes/public.js 
+# src/routes/users.js
+# src/middleware/adminAuth.js
+# backend/package.json
+# backend/.env
+# src/service.js
+
+
+# Frontend Files 
+# src/app/products/[id]/page.tsx
+# src/components/ProductCard.tsx
+# src/app/layout.tsx
+# src/app/page.tsx
+# src/app/profile/page.tsx
+# src/components/Navbar.tsx
+# src/app/globals.css

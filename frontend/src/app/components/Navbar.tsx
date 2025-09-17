@@ -93,11 +93,8 @@ export default function Navbar() {
           const updatedUser = { ...currentUser, ...userData };
           localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
           
-          console.log('🔄 Navbar profile data updated:', {
-            hasProfilePicture: !!userData.profile_picture,
-            name: userData.name,
-            display_name: userData.display_name
-          });
+          // Less verbose logging
+          console.log('🔄 Profile updated');
         }
       }
     } catch (error) {

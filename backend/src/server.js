@@ -8,6 +8,8 @@ const passport = require('./config/passport');
 const { connectRedis } = require('./config/redis');
 const adminRoutes = require('./routes/admin');
 const wishlistRoutes = require('./routes/wishlist');
+const reviewRoutes = require('./routes/reviews');
+
 
 
 require('dotenv').config();
@@ -103,6 +105,8 @@ app.use('/api/database', databaseRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes); 
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/reviews', reviewRoutes);
+
 
 
 // Error handling middleware
