@@ -8,7 +8,7 @@ interface Product {
   description: string;
   image_urls: string;
   views_count: number;
-  rating_average: number;
+  rating_average: number | null; // FIXED: Allow null values
   review_count: number;
   created_at: string;
   updated_at: string;
@@ -42,6 +42,15 @@ export default function AdminProducts() {
   useEffect(() => {
     fetchProducts();
   }, [currentPage]);
+
+  // FIXED: Helper functions for safe rating display
+  const getSafeRating = (rating: number | null): number => {
+    return rating ?? 0;
+  };
+
+  const getSafeRatingDisplay = (rating: number | null): string => {
+    return rating ? rating.toFixed(1) : '0.0';
+  };
 
   const fetchProducts = async () => {
     try {
@@ -232,10 +241,11 @@ export default function AdminProducts() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {product.views_count.toLocaleString()}
                       </td>
+                      {/* FIXED: Safe rating display with null checks */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center">
-                          <span className="text-yellow-400">★</span>
-                          <span className="ml-1">{product.rating_average.toFixed(1)}</span>
+                          <span className={`${getSafeRating(product.rating_average) > 0 ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
+                          <span className="ml-1">{getSafeRatingDisplay(product.rating_average)}</span>
                           <span className="ml-1 text-gray-400">({product.review_count})</span>
                         </div>
                       </td>

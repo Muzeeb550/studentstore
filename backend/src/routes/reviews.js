@@ -392,7 +392,7 @@ router.get('/my-reviews', authenticateToken, async (req, res) => {
     }
 });
 
-// Helper function to update product rating statistics
+// Helper function to update product rating statistics - FIXED: Handle null values properly
 async function updateProductRatingStats(pool, productId) {
     try {
         await pool.request()
@@ -401,7 +401,11 @@ async function updateProductRatingStats(pool, productId) {
                 UPDATE Products 
                 SET 
                     rating_average = (
-                        SELECT AVG(CAST(rating AS DECIMAL(3,2))) 
+                        SELECT 
+                            CASE 
+                                WHEN COUNT(*) = 0 THEN NULL 
+                                ELSE AVG(CAST(rating AS DECIMAL(3,2))) 
+                            END
                         FROM Reviews 
                         WHERE product_id = @productId
                     ),
@@ -418,5 +422,6 @@ async function updateProductRatingStats(pool, productId) {
         throw error;
     }
 }
+
 
 module.exports = router;

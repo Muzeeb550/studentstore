@@ -200,33 +200,90 @@ router.delete('/products/:id', async (req, res) => {
         const pool = await getPool();
         const { id } = req.params;
         
-        // HARD DELETE - permanently remove the record
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .input('adminId', sql.Int, req.user.id)
-            .query('DELETE FROM Products WHERE id = @id AND admin_id = @adminId');
+        // Start a transaction to ensure data integrity
+        const transaction = new sql.Transaction(pool);
         
-        if (result.rowsAffected[0] === 0) {
-            return res.status(404).json({
-                status: 'error',
-                message: 'Product not found or access denied'
+        try {
+            await transaction.begin();
+            
+            // Check if product exists and belongs to admin
+            const productCheck = await transaction.request()
+                .input('id', sql.Int, id)
+                .input('adminId', sql.Int, req.user.id)
+                .query('SELECT id, name FROM Products WHERE id = @id AND admin_id = @adminId');
+            
+            if (productCheck.recordset.length === 0) {
+                await transaction.rollback();
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'Product not found or access denied'
+                });
+            }
+            
+            const productName = productCheck.recordset[0].name;
+            
+            // Delete related data in correct order (children first, then parent)
+            
+            // 1. Delete Reviews first (they reference product_id)
+            const reviewsDeleted = await transaction.request()
+                .input('productId', sql.Int, id)
+                .query('DELETE FROM Reviews WHERE product_id = @productId');
+            
+            // 2. Delete Wishlist entries (they reference product_id)  
+            const wishlistsDeleted = await transaction.request()
+                .input('productId', sql.Int, id)
+                .query('DELETE FROM Wishlists WHERE product_id = @productId');
+            
+            // 3. Finally delete the Product itself
+            const productDeleted = await transaction.request()
+                .input('id', sql.Int, id)
+                .input('adminId', sql.Int, req.user.id)
+                .query('DELETE FROM Products WHERE id = @id AND admin_id = @adminId');
+            
+            // Commit the transaction
+            await transaction.commit();
+            
+            console.log(`✅ Product "${productName}" and related data deleted:`, {
+                productId: id,
+                reviewsDeleted: reviewsDeleted.rowsAffected[0],
+                wishlistsDeleted: wishlistsDeleted.rowsAffected[0]
             });
+            
+            res.json({
+                status: 'success',
+                message: `Product "${productName}" permanently deleted along with ${reviewsDeleted.rowsAffected[0]} reviews and ${wishlistsDeleted.rowsAffected[0]} wishlist entries`,
+                data: {
+                    productId: id,
+                    reviewsDeleted: reviewsDeleted.rowsAffected[0],
+                    wishlistsDeleted: wishlistsDeleted.rowsAffected[0]
+                }
+            });
+            
+        } catch (transactionError) {
+            // Rollback transaction on any error
+            await transaction.rollback();
+            throw transactionError;
         }
-        
-        res.json({
-            status: 'success',
-            message: 'Product permanently deleted'
-        });
         
     } catch (error) {
         console.error('Delete product error:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to delete product',
-            error: error.message
-        });
+        
+        // Handle specific constraint errors
+        if (error.message.includes('REFERENCE constraint') || error.message.includes('foreign key')) {
+            res.status(400).json({
+                status: 'error',
+                message: 'Cannot delete product because it has associated reviews or wishlists. This should be handled automatically - please try again.'
+            });
+        } else {
+            res.status(500).json({
+                status: 'error',
+                message: 'Failed to delete product',
+                error: error.message
+            });
+        }
     }
 });
+
 
 // Create new category
 router.post('/categories', async (req, res) => {

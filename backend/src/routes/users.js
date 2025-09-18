@@ -326,4 +326,178 @@ router.get('/stats', authenticateToken, generalApiLimit, async (req, res) => {
     }
 });
 
+// Get enhanced user stats for dashboard (protected route)
+router.get('/dashboard-stats', authenticateToken, generalApiLimit, async (req, res) => {
+    try {
+        const pool = await getPool();
+        const userId = req.user.id;
+        
+        // Get basic user info and creation date
+        const userResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .query(`
+                SELECT id, name, display_name, email, profile_picture, 
+                       role, created_at, is_active
+                FROM Users 
+                WHERE id = @userId AND is_active = 1
+            `);
+        
+        if (userResult.recordset.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'User not found or account deactivated'
+            });
+        }
+        
+        const user = userResult.recordset[0];
+        
+        // Get wishlist count
+        const wishlistResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .query('SELECT COUNT(*) as count FROM Wishlists WHERE user_id = @userId');
+        
+        // Get review statistics
+        const reviewStatsResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .query(`
+                SELECT 
+                    COUNT(*) as total_reviews,
+                    AVG(CAST(rating AS DECIMAL(3,2))) as average_rating_given,
+                    MIN(created_at) as first_review_date,
+                    MAX(created_at) as latest_review_date
+                FROM Reviews 
+                WHERE user_id = @userId
+            `);
+        
+        // Get recent reviews (last 5) with product info
+        const recentReviewsResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .query(`
+                SELECT TOP 5
+                    r.id, r.rating, r.review_text, r.review_images,
+                    r.created_at, r.updated_at,
+                    p.id as product_id, p.name as product_name, 
+                    p.image_urls as product_images
+                FROM Reviews r
+                INNER JOIN Products p ON r.product_id = p.id
+                WHERE r.user_id = @userId
+                ORDER BY r.created_at DESC
+            `);
+        
+        // Calculate member since date
+        const memberSince = user.created_at;
+        const memberSinceFormatted = memberSince.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        // Calculate days since joining
+        const daysSinceJoining = Math.floor((new Date().getTime() - memberSince.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Get review statistics
+        const reviewStats = reviewStatsResult.recordset[0];
+        const totalReviews = reviewStats.total_reviews || 0;
+        const avgRatingGiven = reviewStats.average_rating_given || 0;
+        
+        // Calculate achievement badges
+        const badges = [];
+        
+        if (totalReviews >= 1) {
+            badges.push({
+                id: 'first_review',
+                name: 'First Review',
+                description: 'Wrote your first review',
+                icon: '🌟',
+                earned_date: reviewStats.first_review_date
+            });
+        }
+        
+        if (totalReviews >= 5) {
+            badges.push({
+                id: 'review_contributor',
+                name: 'Review Contributor',
+                description: 'Wrote 5+ helpful reviews',
+                icon: '✍️',
+                earned_date: null // Could track when 5th review was written
+            });
+        }
+        
+        if (totalReviews >= 10) {
+            badges.push({
+                id: 'review_expert',
+                name: 'Review Expert',
+                description: 'Wrote 10+ detailed reviews',
+                icon: '🏆',
+                earned_date: null
+            });
+        }
+        
+        if (totalReviews >= 25) {
+            badges.push({
+                id: 'review_master',
+                name: 'Review Master',
+                description: 'Wrote 25+ amazing reviews',
+                icon: '👑',
+                earned_date: null
+            });
+        }
+        
+        // Check for high-quality reviewer (average rating given > 4.0)
+        if (totalReviews >= 3 && avgRatingGiven >= 4.0) {
+            badges.push({
+                id: 'positive_reviewer',
+                name: 'positive Reviewer',
+                description: 'Consistently gives helpful feedback',
+                icon: '😊',
+                earned_date: null
+            });
+        }
+        
+        // Check for loyal member (30+ days)
+        if (daysSinceJoining >= 30) {
+            badges.push({
+                id: 'loyal_member',
+                name: 'Loyal Member',
+                description: 'Member for 30+ days',
+                icon: '🎓',
+                earned_date: memberSince
+            });
+        }
+
+        res.json({
+            status: 'success',
+            message: 'Dashboard stats retrieved successfully',
+            data: {
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    display_name: user.display_name,
+                    email: user.email,
+                    profile_picture: user.profile_picture,
+                    role: user.role
+                },
+                stats: {
+                    wishlist_count: wishlistResult.recordset[0].count,
+                    products_viewed: 0, // Will be dynamic later when we add view tracking
+                    member_since: memberSinceFormatted,
+                    member_since_raw: memberSince.toISOString(),
+                    days_since_joining: daysSinceJoining,
+                    total_reviews: totalReviews,
+                    average_rating_given: parseFloat(avgRatingGiven.toFixed(1)),
+                    first_review_date: reviewStats.first_review_date,
+                    latest_review_date: reviewStats.latest_review_date
+                },
+                recent_reviews: recentReviewsResult.recordset,
+                achievement_badges: badges,
+                account_status: 'active'
+            }
+        });
+        
+    } catch (error) {
+        console.error('Get dashboard stats error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to retrieve dashboard stats',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Database error'
+        });
+    }
+});
+
 module.exports = router;

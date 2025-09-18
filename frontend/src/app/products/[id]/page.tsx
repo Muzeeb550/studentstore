@@ -26,7 +26,7 @@ interface Product {
   buy_button_3_name?: string;
   buy_button_3_url?: string;
   views_count: number;
-  rating_average: number;
+  rating_average: number | null; // FIXED: Allow null values
   review_count: number;
   created_at: string;
   updated_at: string;
@@ -40,7 +40,7 @@ interface RelatedProduct {
   category_name: string;
   buy_button_1_name: string;
   buy_button_1_url: string;
-  rating_average: number;
+  rating_average: number | null; // FIXED: Allow null values
   review_count: number;
 }
 
@@ -125,6 +125,15 @@ export default function ProductPage() {
       navigator.clipboard.writeText(window.location.href);
       // You could add a toast notification here
     }
+  };
+
+  // FIXED: Helper functions for safe rating display
+  const getSafeRating = (rating: number | null): number => {
+    return rating ?? 0;
+  };
+
+  const getSafeRatingDisplay = (rating: number | null): string => {
+    return rating ? rating.toFixed(1) : '0.0';
   };
 
   if (loading) {
@@ -269,15 +278,15 @@ export default function ProductPage() {
               {product.name}
             </h1>
 
-            {/* Rating and Views */}
+            {/* Rating and Views - FIXED: Added null safety */}
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <div className="flex items-center">
                 <StarRating 
-                  rating={product.rating_average} 
+                  rating={getSafeRating(product.rating_average)} 
                   showRatingText={false}
                   size="sm"
                 />
-                <span className="ml-2">{product.rating_average.toFixed(1)}</span>
+                <span className="ml-2">{getSafeRatingDisplay(product.rating_average)}</span>
                 <span className="ml-1">({product.review_count} reviews)</span>
               </div>
               <div className="flex items-center">
