@@ -1,8 +1,10 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const { getPool, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/adminAuth');
 const imagekit = require('../config/imagekit');
+const { createCacheMiddleware } = require('../middleware/cache'); // ADD CACHE MIDDLEWARE
 const router = express.Router();
 
 // Profile upload rate limiting - ONLY for profile pictures (5 per hour)
@@ -42,13 +44,38 @@ const reviewImageUploadLimit = rateLimit({
 const generalApiLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
-    keyGenerator: (req) => req.user?.id || req.ip,
+    keyGenerator: (req) => {
+        if (req.user?.id) {
+            return `user:${req.user.id}`;
+        }
+        return ipKeyGenerator(req);  // Use proper IPv6-compatible key generator
+    },
     message: {
         status: 'error',
         message: 'Too many requests. Please try again later.',
         code: 'API_RATE_LIMIT_EXCEEDED'
     }
 });
+
+// ================== CACHE CONFIGURATIONS ==================
+// Dashboard stats caching - per user, 10 minutes (MOST IMPORTANT)
+const dashboardStatsCache = createCacheMiddleware(
+    (req) => `dashboard:user:${req.user.id}`,
+    600, // 10 minutes - balance between performance and data freshness
+    (req) => !req.user // Skip if no authenticated user
+);
+
+// User profile caching - per user, 10 minutes  
+const userProfileCache = createCacheMiddleware(
+    (req) => `profile:user:${req.user.id}`,
+    600 // 10 minutes
+);
+
+// User stats caching - per user, 5 minutes (more dynamic data)
+const userStatsCache = createCacheMiddleware(
+    (req) => `stats:user:${req.user.id}`,
+    300 // 5 minutes
+);
 
 // Get all users (admin only)
 router.get('/', generalApiLimit, async (req, res) => {
@@ -122,8 +149,8 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
     }
 });
 
-// Get user profile (protected route)
-router.get('/profile', authenticateToken, generalApiLimit, async (req, res) => {
+// Get user profile (protected route) - WITH CACHING
+router.get('/profile', authenticateToken, userProfileCache, generalApiLimit, async (req, res) => {
     try {
         const pool = await getPool();
         const userId = req.user.id;
@@ -260,6 +287,12 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         
         console.log(`✅ Profile picture updated successfully for user ${userId}`);
         
+        // IMPORTANT: Clear user's cached data when profile is updated
+        const { deleteCache } = require('../config/redis');
+        await deleteCache(`profile:user:${userId}`);
+        await deleteCache(`dashboard:user:${userId}`);
+        await deleteCache(`stats:user:${userId}`);
+        
         res.json({
             status: 'success',
             message: 'Profile picture updated successfully',
@@ -280,8 +313,8 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
     }
 });
 
-// Get user stats for dashboard
-router.get('/stats', authenticateToken, generalApiLimit, async (req, res) => {
+// Get user stats for dashboard - WITH CACHING
+router.get('/stats', authenticateToken, userStatsCache, generalApiLimit, async (req, res) => {
     try {
         const pool = await getPool();
         const userId = req.user.id;
@@ -326,11 +359,13 @@ router.get('/stats', authenticateToken, generalApiLimit, async (req, res) => {
     }
 });
 
-// Get enhanced user stats for dashboard (protected route)
-router.get('/dashboard-stats', authenticateToken, generalApiLimit, async (req, res) => {
+// Get enhanced user stats for dashboard (protected route) - WITH CACHING  
+router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalApiLimit, async (req, res) => {
     try {
         const pool = await getPool();
         const userId = req.user.id;
+        
+        console.log(`🔍 DEBUG - Dashboard stats for user ${userId}`);
         
         // Get basic user info and creation date
         const userResult = await pool.request()
@@ -415,7 +450,7 @@ router.get('/dashboard-stats', authenticateToken, generalApiLimit, async (req, r
                 name: 'Review Contributor',
                 description: 'Wrote 5+ helpful reviews',
                 icon: '✍️',
-                earned_date: null // Could track when 5th review was written
+                earned_date: null
             });
         }
         

@@ -128,6 +128,14 @@ app.use((req, res) => {
     });
 });
 
+// Add this endpoint temporarily to clear cache
+app.get('/clear-cache', async (req, res) => {
+    const { clearAllCache } = require('./config/redis');
+    await clearAllCache();
+    res.json({ message: 'Cache cleared' });
+});
+
+
 // Start server
 const startServer = async () => {
     try {

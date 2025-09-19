@@ -1,10 +1,45 @@
 const express = require('express');
 const { getPool, sql } = require('../config/database');
+const { createCacheMiddleware } = require('../middleware/cache'); // ADD CACHE MIDDLEWARE
 const router = express.Router();
 
+// Cache configurations with different TTL (Time To Live) values
+const bannersCache = createCacheMiddleware(
+    () => 'banners:active',
+    1800 // 30 minutes - banners rarely change
+);
 
-// Public route to get active banners (no auth required)
-router.get('/banners', async (req, res) => {
+const categoriesCache = createCacheMiddleware(
+    () => 'categories:all', 
+    3600 // 60 minutes - categories change even less
+);
+
+const featuredProductsCache = createCacheMiddleware(
+    (req) => `products:featured:limit:${req.query.limit || 8}`,
+    900 // 15 minutes - products may be updated more often
+);
+
+const productDetailsCache = createCacheMiddleware(
+    (req) => `product:${req.params.id}`,
+    600, // 10 minutes
+    (req) => req.method !== 'GET' // Skip caching for non-GET requests
+);
+
+const categoryProductsCache = createCacheMiddleware(
+    (req) => `category:${req.params.id}:page:${req.query.page || 1}:limit:${req.query.limit || 12}`,
+    300 // 5 minutes - category product lists change more frequently
+);
+
+const searchCache = createCacheMiddleware(
+    (req) => {
+        const { q, category, sort = 'relevance', page = 1 } = req.query;
+        return `search:${q}:${category || 'all'}:${sort}:${page}`;
+    },
+    300 // 5 minutes - search results can change frequently
+);
+
+// Public route to get active banners (no auth required) - WITH CACHING
+router.get('/banners', bannersCache, async (req, res) => {
     try {
         const pool = await getPool();
         
@@ -17,13 +52,11 @@ router.get('/banners', async (req, res) => {
             ORDER BY b.display_order ASC, b.created_at DESC
         `);
 
-
         res.json({
             status: 'success',
             message: 'Public banners retrieved successfully',
             data: result.recordset
         });
-
 
     } catch (error) {
         console.error('Get public banners error:', error);
@@ -35,9 +68,8 @@ router.get('/banners', async (req, res) => {
     }
 });
 
-
-// Public route to get categories (no auth required)
-router.get('/categories', async (req, res) => {
+// Public route to get categories (no auth required) - WITH CACHING
+router.get('/categories', categoriesCache, async (req, res) => {
     try {
         const pool = await getPool();
         
@@ -47,13 +79,11 @@ router.get('/categories', async (req, res) => {
             ORDER BY sort_order, name
         `);
 
-
         res.json({
             status: 'success',
             message: 'Public categories retrieved successfully',
             data: result.recordset
         });
-
 
     } catch (error) {
         console.error('Get public categories error:', error);
@@ -65,9 +95,8 @@ router.get('/categories', async (req, res) => {
     }
 });
 
-
-// Public route to get products by category (no auth required)
-router.get('/categories/:id/products', async (req, res) => {
+// Public route to get products by category (no auth required) - WITH CACHING
+router.get('/categories/:id/products', categoryProductsCache, async (req, res) => {
     try {
         const pool = await getPool();
         const categoryId = parseInt(req.params.id);
@@ -153,9 +182,8 @@ router.get('/categories/:id/products', async (req, res) => {
     }
 });
 
-
-// Public route to get single product details (no auth required)
-router.get('/products/:id', async (req, res) => {
+// Public route to get single product details (no auth required) - WITH CACHING
+router.get('/products/:id', productDetailsCache, async (req, res) => {
     try {
         const pool = await getPool();
         const productId = parseInt(req.params.id);
@@ -194,7 +222,7 @@ router.get('/products/:id', async (req, res) => {
 
         const product = productResult.recordset[0];
 
-        // Update view count
+        // Update view count (this happens regardless of caching)
         await pool.request()
             .input('productId', sql.Int, productId)
             .query('UPDATE Products SET views_count = views_count + 1 WHERE id = @productId');
@@ -234,9 +262,8 @@ router.get('/products/:id', async (req, res) => {
     }
 });
 
-
-// Public route to get featured products (no auth required)
-router.get('/products', async (req, res) => {
+// Public route to get featured products (no auth required) - WITH CACHING
+router.get('/products', featuredProductsCache, async (req, res) => {
     try {
         const pool = await getPool();
         const limit = parseInt(req.query.limit) || 8;
@@ -253,7 +280,6 @@ router.get('/products', async (req, res) => {
                 ORDER BY p.created_at DESC
             `);
 
-
         res.json({
             status: 'success',
             message: 'Public products retrieved successfully',
@@ -262,7 +288,6 @@ router.get('/products', async (req, res) => {
                 total: result.recordset.length
             }
         });
-
 
     } catch (error) {
         console.error('Get public products error:', error);
@@ -274,9 +299,8 @@ router.get('/products', async (req, res) => {
     }
 });
 
-
-// Public route to search products (no auth required)
-router.get('/search', async (req, res) => {
+// Public route to search products (no auth required) - WITH CACHING
+router.get('/search', searchCache, async (req, res) => {
     try {
         const pool = await getPool();
         const query = req.query.q ? req.query.q.toString().trim() : '';
@@ -457,6 +481,5 @@ router.get('/search', async (req, res) => {
         });
     }
 });
-
 
 module.exports = router;
