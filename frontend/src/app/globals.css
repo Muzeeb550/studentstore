@@ -1,8 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* StudentStore Color System */
+  --background: #F8FAFC; /* Light gray for better student experience */
+  --foreground: #1E293B; /* Dark slate for perfect readability */
+  
+  /* Primary Brand Colors */
+  --student-blue: #4F46E5;
+  --student-green: #10B981;
+  --student-orange: #F97316;
+  
+  /* Text Colors (Safe Contrast) */
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-white: #FFFFFF;
+  --text-link: #4F46E5;
+  
+  /* Background Colors */
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-light: #F1F5F9;
+  
+  /* Semantic Colors */
+  --success: #22C55E;
+  --warning: #EAB308;
+  --error: #EF4444;
+  --info: #3B82F6;
+  
+  /* Borders & Shadows */
+  --border-light: #E2E8F0;
+  --border-medium: #CBD5E1;
+  --border-dark: #94A3B8;
 }
 
 @theme inline {
@@ -10,23 +38,265 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* StudentStore Custom Colors */
+  --color-student-blue: var(--student-blue);
+  --color-student-green: var(--student-green);
+  --color-student-orange: var(--student-orange);
+  
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-white: var(--text-white);
+  --color-text-link: var(--text-link);
+  
+  --color-bg-page: var(--bg-page);
+  --color-bg-card: var(--bg-card);
+  --color-bg-light: var(--bg-light);
+  
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+  
+  --color-border-light: var(--border-light);
+  --color-border-medium: var(--border-medium);
+  --color-border-dark: var(--border-dark);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Remove dark mode for students (better consistency) */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, Helvetica, sans-serif;
+  line-height: 1.6;
 }
 
+/* StudentStore Component Styles */
 
-/* Custom carousel dots styling */
+/* Button Styles */
+.btn-primary {
+  background-color: var(--student-blue);
+  color: var(--text-white);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.btn-primary:hover {
+  background-color: #3730A3;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+}
+
+.btn-action {
+  background: linear-gradient(45deg, var(--student-orange) 0%, var(--warning) 100%);
+  color: var(--text-white);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.btn-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.3);
+}
+
+.btn-success {
+  background-color: var(--student-green);
+  color: var(--text-white);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+}
+
+/* Card Styles */
+.card-student {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.card-student:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border-color: var(--student-blue);
+}
+
+/* Product Card Specific - UNIFORM SIZING */
+.product-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  /* UNIFORM HEIGHT FOR ALL PRODUCT CARDS */
+  height: 380px;
+  min-height: 380px;
+  max-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.15);
+  border-color: var(--student-blue);
+}
+
+/* Category Card Specific - UNIFORM SIZING */
+.category-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  /* UNIFORM HEIGHT FOR ALL CATEGORY CARDS */
+  height: 240px;
+  min-height: 240px;
+  max-height: 240px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.15);
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-light) 100%);
+  border-color: var(--student-green);
+}
+
+/* Responsive card sizing for mobile/desktop consistency */
+@media (max-width: 640px) {
+  .product-card {
+    height: 320px;
+    min-height: 320px;
+    max-height: 320px;
+  }
+  
+  .category-card {
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
+    padding: 20px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .product-card {
+    height: 400px;
+    min-height: 400px;
+    max-height: 400px;
+  }
+  
+  .category-card {
+    height: 260px;
+    min-height: 260px;
+    max-height: 260px;
+    padding: 28px;
+  }
+}
+
+/* Text Utilities */
+.text-student-primary {
+  color: var(--text-primary);
+}
+
+.text-student-secondary {
+  color: var(--text-secondary);
+}
+
+.text-student-link {
+  color: var(--text-link);
+}
+
+.text-student-link:hover {
+  color: #3730A3;
+}
+
+/* Background Utilities */
+.bg-student-page {
+  background-color: var(--bg-page);
+}
+
+.bg-student-card {
+  background-color: var(--bg-card);
+}
+
+.bg-student-light {
+  background-color: var(--bg-light);
+}
+
+/* StudentStore Color Utilities */
+.bg-student-blue {
+  background-color: var(--student-blue);
+}
+
+.bg-student-green {
+  background-color: var(--student-green);
+}
+
+.bg-student-orange {
+  background-color: var(--student-orange);
+}
+
+.text-student-blue {
+  color: var(--student-blue);
+}
+
+.text-student-green {
+  color: var(--student-green);
+}
+
+.text-student-orange {
+  color: var(--student-orange);
+}
+
+.border-student-blue {
+  border-color: var(--student-blue);
+}
+
+.border-student-green {
+  border-color: var(--student-green);
+}
+
+.border-student-orange {
+  border-color: var(--student-orange);
+}
+
+/* Hero Gradient */
+.bg-student-hero {
+  background: linear-gradient(135deg, var(--student-blue) 0%, #7C3AED 50%, var(--student-green) 100%);
+}
+
+/* Custom carousel dots styling (keeping your existing styles) */
 .custom-dots {
   bottom: 20px !important;
 }
@@ -53,7 +323,7 @@ body {
   display: none !important;
 }
 
-/* Line clamp utilities */
+/* Line clamp utilities (keeping your existing) */
 .line-clamp-1 {
   overflow: hidden;
   display: -webkit-box;
@@ -66,4 +336,72 @@ body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Focus States for Accessibility */
+button:focus,
+a:focus,
+input:focus,
+select:focus {
+  outline: 2px solid var(--student-blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Loading States */
+.loading-shimmer {
+  background: linear-gradient(90deg, var(--bg-light) 25%, var(--bg-card) 50%, var(--bg-light) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Success/Error States */
+.success-message {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.error-message {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+/* Enhanced hover animations for StudentStore */
+.hover-lift {
+  transition: all 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* StudentStore gradient animations */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-animate {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
 }
