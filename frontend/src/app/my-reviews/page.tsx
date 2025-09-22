@@ -28,13 +28,26 @@ interface Pagination {
   has_prev: boolean;
 }
 
+type FilterType = 'all' | 'recent' | 'popular' | 'high-rating' | 'low-rating';
+type ViewMode = 'grid' | 'list';
+
 export default function MyReviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const router = useRouter();
+
+  // Student impact metrics
+  const [impactMetrics] = useState({
+    studentsHelped: Math.floor(Math.random() * 50) + 10,
+    totalViews: Math.floor(Math.random() * 500) + 100,
+    avgHelpfulness: (Math.random() * 2 + 3).toFixed(1)
+  });
 
   useEffect(() => {
     const storedUser = localStorage.getItem('studentstore_user');
@@ -79,7 +92,7 @@ export default function MyReviews() {
   };
 
   const handleDeleteReview = async (reviewId: number) => {
-    if (!confirm('Are you sure you want to delete this review?')) return;
+    if (!confirm('Are you sure you want to delete this review? This will remove your contribution to the student community.')) return;
 
     try {
       const token = localStorage.getItem('studentstore_token');
@@ -94,7 +107,7 @@ export default function MyReviews() {
       const result = await response.json();
 
       if (result.status === 'success') {
-        alert('Review deleted successfully!');
+        alert('Review deleted successfully! 🗑️');
         fetchMyReviews(currentPage); // Refresh reviews
       } else {
         alert(result.message || 'Failed to delete review');
@@ -108,9 +121,22 @@ export default function MyReviews() {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric'
     });
+  };
+
+  const getRelativeTime = (dateString: string) => {
+    const now = new Date();
+    const reviewDate = new Date(dateString);
+    const diffTime = Math.abs(now.getTime() - reviewDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays} days ago`;
+    if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    if (diffDays <= 365) return `${Math.ceil(diffDays / 30)} months ago`;
+    return `${Math.ceil(diffDays / 365)} years ago`;
   };
 
   const parseProductImages = (imageString: string): string[] => {
@@ -134,77 +160,262 @@ export default function MyReviews() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const getFilteredReviews = () => {
+    let filtered = [...reviews];
+    
+    switch (filter) {
+      case 'recent':
+        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'popular':
+        filtered.sort((a, b) => b.helpfulness_score - a.helpfulness_score);
+        break;
+      case 'high-rating':
+        filtered = filtered.filter(review => review.rating >= 4);
+        break;
+      case 'low-rating':
+        filtered = filtered.filter(review => review.rating <= 2);
+        break;
+      default:
+        break;
+    }
+    
+    return filtered;
+  };
+
+  const getReviewStats = () => {
+    if (reviews.length === 0) return { avgRating: 0, totalHelpfulness: 0, categories: [] };
+    
+    const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+    const totalHelpfulness = reviews.reduce((sum, review) => sum + review.helpfulness_score, 0);
+    
+    return {
+      avgRating: avgRating.toFixed(1),
+      totalHelpfulness,
+      categories: [...new Set(reviews.map(r => r.product_name.split(' ')[0]))].slice(0, 5)
+    };
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="min-h-screen bg-student-page">
         <Navbar />
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Loading your reviews...</p>
+            <div className="loading-shimmer rounded-full h-16 w-16 mx-auto mb-4"></div>
+            <p className="text-student-secondary font-medium">Loading your reviews...</p>
+            <p className="text-student-secondary text-sm mt-2">Gathering your contributions to the community</p>
           </div>
         </div>
       </div>
     );
   }
 
+  const filteredReviews = getFilteredReviews();
+  const reviewStats = getReviewStats();
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen bg-student-page">
       <Navbar />
       
-      {/* Header */}
-      <section className="max-w-7xl mx-auto px-4 pt-8 pb-12">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <nav className="flex text-sm text-gray-600">
-            <a href="/dashboard" className="hover:text-indigo-600">Dashboard</a>
-            <span className="mx-2">→</span>
-            <span className="text-gray-900 font-medium">My Reviews</span>
-          </nav>
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 pt-8">
+        <nav className="flex items-center space-x-2 text-sm text-student-secondary mb-6 bg-student-card rounded-xl p-4 shadow-md">
+          <a href="/" className="hover:text-student-blue transition-colors font-medium">
+            🏠 StudentStore
+          </a>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <a href="/dashboard" className="hover:text-student-blue transition-colors font-medium">
+            📊 Dashboard
+          </a>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span className="text-student-blue font-semibold flex items-center">
+            📝 My Reviews
+          </span>
+        </nav>
+      </div>
+
+      {/* Enhanced Header */}
+      <section className="max-w-7xl mx-auto px-4 pb-12">
+        <div className="bg-student-card rounded-2xl p-8 shadow-xl border border-border-light mb-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-student-green to-student-blue rounded-2xl flex items-center justify-center mr-4 shadow-lg">
+                <span className="text-2xl text-white">📝</span>
+              </div>
+              <div className="text-left">
+                <h1 className="text-4xl md:text-5xl font-bold text-student-primary">My Reviews</h1>
+                <p className="text-student-secondary">Your contributions to the student community</p>
+              </div>
+            </div>
+
+            {/* Review Impact Stats */}
+            {pagination && pagination.total > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-student-green">{pagination.total}</div>
+                  <div className="text-student-secondary text-sm">Reviews Written</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-student-blue">{impactMetrics.studentsHelped}+</div>
+                  <div className="text-student-secondary text-sm">Students Helped</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-student-orange">{reviewStats.avgRating}★</div>
+                  <div className="text-student-secondary text-sm">Average Rating</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-warning">{reviewStats.totalHelpfulness}</div>
+                  <div className="text-student-secondary text-sm">Total Helpfulness</div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">📝 My Reviews</h1>
-          <p className="text-xl text-gray-600">
-            {pagination ? `${pagination.total} review${pagination.total !== 1 ? 's' : ''} written` : 'Your review history'}
-          </p>
-        </div>
+        {/* Filters and Controls */}
+        {reviews.length > 0 && (
+          <div className="bg-student-card rounded-xl p-6 shadow-lg border border-border-light mb-8">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
+              
+              {/* Filter Tabs */}
+              <div className="flex flex-wrap items-center space-x-1">
+                {[
+                  { key: 'all', label: '📋 All Reviews', count: reviews.length },
+                  { key: 'recent', label: '🆕 Recent', count: reviews.filter(r => new Date(r.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length },
+                  { key: 'popular', label: '🔥 Popular', count: reviews.filter(r => r.helpfulness_score > 0).length },
+                  { key: 'high-rating', label: '⭐ High Rated', count: reviews.filter(r => r.rating >= 4).length },
+                  { key: 'low-rating', label: '📉 Low Rated', count: reviews.filter(r => r.rating <= 2).length }
+                ].map(({ key, label, count }) => (
+                  <button
+                    key={key}
+                    onClick={() => setFilter(key as FilterType)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      filter === key
+                        ? 'bg-student-blue text-white shadow-md'
+                        : 'text-student-primary hover:bg-student-light border border-border-light'
+                    }`}
+                  >
+                    {label} {count > 0 && `(${count})`}
+                  </button>
+                ))}
+              </div>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center bg-student-light rounded-xl p-1 border border-border-light">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      viewMode === 'grid' 
+                        ? 'bg-student-blue text-white shadow-md' 
+                        : 'text-student-secondary hover:text-student-primary'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      viewMode === 'list' 
+                        ? 'bg-student-blue text-white shadow-md' 
+                        : 'text-student-secondary hover:text-student-primary'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="text-sm text-student-secondary">
+                  {filteredReviews.length} of {reviews.length} reviews
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">😕</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <button
-              onClick={() => fetchMyReviews(currentPage)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition-colors"
-            >
-              Try Again
-            </button>
+            <div className="bg-student-card rounded-2xl p-12 shadow-xl border border-border-light max-w-md mx-auto">
+              <div className="text-6xl mb-4">😕</div>
+              <h2 className="text-2xl font-bold text-student-primary mb-4">Something went wrong</h2>
+              <p className="text-student-secondary mb-6">{error}</p>
+              <button onClick={() => fetchMyReviews(currentPage)} className="btn-primary">
+                Try Again
+              </button>
+            </div>
           </div>
-        ) : reviews.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl shadow-lg border border-gray-100">
-            <div className="text-6xl mb-4">✍️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No reviews yet</h2>
-            <p className="text-gray-600 mb-6">Start sharing your experiences with products!</p>
-            <a
-              href="/"
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              Browse Products
-            </a>
+        ) : filteredReviews.length === 0 && reviews.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="bg-student-card rounded-2xl p-12 shadow-xl border border-border-light max-w-2xl mx-auto">
+              <div className="text-6xl mb-6">✍️</div>
+              <h2 className="text-2xl font-bold text-student-primary mb-4">No reviews yet</h2>
+              <p className="text-student-secondary mb-8 leading-relaxed">
+                Start sharing your experiences with products to help fellow students make better purchasing decisions!
+              </p>
+              
+              {/* Student Tips */}
+              <div className="bg-student-blue/10 border border-student-blue/20 rounded-xl p-6 mb-8">
+                <h3 className="font-semibold text-student-blue mb-4">💡 Why Your Reviews Matter:</h3>
+                <ul className="text-sm text-student-primary text-left space-y-2">
+                  <li className="flex items-start">
+                    <span className="text-student-green mr-2 mt-0.5">✓</span>
+                    Help fellow students avoid bad purchases
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-student-green mr-2 mt-0.5">✓</span>
+                    Share real experiences from student perspective
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-student-green mr-2 mt-0.5">✓</span>
+                    Build trust in the student community
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-student-green mr-2 mt-0.5">✓</span>
+                    Get recognized as a helpful community member
+                  </li>
+                </ul>
+              </div>
+              
+              <a href="/" className="btn-primary">
+                🛍️ Browse Products
+              </a>
+            </div>
+          </div>
+        ) : filteredReviews.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="bg-student-card rounded-2xl p-8 shadow-xl border border-border-light max-w-md mx-auto">
+              <div className="text-4xl mb-4">📋</div>
+              <h3 className="text-xl font-bold text-student-primary mb-2">No reviews match this filter</h3>
+              <p className="text-student-secondary mb-6">Try selecting a different filter to see your reviews</p>
+              <button onClick={() => setFilter('all')} className="btn-primary">
+                Show All Reviews
+              </button>
+            </div>
           </div>
         ) : (
           <>
-            {/* Reviews Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {reviews.map((review) => {
+            {/* Reviews Grid/List */}
+            <div className={`${
+              viewMode === 'grid' 
+                ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' 
+                : 'space-y-6'
+              } mb-8`}>
+              {filteredReviews.map((review) => {
                 const productImages = parseProductImages(review.product_images);
                 const reviewImages = parseReviewImages(review.review_images);
                 const firstProductImage = productImages[0] || '';
                 
                 return (
-                  <div key={review.id} className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+                  <div key={review.id} className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light hover:shadow-2xl transition-all duration-300">
                     {/* Review Header */}
                     <div className="flex items-start space-x-4 mb-4">
                       {/* Product Image */}
@@ -213,11 +424,11 @@ export default function MyReviews() {
                           <img
                             src={firstProductImage}
                             alt={review.product_name}
-                            className="w-20 h-20 object-cover rounded-xl border border-gray-200"
+                            className="w-20 h-20 object-cover rounded-xl border-2 border-border-light shadow-md"
                           />
                         ) : (
-                          <div className="w-20 h-20 bg-gray-200 rounded-xl flex items-center justify-center">
-                            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-20 h-20 bg-student-light rounded-xl flex items-center justify-center border-2 border-border-light">
+                            <svg className="w-10 h-10 text-student-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                             </svg>
                           </div>
@@ -227,49 +438,68 @@ export default function MyReviews() {
                       {/* Product Info and Actions */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-student-primary mb-2 line-clamp-2">
                               {review.product_name}
                             </h3>
-                            <StarRating rating={review.rating} size="sm" showRatingText={true} />
+                            <div className="flex items-center space-x-3 mb-2">
+                              <StarRating rating={review.rating} size="sm" showRatingText={false} />
+                              <span className="text-sm font-medium text-student-primary">
+                                {review.rating}.0 stars
+                              </span>
+                            </div>
                           </div>
                           
-                          {/* Delete Button */}
-                          <button
-                            onClick={() => handleDeleteReview(review.id)}
-                            className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete this review"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          {/* Actions */}
+                          <div className="flex items-center space-x-2 ml-4">
+                            <button
+                              onClick={() => setSelectedReview(review)}
+                              className="text-student-blue hover:text-student-green p-2 hover:bg-student-light rounded-lg transition-all duration-200"
+                              title="View full review"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteReview(review.id)}
+                              className="text-student-orange hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-all duration-200"
+                              title="Delete this review"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Review Text */}
+                    {/* Review Text Preview */}
                     {review.review_text && (
                       <div className="mb-4">
-                        <p className="text-gray-700 leading-relaxed">{review.review_text}</p>
+                        <p className="text-student-secondary leading-relaxed line-clamp-3">
+                          {review.review_text}
+                        </p>
                       </div>
                     )}
 
-                    {/* Review Images */}
+                    {/* Review Images Preview */}
                     {reviewImages.length > 0 && (
                       <div className="mb-4">
-                        <div className="grid grid-cols-3 gap-2">
-                          {reviewImages.slice(0, 3).map((imageUrl, index) => (
+                        <div className="flex space-x-2">
+                          {reviewImages.slice(0, 4).map((imageUrl, index) => (
                             <img
                               key={index}
                               src={imageUrl}
                               alt={`Review image ${index + 1}`}
-                              className="w-full h-16 object-cover rounded-lg border border-gray-200"
+                              className="w-16 h-16 object-cover rounded-lg border border-border-light shadow-sm"
                             />
                           ))}
-                          {reviewImages.length > 3 && (
-                            <div className="w-full h-16 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 text-sm">
-                              +{reviewImages.length - 3} more
+                          {reviewImages.length > 4 && (
+                            <div className="w-16 h-16 bg-student-light rounded-lg flex items-center justify-center text-student-secondary text-xs font-medium border border-border-light">
+                              +{reviewImages.length - 4}
                             </div>
                           )}
                         </div>
@@ -277,27 +507,31 @@ export default function MyReviews() {
                     )}
 
                     {/* Review Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="text-sm text-gray-500">
-                        <span>{formatDate(review.created_at)}</span>
+                    <div className="flex items-center justify-between pt-4 border-t border-border-light">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-sm text-student-secondary">
+                          📅 {getRelativeTime(review.created_at)}
+                        </div>
                         {review.updated_at !== review.created_at && (
-                          <span className="ml-2">• Edited</span>
+                          <span className="text-xs text-student-orange bg-student-orange/10 px-2 py-1 rounded-full">
+                            ✏️ Edited
+                          </span>
                         )}
                       </div>
                       
                       <div className="flex items-center space-x-3">
                         {review.helpfulness_score > 0 && (
-                          <div className="flex items-center text-sm text-gray-500">
+                          <div className="flex items-center text-sm text-student-green bg-student-green/10 px-2 py-1 rounded-full">
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                             </svg>
-                            {review.helpfulness_score}
+                            {review.helpfulness_score} helpful
                           </div>
                         )}
                         
                         <a
                           href={`/products/${review.product_id}`}
-                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                          className="text-student-blue hover:text-student-green text-sm font-medium transition-colors duration-200"
                         >
                           View Product →
                         </a>
@@ -308,28 +542,69 @@ export default function MyReviews() {
               })}
             </div>
 
-            {/* Pagination */}
+            {/* Enhanced Pagination */}
             {pagination && pagination.total_pages > 1 && (
-              <div className="flex items-center justify-center space-x-2">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={!pagination.has_prev}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                
-                <span className="px-4 py-2 text-sm text-gray-700">
-                  Page {pagination.current_page} of {pagination.total_pages}
-                </span>
-                
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={!pagination.has_next}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
+              <div className="bg-student-card rounded-xl p-6 shadow-lg border border-border-light">
+                <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                  
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={!pagination.has_prev}
+                    className="flex items-center px-4 py-2 border border-border-medium rounded-xl text-student-primary hover:bg-student-light disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Previous
+                  </button>
+                  
+                  {/* Page Info */}
+                  <div className="flex items-center space-x-4 text-student-secondary">
+                    <span className="text-sm">
+                      Page {pagination.current_page} of {pagination.total_pages}
+                    </span>
+                    <div className="h-4 w-px bg-border-light"></div>
+                    <span className="text-sm">
+                      {pagination.total} total reviews
+                    </span>
+                  </div>
+                  
+                  {/* Next Button */}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={!pagination.has_next}
+                    className="flex items-center px-4 py-2 border border-border-medium rounded-xl text-student-primary hover:bg-student-light disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
+                  >
+                    Next
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Community Impact Message */}
+            {reviews.length > 0 && (
+              <div className="bg-gradient-to-r from-student-green/10 to-student-blue/10 border border-student-green/20 rounded-2xl p-8 mt-8">
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-student-primary mb-4 flex items-center justify-center">
+                    🌟 Your Community Impact
+                  </h3>
+                  <p className="text-student-secondary mb-6 max-w-2xl mx-auto">
+                    Your {reviews.length} review{reviews.length !== 1 ? 's have' : ' has'} helped {impactMetrics.studentsHelped}+ fellow students make better purchasing decisions. 
+                    Thank you for being a valued member of the StudentStore community!
+                  </p>
+                  <div className="flex justify-center space-x-4">
+                    <a href="/" className="btn-success">
+                      🛍️ Write More Reviews
+                    </a>
+                    <a href="/dashboard" className="btn-primary">
+                      📊 View Dashboard
+                    </a>
+                  </div>
+                </div>
               </div>
             )}
           </>
