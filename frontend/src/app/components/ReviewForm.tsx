@@ -111,7 +111,8 @@ export default function ReviewForm({
             console.log(`Attempting ImageKit auth for review images (attempt ${retryCount + 1})`);
             
             // UPDATED: Add usage=review parameter for higher rate limits
-            const authResponse = await fetch('http://localhost:5000/api/users/imagekit-auth?usage=review', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const authResponse = await fetch(`${apiUrl}/api/users/imagekit-auth?usage=review`, {
               headers: { 'Authorization': `Bearer ${token}` },
             });
 

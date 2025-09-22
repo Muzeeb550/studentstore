@@ -70,41 +70,45 @@ export default function HomePage() {
   }, []);
 
   const fetchPublicData = async () => {
-    try {
-      // Fetch banners
-      const bannerRes = await fetch('http://localhost:5000/api/public/banners');
-      const bannerData = await bannerRes.json();
-      if (bannerData.status === 'success') {
-        setBanners(bannerData.data);
-      }
-
-      // Fetch categories
-      const categoryRes = await fetch('http://localhost:5000/api/public/categories');
-      const categoryData = await categoryRes.json();
-      if (categoryData.status === 'success') {
-        setCategories(categoryData.data);
-      }
-
-      // Fetch trending products (will enhance with algorithm later)
-      const productRes = await fetch('http://localhost:5000/api/public/products?limit=10');
-      const productData = await productRes.json();
-      if (productData.status === 'success') {
-        // Use first 10 as trending for now
-        setTrendingProducts(productData.data.products.slice(0, 10));
-      }
-
-      // Fetch featured products
-      const featuredRes = await fetch('http://localhost:5000/api/public/products?limit=12');
-      const featuredData = await featuredRes.json();
-      if (featuredData.status === 'success') {
-        setProducts(featuredData.data.products);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const timestamp = Date.now(); // Cache busting parameter
+    
+    // Fetch banners with cache busting
+    const bannerRes = await fetch(`${apiUrl}/api/public/banners?t=${timestamp}`);
+    const bannerData = await bannerRes.json();
+    console.log('📊 Banner API Response:', bannerData); // Debug log
+    if (bannerData.status === 'success') {
+      setBanners(bannerData.data);
     }
-  };
+
+    // Fetch categories with cache busting
+    const categoryRes = await fetch(`${apiUrl}/api/public/categories?t=${timestamp}`);
+    const categoryData = await categoryRes.json();
+    console.log('📂 Category API Response:', categoryData); // Debug log
+    if (categoryData.status === 'success') {
+      setCategories(categoryData.data);
+    }
+
+    // Fetch trending products
+    const productRes = await fetch(`${apiUrl}/api/public/products?limit=10&t=${timestamp}`);
+    const productData = await productRes.json();
+    if (productData.status === 'success') {
+      setTrendingProducts(productData.data.products.slice(0, 10));
+    }
+
+    // Fetch featured products
+    const featuredRes = await fetch(`${apiUrl}/api/public/products?limit=12&t=${timestamp}`);
+    const featuredData = await featuredRes.json();
+    if (featuredData.status === 'success') {
+      setProducts(featuredData.data.products);
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Recently Viewed Products Management - Updated
   const loadRecentlyViewed = () => {

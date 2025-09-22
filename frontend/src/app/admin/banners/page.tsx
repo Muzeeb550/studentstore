@@ -30,7 +30,8 @@ export default function AdminBanners() {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/admin/banners', {
+   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const response = await fetch(`${apiUrl}/api/admin/banners`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -60,7 +61,8 @@ export default function AdminBanners() {
 
     try {
       const token = localStorage.getItem('studentstore_token');
-      const response = await fetch(`http://localhost:5000/api/admin/banners/${bannerId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/banners/${bannerId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -61,7 +61,8 @@ export default function Navbar() {
       const token = localStorage.getItem('studentstore_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:5000/api/users/profile', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/users/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -107,7 +108,8 @@ export default function Navbar() {
       const token = localStorage.getItem('studentstore_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:5000/api/wishlist/count', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/wishlist/count`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -367,7 +369,10 @@ export default function Navbar() {
               </div>
             ) : (
               <button 
-                onClick={() => window.location.href = 'http://localhost:5000/auth/google'}
+                onClick={() => {
+                  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+                  window.location.href = `${apiUrl}/auth/google`;
+                }}
                 className="bg-gradient-to-r from-student-blue to-student-green hover:from-student-blue/90 hover:to-student-green/90 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-2"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -381,6 +386,7 @@ export default function Navbar() {
             )}
           </div>
         </div>
+
 
         {/* Mobile Search Bar */}
         <div className="md:hidden pb-4">

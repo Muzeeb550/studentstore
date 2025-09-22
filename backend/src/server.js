@@ -152,16 +152,13 @@ const startServer = async () => {
         }
         
         app.listen(PORT, () => {
-            console.log(`
-🚀 StudentStore Backend Server Running!
-📍 Port: ${PORT}
-🌍 Environment: ${process.env.NODE_ENV}
-🔗 URL: http://localhost:${PORT}
-⚡ Ready for student authentication!
-🧪 Test database: http://localhost:${PORT}/test-db
-🎯 Create tables: http://localhost:${PORT}/api/database/create-tables
-🌐 Public API: http://localhost:${PORT}/api/public/banners
-            `);
+           console.log(`
+        🚀 StudentStore Backend Server Running!
+        📍 Port: ${PORT}
+        🌍 Environment: ${process.env.NODE_ENV}
+        ⚡ Ready for student authentication!
+        🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}
+        `);
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);

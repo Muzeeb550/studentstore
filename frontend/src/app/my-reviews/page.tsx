@@ -67,7 +67,8 @@ export default function MyReviews() {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/reviews/my-reviews?page=${page}&limit=12`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/reviews/my-reviews?page=${page}&limit=12`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -96,7 +97,8 @@ export default function MyReviews() {
 
     try {
       const token = localStorage.getItem('studentstore_token');
-      const response = await fetch(`http://localhost:5000/api/reviews/${reviewId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

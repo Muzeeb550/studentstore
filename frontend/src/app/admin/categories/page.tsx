@@ -42,7 +42,8 @@ export default function AdminCategories() {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/admin/categories', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/categories`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -97,7 +98,8 @@ export default function AdminCategories() {
 
     try {
       const token = localStorage.getItem('studentstore_token');
-      const response = await fetch(`http://localhost:5000/api/admin/categories/${categoryId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/categories/${categoryId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -138,7 +140,8 @@ export default function AdminCategories() {
     try {
       const token = localStorage.getItem('studentstore_token');
       
-      const authResponse = await fetch('http://localhost:5000/api/admin/imagekit-auth', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const authResponse = await fetch(`${apiUrl}/api/admin/imagekit-auth`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -186,7 +189,8 @@ export default function AdminCategories() {
 
     try {
       const token = localStorage.getItem('studentstore_token');
-      const response = await fetch('http://localhost:5000/api/admin/categories', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/categories`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -222,7 +226,8 @@ export default function AdminCategories() {
 
     try {
       const token = localStorage.getItem('studentstore_token');
-      const response = await fetch(`http://localhost:5000/api/admin/categories/${editingCategory.id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/categories/${editingCategory.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

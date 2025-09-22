@@ -67,8 +67,9 @@ export default function CategoryPage() {
   const fetchCategoryProducts = async () => {
     try {
       setLoading(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const response = await fetch(
-        `http://localhost:5000/api/public/categories/${categoryId}/products?page=${currentPage}&limit=12&sort=${sortBy}`
+        `${apiUrl}/api/public/categories/${categoryId}/products?page=${currentPage}&limit=12&sort=${sortBy}`
       );
       const result = await response.json();
 

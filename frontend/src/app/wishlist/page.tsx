@@ -93,7 +93,8 @@ export default function WishlistPage() {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/wishlist?page=${page}&limit=12`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/wishlist?page=${page}&limit=12`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -126,7 +127,8 @@ export default function WishlistPage() {
       const token = localStorage.getItem('studentstore_token');
       if (!token) return;
 
-      const response = await fetch(`http://localhost:5000/api/wishlist/remove/${productId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/wishlist/remove/${productId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -163,9 +165,10 @@ export default function WishlistPage() {
     }
   };
 
-  const handleLoginRedirect = () => {
-    window.location.href = 'http://localhost:5000/auth/google';
-  };
+ const handleLoginRedirect = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  window.location.href = `${apiUrl}/auth/google`;
+};
 
   const getFilteredProducts = () => {
     if (!data?.products) return [];

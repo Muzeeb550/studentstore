@@ -81,7 +81,8 @@ export default function SearchPage() {
       setLoading(true);
       
       // Build search URL with filters
-      const searchUrl = new URL('http://localhost:5000/api/public/search');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const searchUrl = new URL(`${apiUrl}/api/public/search`);
       searchUrl.searchParams.set('q', query);
       if (categoryFilter) searchUrl.searchParams.set('category', categoryFilter);
       if (sortFilter) searchUrl.searchParams.set('sort', sortFilter);

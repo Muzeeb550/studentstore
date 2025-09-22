@@ -41,8 +41,9 @@ export default function SearchBar({ className = '' }: SearchBarProps) {
     if (value.length >= 2) {
       setLoading(true);
       try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
         const response = await fetch(
-          `http://localhost:5000/api/public/search?q=${encodeURIComponent(value)}&limit=5`
+          `${apiUrl}/api/public/search?q=${encodeURIComponent(value)}&limit=5`
         );
         const result = await response.json();
 

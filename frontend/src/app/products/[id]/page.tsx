@@ -90,7 +90,8 @@ export default function ProductPage() {
   const fetchProductDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/public/products/${productId}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/public/products/${productId}`);
       const result = await response.json();
 
       if (result.status === 'success') {

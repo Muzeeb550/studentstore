@@ -52,7 +52,8 @@ export default function WishlistButton({
       const token = localStorage.getItem('studentstore_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:5000/api/wishlist/check', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/wishlist/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +90,8 @@ const handleWishlistToggle = async () => {
 
       if (isInWishlist) {
         // Remove from wishlist
-        const response = await fetch(`http://localhost:5000/api/wishlist/remove/${productId}`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${apiUrl}/api/wishlist/remove/${productId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -110,7 +112,8 @@ const handleWishlistToggle = async () => {
         }
       } else {
         // Add to wishlist
-        const response = await fetch('http://localhost:5000/api/wishlist/add', {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${apiUrl}/api/wishlist/add`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -140,9 +143,10 @@ const handleWishlistToggle = async () => {
 
 
 
-  const handleLoginRedirect = () => {
-    window.location.href = 'http://localhost:5000/auth/google';
-  };
+const handleLoginRedirect = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  window.location.href = `${apiUrl}/auth/google`;
+};
 
   return (
     <div className="relative">

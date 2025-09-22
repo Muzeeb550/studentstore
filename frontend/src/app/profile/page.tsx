@@ -75,7 +75,8 @@ export default function ProfilePage() {
       const token = localStorage.getItem('studentstore_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:5000/api/users/profile', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/users/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -145,7 +146,8 @@ export default function ProfilePage() {
       
       console.log('📡 Calling ImageKit auth endpoint...');
       
-      const authResponse = await fetch('http://localhost:5000/api/users/imagekit-auth', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const authResponse = await fetch(`${apiUrl}/api/users/imagekit-auth`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -298,7 +300,8 @@ export default function ProfilePage() {
     try {
       const token = localStorage.getItem('studentstore_token');
       
-      const response = await fetch('http://localhost:5000/api/users/profile/picture', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/users/profile/picture`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

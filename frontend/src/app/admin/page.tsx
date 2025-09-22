@@ -27,36 +27,39 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('studentstore_token');
-      if (!token) {
-        setError('No authentication token found');
-        return;
-      }
-
-      const response = await fetch('http://localhost:5000/api/admin/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        setData(result.data);
-        setError('');
-      } else {
-        setError(result.message || 'Failed to load dashboard data');
-      }
-    } catch (error) {
-      console.error('Dashboard fetch error:', error);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
+const fetchDashboardData = async () => {
+  try {
+    const token = localStorage.getItem('studentstore_token');
+    if (!token) {
+      setError('No authentication token found');
+      return;
     }
-  };
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    
+    const response = await fetch(`${apiUrl}/api/admin/dashboard`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      setData(result.data);
+      setError('');
+    } else {
+      setError(result.message || 'Failed to load dashboard data');
+    }
+  } catch (error) {
+    console.error('Dashboard fetch error:', error);
+    setError('Failed to load dashboard data');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (loading) {
     return (

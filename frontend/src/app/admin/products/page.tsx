@@ -60,7 +60,8 @@ export default function AdminProducts() {
         return;
       }
 
-      const url = `http://localhost:5000/api/admin/products?page=${currentPage}&limit=10`;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const url = `${apiUrl}/api/admin/products?page=${currentPage}&limit=10`;
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -91,7 +92,8 @@ export default function AdminProducts() {
 
     try {
       const token = localStorage.getItem('studentstore_token');
-      const response = await fetch(`http://localhost:5000/api/admin/products/${productId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/products/${productId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

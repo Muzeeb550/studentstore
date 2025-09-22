@@ -8,7 +8,8 @@ export default function TestPage() {
   useEffect(() => {
     const testBackend = async () => {
       try {
-        const response = await fetch('http://localhost:5000/health');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${apiUrl}/health`);
         const data = await response.json();
         setBackendStatus(`✅ Backend connected: ${data.status}`);
       } catch (error) {

@@ -42,7 +42,8 @@ export default function ReviewManager({ productId, productName, onReviewSubmitte
   const checkUserReviews = async (userId: number) => {
     try {
       const token = localStorage.getItem('studentstore_token');
-      const response = await fetch('http://localhost:5000/api/reviews/my-reviews', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/reviews/my-reviews`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -75,7 +76,8 @@ export default function ReviewManager({ productId, productName, onReviewSubmitte
     try {
       const token = localStorage.getItem('studentstore_token');
       // Always create new reviews, never update existing ones
-      const response = await fetch('http://localhost:5000/api/reviews', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/reviews`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -119,7 +121,10 @@ export default function ReviewManager({ productId, productName, onReviewSubmitte
         <h3 className="text-xl font-bold text-gray-900 mb-2">Sign in to write a review</h3>
         <p className="text-gray-600 mb-6">Share your experience with other students</p>
         <button 
-          onClick={() => window.location.href = 'http://localhost:5000/auth/google'}
+          onClick={() => {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            window.location.href = `${apiUrl}/auth/google`;
+          }}
           className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
         >
           Sign in with Google

@@ -39,7 +39,8 @@ export default function EditBanner() {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/admin/banners/${bannerId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/banners/${bannerId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -89,7 +90,8 @@ export default function EditBanner() {
       const token = localStorage.getItem('studentstore_token');
       
       // Get ImageKit authentication
-      const authResponse = await fetch('http://localhost:5000/api/admin/imagekit-auth', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const authResponse = await fetch(`${apiUrl}/api/admin/imagekit-auth`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -151,7 +153,8 @@ export default function EditBanner() {
     try {
       const token = localStorage.getItem('studentstore_token');
       
-      const response = await fetch(`http://localhost:5000/api/admin/banners/${bannerId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/banners/${bannerId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
