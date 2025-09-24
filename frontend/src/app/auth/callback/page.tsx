@@ -1,5 +1,8 @@
 'use client';
 
+export const dynamic = 'force-dynamic'; // This line must be here
+
+
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
@@ -10,6 +13,7 @@ interface User {
   iat: number;
   exp: number;
 }
+
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Processing authentication...');

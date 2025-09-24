@@ -1,10 +1,14 @@
 'use client';
 
+export const dynamic = 'force-dynamic'; // Add this line
+
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import Footer from '../components/Footer';
+
+
 
 interface Product {
   id: number;
@@ -54,6 +58,7 @@ interface CacheData {
 }
 
 type ViewMode = 'grid' | 'list';
+
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
