@@ -1,61 +1,94 @@
 const express = require('express');
 const { getPool, sql } = require('../config/database');
-const { createCacheMiddleware } = require('../middleware/cache'); // ADD CACHE MIDDLEWARE
+const { createCacheMiddleware } = require('../middleware/cache');
+const { getCacheHealth } = require('../config/redis'); // 🚀 ADDED: Cache monitoring
 const router = express.Router();
 
-// Cache configurations with different TTL (Time To Live) values
+// 🚀 OPTIMIZED: Enterprise-level cache configurations with intelligent TTL values
 const bannersCache = createCacheMiddleware(
     () => 'banners:active',
-    1800 // 30 minutes - banners rarely change
+    300, // 🚀 OPTIMIZED: 5 minutes (was 30 minutes) - Fast admin updates
+    (req) => req.headers['cache-control'] === 'no-cache' // Skip cache if force-refresh
 );
 
 const categoriesCache = createCacheMiddleware(
     () => 'categories:all', 
-    3600 // 60 minutes - categories change even less
+    600, // 🚀 OPTIMIZED: 10 minutes (was 60 minutes) - Faster category updates
+    (req) => req.headers['cache-control'] === 'no-cache'
 );
 
 const featuredProductsCache = createCacheMiddleware(
-    (req) => `products:featured:limit:${req.query.limit || 8}`,
-    900 // 15 minutes - products may be updated more often
+    (req) => `products:featured:limit:${req.query.limit || 8}:sort:${req.query.sort || 'newest'}`, // 🚀 FIXED: Include sort in cache key
+    300, // 🚀 OPTIMIZED: 5 minutes (was 15 minutes) - Faster product updates
+    (req) => req.headers['cache-control'] === 'no-cache'
 );
 
 const productDetailsCache = createCacheMiddleware(
     (req) => `product:${req.params.id}`,
-    600, // 10 minutes
-    (req) => req.method !== 'GET' // Skip caching for non-GET requests
+    300, // 🚀 OPTIMIZED: 5 minutes (was 10 minutes) - Faster review/rating updates
+    (req) => req.method !== 'GET' || req.headers['cache-control'] === 'no-cache'
 );
 
 const categoryProductsCache = createCacheMiddleware(
-    (req) => `category:${req.params.id}:page:${req.query.page || 1}:limit:${req.query.limit || 12}`,
-    300 // 5 minutes - category product lists change more frequently
+    (req) => `category:${req.params.id}:page:${req.query.page || 1}:limit:${req.query.limit || 12}:sort:${req.query.sort || 'newest'}`, // 🚀 FIXED: Include sort in cache key
+    180, // 🚀 OPTIMIZED: 3 minutes (was 5 minutes) - Very fast product list updates
+    (req) => req.headers['cache-control'] === 'no-cache'
 );
 
 const searchCache = createCacheMiddleware(
     (req) => {
-        const { q, category, sort = 'relevance', page = 1 } = req.query;
-        return `search:${q}:${category || 'all'}:${sort}:${page}`;
+        const { q, category, sort = 'relevance', page = 1, min_rating } = req.query;
+        return `search:${q}:${category || 'all'}:${sort}:${page}:${min_rating || 'any'}`;
     },
-    300 // 5 minutes - search results can change frequently
+    180, // 🚀 OPTIMIZED: 3 minutes (was 5 minutes) - Dynamic search results
+    (req) => req.headers['cache-control'] === 'no-cache'
 );
 
-// Public route to get active banners (no auth required) - WITH CACHING
+// 🚀 NEW: Cache health monitoring endpoint
+router.get('/cache/health', async (req, res) => {
+    try {
+        const health = await getCacheHealth();
+        res.json({
+            status: 'success',
+            message: 'Cache health retrieved successfully',
+            data: health
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to retrieve cache health',
+            error: error.message
+        });
+    }
+});
+
+// 🚀 ENHANCED: Public route to get active banners with performance monitoring
 router.get('/banners', bannersCache, async (req, res) => {
     try {
+        const startTime = Date.now();
         const pool = await getPool();
         
         const result = await pool.request().query(`
             SELECT 
-                b.id, b.name, b.media_url, b.link_url, b.display_order
+                b.id, b.name, b.media_url, b.link_url, b.display_order,
+                b.created_at
             FROM Banners b
             INNER JOIN Users u ON b.admin_id = u.id
             WHERE b.is_active = 1
             ORDER BY b.display_order ASC, b.created_at DESC
         `);
 
+        const duration = Date.now() - startTime;
+
         res.json({
             status: 'success',
             message: 'Public banners retrieved successfully',
-            data: result.recordset
+            data: result.recordset,
+            meta: {
+                count: result.recordset.length,
+                query_time: `${duration}ms`,
+                cached: false // Will be overridden by cache middleware if cached
+            }
         });
 
     } catch (error) {
@@ -68,21 +101,34 @@ router.get('/banners', bannersCache, async (req, res) => {
     }
 });
 
-// Public route to get categories (no auth required) - WITH CACHING
+// 🚀 ENHANCED: Public route to get categories with performance monitoring
 router.get('/categories', categoriesCache, async (req, res) => {
     try {
+        const startTime = Date.now();
         const pool = await getPool();
         
+        // 🚀 ENHANCED: Include product count for each category
         const result = await pool.request().query(`
-            SELECT id, name, description, icon_url, sort_order
-            FROM Categories
-            ORDER BY sort_order, name
+            SELECT 
+                c.id, c.name, c.description, c.icon_url, c.sort_order,
+                COUNT(p.id) as product_count
+            FROM Categories c
+            LEFT JOIN Products p ON c.id = p.category_id
+            GROUP BY c.id, c.name, c.description, c.icon_url, c.sort_order
+            ORDER BY c.sort_order, c.name
         `);
+
+        const duration = Date.now() - startTime;
 
         res.json({
             status: 'success',
             message: 'Public categories retrieved successfully',
-            data: result.recordset
+            data: result.recordset,
+            meta: {
+                count: result.recordset.length,
+                query_time: `${duration}ms`,
+                cached: false
+            }
         });
 
     } catch (error) {
@@ -95,13 +141,15 @@ router.get('/categories', categoriesCache, async (req, res) => {
     }
 });
 
-// Public route to get products by category (no auth required) - WITH CACHING
+// 🚀 FIXED: Public route to get products by category with SQL Server compatibility
 router.get('/categories/:id/products', categoryProductsCache, async (req, res) => {
     try {
+        const startTime = Date.now();
         const pool = await getPool();
         const categoryId = parseInt(req.params.id);
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 12;
+        const sortBy = req.query.sort || 'newest'; // 🚀 ADDED: Sort options
         const offset = (page - 1) * limit;
 
         // Validate category ID
@@ -126,6 +174,35 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
 
         const category = categoryResult.recordset[0];
 
+        // 🚀 FIXED: SQL Server compatible sort options
+        let orderClause = '';
+        switch (sortBy) {
+            case 'newest':
+                orderClause = 'ORDER BY p.created_at DESC';
+                break;
+            case 'oldest':
+                orderClause = 'ORDER BY p.created_at ASC';
+                break;
+            case 'name_asc':
+                orderClause = 'ORDER BY p.name ASC';
+                break;
+            case 'name_desc':
+                orderClause = 'ORDER BY p.name DESC';
+                break;
+            case 'rating':
+                // 🚀 FIXED: SQL Server compatible NULLS handling
+                orderClause = 'ORDER BY ISNULL(p.rating_average, 0) DESC, p.review_count DESC';
+                break;
+            case 'popular':
+                orderClause = 'ORDER BY p.views_count DESC, ISNULL(p.rating_average, 0) DESC';
+                break;
+            case 'reviews':
+                orderClause = 'ORDER BY p.review_count DESC, ISNULL(p.rating_average, 0) DESC';
+                break;
+            default:
+                orderClause = 'ORDER BY p.created_at DESC';
+        }
+
         // Get products in this category with pagination
         const productsResult = await pool.request()
             .input('categoryId', sql.Int, categoryId)
@@ -142,7 +219,7 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
                 FROM Products p
                 INNER JOIN Categories c ON p.category_id = c.id
                 WHERE p.category_id = @categoryId
-                ORDER BY p.created_at DESC
+                ${orderClause}
                 OFFSET @offset ROWS
                 FETCH NEXT @limit ROWS ONLY
             `);
@@ -154,6 +231,7 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
 
         const total = countResult.recordset[0].total;
         const totalPages = Math.ceil(total / limit);
+        const duration = Date.now() - startTime;
 
         res.json({
             status: 'success',
@@ -169,6 +247,12 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
                     has_next: page < totalPages,
                     has_prev: page > 1
                 }
+            },
+            meta: {
+                count: productsResult.recordset.length,
+                query_time: `${duration}ms`,
+                sort: sortBy,
+                cached: false
             }
         });
 
@@ -182,9 +266,10 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
     }
 });
 
-// Public route to get single product details (no auth required) - WITH CACHING
+// 🚀 ENHANCED: Public route to get single product details with related products
 router.get('/products/:id', productDetailsCache, async (req, res) => {
     try {
+        const startTime = Date.now();
         const pool = await getPool();
         const productId = parseInt(req.params.id);
 
@@ -196,7 +281,7 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
             });
         }
 
-        // Get product details with category info
+        // 🚀 ENHANCED: Single query with comprehensive product data
         const productResult = await pool.request()
             .input('productId', sql.Int, productId)
             .query(`
@@ -207,9 +292,11 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
                     p.buy_button_3_name, p.buy_button_3_url,
                     p.views_count, p.rating_average, p.review_count, 
                     p.created_at, p.updated_at, p.category_id,
-                    c.name as category_name, c.description as category_description
+                    c.name as category_name, c.description as category_description,
+                    u.display_name as admin_name
                 FROM Products p
                 INNER JOIN Categories c ON p.category_id = c.id
+                INNER JOIN Users u ON p.admin_id = u.id
                 WHERE p.id = @productId
             `);
 
@@ -222,26 +309,34 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
 
         const product = productResult.recordset[0];
 
-        // Update view count (this happens regardless of caching)
-        await pool.request()
-            .input('productId', sql.Int, productId)
-            .query('UPDATE Products SET views_count = views_count + 1 WHERE id = @productId');
+        // 🚀 PERFORMANCE: Parallel execution of view update and related products
+        const [viewUpdate, relatedProductsResult] = await Promise.all([
+            // Update view count asynchronously
+            pool.request()
+                .input('productId', sql.Int, productId)
+                .query('UPDATE Products SET views_count = views_count + 1 WHERE id = @productId'),
+            
+            // Get related products from same category
+            pool.request()
+                .input('categoryId', sql.Int, product.category_id)
+                .input('productId', sql.Int, productId)
+                .query(`
+                    SELECT TOP 4
+                        p.id, p.name, p.description, p.image_urls,
+                        p.buy_button_1_name, p.buy_button_1_url,
+                        p.rating_average, p.review_count, p.views_count,
+                        c.name as category_name
+                    FROM Products p
+                    INNER JOIN Categories c ON p.category_id = c.id
+                    WHERE p.category_id = @categoryId AND p.id != @productId
+                    ORDER BY 
+                        ISNULL(p.rating_average, 0) DESC,
+                        p.views_count DESC,
+                        p.created_at DESC
+                `)
+        ]);
 
-        // Get related products from same category (excluding current product)
-        const relatedProductsResult = await pool.request()
-            .input('categoryId', sql.Int, product.category_id)
-            .input('productId', sql.Int, productId)
-            .query(`
-                SELECT TOP 4
-                    p.id, p.name, p.description, p.image_urls,
-                    p.buy_button_1_name, p.buy_button_1_url,
-                    p.rating_average, p.review_count,
-                    c.name as category_name
-                FROM Products p
-                INNER JOIN Categories c ON p.category_id = c.id
-                WHERE p.category_id = @categoryId AND p.id != @productId
-                ORDER BY p.created_at DESC
-            `);
+        const duration = Date.now() - startTime;
 
         res.json({
             status: 'success',
@@ -249,6 +344,12 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
             data: {
                 product: product,
                 related_products: relatedProductsResult.recordset
+            },
+            meta: {
+                related_count: relatedProductsResult.recordset.length,
+                query_time: `${duration}ms`,
+                view_updated: true,
+                cached: false
             }
         });
 
@@ -262,11 +363,34 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
     }
 });
 
-// Public route to get featured products (no auth required) - WITH CACHING
+// 🚀 FIXED: Public route to get featured products with SQL Server compatibility
 router.get('/products', featuredProductsCache, async (req, res) => {
     try {
+        const startTime = Date.now();
         const pool = await getPool();
         const limit = parseInt(req.query.limit) || 8;
+        const sortBy = req.query.sort || 'newest'; // 🚀 ADDED: Sort options
+        
+        // 🚀 FIXED: SQL Server compatible sort for featured products
+        let orderClause = '';
+        switch (sortBy) {
+            case 'newest':
+                orderClause = 'ORDER BY p.created_at DESC';
+                break;
+            case 'popular':
+                orderClause = 'ORDER BY p.views_count DESC, ISNULL(p.rating_average, 0) DESC';
+                break;
+            case 'rating':
+                orderClause = 'ORDER BY ISNULL(p.rating_average, 0) DESC, p.review_count DESC';
+                break;
+            case 'trending':
+                orderClause = `ORDER BY 
+                    (p.views_count * 0.3 + ISNULL(p.rating_average, 0) * p.review_count * 0.7) DESC,
+                    p.created_at DESC`;
+                break;
+            default:
+                orderClause = 'ORDER BY p.created_at DESC';
+        }
         
         const result = await pool.request()
             .input('limit', sql.Int, limit)
@@ -274,40 +398,52 @@ router.get('/products', featuredProductsCache, async (req, res) => {
                 SELECT TOP (@limit)
                     p.id, p.name, p.description, p.image_urls,
                     p.buy_button_1_name, p.buy_button_1_url,
-                    c.name as category_name
+                    p.rating_average, p.review_count, p.views_count,
+                    p.created_at,
+                    c.name as category_name, c.id as category_id
                 FROM Products p
                 INNER JOIN Categories c ON p.category_id = c.id
-                ORDER BY p.created_at DESC
+                ${orderClause}
             `);
+
+        const duration = Date.now() - startTime;
 
         res.json({
             status: 'success',
-            message: 'Public products retrieved successfully',
+            message: 'Featured products retrieved successfully',
             data: { 
                 products: result.recordset,
                 total: result.recordset.length
+            },
+            meta: {
+                count: result.recordset.length,
+                sort: sortBy,
+                query_time: `${duration}ms`,
+                cached: false
             }
         });
 
     } catch (error) {
-        console.error('Get public products error:', error);
+        console.error('Get featured products error:', error);
         res.status(500).json({
             status: 'error',
-            message: 'Failed to retrieve products',
+            message: 'Failed to retrieve featured products',
             error: error.message
         });
     }
 });
 
-// Public route to search products (no auth required) - WITH CACHING
+// 🚀 FIXED: Advanced search with SQL Server compatibility
 router.get('/search', searchCache, async (req, res) => {
     try {
+        const startTime = Date.now();
         const pool = await getPool();
         const query = req.query.q ? req.query.q.toString().trim() : '';
         const category = req.query.category ? parseInt(req.query.category.toString()) : null;
         const sort = req.query.sort ? req.query.sort.toString() : 'relevance';
         const page = parseInt(req.query.page?.toString() || '1');
         const limit = parseInt(req.query.limit?.toString() || '12');
+        const minRating = req.query.min_rating ? parseFloat(req.query.min_rating.toString()) : null; // 🚀 NEW: Rating filter
         const offset = (page - 1) * limit;
 
         // Validate search query
@@ -318,23 +454,30 @@ router.get('/search', searchCache, async (req, res) => {
             });
         }
 
-        // Build search conditions
+        // 🚀 ENHANCED: Build advanced search conditions
         let searchConditions = [];
         let searchParams = [];
         let paramIndex = 0;
 
-        // Search in product name and description
+        // Primary search in product name and description
         searchConditions.push(`(p.name LIKE @searchTerm${paramIndex} OR p.description LIKE @searchTerm${paramIndex})`);
         searchParams.push({ name: `searchTerm${paramIndex}`, value: `%${query}%` });
         paramIndex++;
 
+        // 🚀 NEW: Additional filters
+        let additionalFilters = '';
+        
         // Category filter
-        let categoryCondition = '';
         if (category) {
-            categoryCondition = 'AND p.category_id = @categoryId';
+            additionalFilters += ' AND p.category_id = @categoryId';
+        }
+        
+        // Rating filter
+        if (minRating) {
+            additionalFilters += ' AND p.rating_average >= @minRating';
         }
 
-        // Sort options
+        // 🚀 FIXED: SQL Server compatible advanced sort options
         let orderBy = '';
         switch (sort) {
             case 'newest':
@@ -350,10 +493,15 @@ router.get('/search', searchCache, async (req, res) => {
                 orderBy = 'ORDER BY p.name DESC';
                 break;
             case 'rating':
-                orderBy = 'ORDER BY p.rating_average DESC, p.review_count DESC';
+                orderBy = 'ORDER BY ISNULL(p.rating_average, 0) DESC, p.review_count DESC';
                 break;
-            case 'views':
-                orderBy = 'ORDER BY p.views_count DESC';
+            case 'popular':
+                orderBy = 'ORDER BY p.views_count DESC, ISNULL(p.rating_average, 0) DESC';
+                break;
+            case 'trending':
+                orderBy = `ORDER BY 
+                    (p.views_count * 0.2 + ISNULL(p.rating_average, 0) * p.review_count * 0.8) DESC,
+                    p.created_at DESC`;
                 break;
             default: // relevance
                 orderBy = `ORDER BY 
@@ -363,7 +511,7 @@ router.get('/search', searchCache, async (req, res) => {
                         WHEN p.description LIKE @startsWith THEN 3
                         ELSE 4
                     END,
-                    p.rating_average DESC,
+                    ISNULL(p.rating_average, 0) DESC,
                     p.views_count DESC`;
                 
                 // Add relevance parameters
@@ -374,7 +522,7 @@ router.get('/search', searchCache, async (req, res) => {
                 break;
         }
 
-        // Build the main search query
+        // 🚀 OPTIMIZED: Single comprehensive search query
         const searchQuery = `
             SELECT 
                 p.id, p.name, p.description, p.image_urls,
@@ -386,22 +534,21 @@ router.get('/search', searchCache, async (req, res) => {
             FROM Products p
             INNER JOIN Categories c ON p.category_id = c.id
             WHERE (${searchConditions.join(' OR ')})
-            ${categoryCondition}
+            ${additionalFilters}
             ${orderBy}
             OFFSET @offset ROWS
             FETCH NEXT @limit ROWS ONLY
         `;
 
-        // Build the count query
         const countQuery = `
             SELECT COUNT(*) as total
             FROM Products p
             INNER JOIN Categories c ON p.category_id = c.id
             WHERE (${searchConditions.join(' OR ')})
-            ${categoryCondition}
+            ${additionalFilters}
         `;
 
-        // Execute search query
+        // Execute search query with parameters
         let searchRequest = pool.request()
             .input('offset', sql.Int, offset)
             .input('limit', sql.Int, limit);
@@ -411,43 +558,45 @@ router.get('/search', searchCache, async (req, res) => {
             searchRequest = searchRequest.input(param.name, sql.NVarChar, param.value);
         });
 
-        // Add category parameter if provided
+        // Add filter parameters
         if (category) {
             searchRequest = searchRequest.input('categoryId', sql.Int, category);
         }
-
-        const searchResult = await searchRequest.query(searchQuery);
-
-        // Execute count query
-        let countRequest = pool.request();
-        
-        // Add the same search parameters for count
-        searchParams.slice(0, 1).forEach(param => { // Only need the first search term for count
-            countRequest = countRequest.input(param.name, sql.NVarChar, param.value);
-        });
-
-        if (category) {
-            countRequest = countRequest.input('categoryId', sql.Int, category);
+        if (minRating) {
+            searchRequest = searchRequest.input('minRating', sql.Float, minRating);
         }
 
-        const countResult = await countRequest.query(countQuery);
+        // 🚀 PERFORMANCE: Parallel execution of search and count queries
+        const [searchResult, countResult, categoriesResult] = await Promise.all([
+            searchRequest.query(searchQuery),
+            
+            // Count query with same parameters
+            (async () => {
+                let countRequest = pool.request();
+                searchParams.slice(0, 1).forEach(param => {
+                    countRequest = countRequest.input(param.name, sql.NVarChar, param.value);
+                });
+                if (category) countRequest = countRequest.input('categoryId', sql.Int, category);
+                if (minRating) countRequest = countRequest.input('minRating', sql.Float, minRating);
+                return countRequest.query(countQuery);
+            })(),
+            
+            // Available categories for filtering
+            pool.request()
+                .input('searchTerm0', sql.NVarChar, `%${query}%`)
+                .query(`
+                    SELECT DISTINCT c.id, c.name, COUNT(p.id) as product_count
+                    FROM Categories c
+                    INNER JOIN Products p ON c.id = p.category_id
+                    WHERE (p.name LIKE @searchTerm0 OR p.description LIKE @searchTerm0)
+                    GROUP BY c.id, c.name
+                    ORDER BY c.name
+                `)
+        ]);
+
         const total = countResult.recordset[0].total;
         const totalPages = Math.ceil(total / limit);
-
-        // Get available categories for filtering (categories that have matching products)
-        const categoriesQuery = `
-            SELECT DISTINCT c.id, c.name, COUNT(p.id) as product_count
-            FROM Categories c
-            INNER JOIN Products p ON c.id = p.category_id
-            WHERE (p.name LIKE @searchTerm0 OR p.description LIKE @searchTerm0)
-            GROUP BY c.id, c.name
-            ORDER BY c.name
-        `;
-
-        const categoriesRequest = pool.request()
-            .input('searchTerm0', sql.NVarChar, `%${query}%`);
-        
-        const categoriesResult = await categoriesRequest.query(categoriesQuery);
+        const duration = Date.now() - startTime;
 
         res.json({
             status: 'success',
@@ -467,8 +616,14 @@ router.get('/search', searchCache, async (req, res) => {
                 },
                 filters: {
                     category: category,
-                    sort: sort
+                    sort: sort,
+                    min_rating: minRating
                 }
+            },
+            meta: {
+                count: searchResult.recordset.length,
+                query_time: `${duration}ms`,
+                cached: false
             }
         });
 
@@ -477,6 +632,61 @@ router.get('/search', searchCache, async (req, res) => {
         res.status(500).json({
             status: 'error',
             message: 'Failed to search products',
+            error: error.message
+        });
+    }
+});
+
+// 🚀 FIXED: Popular products endpoint with SQL Server compatibility
+router.get('/products/popular', async (req, res) => {
+    try {
+        const startTime = Date.now();
+        const pool = await getPool();
+        const limit = parseInt(req.query.limit) || 10;
+        const timeframe = req.query.timeframe || 'all'; // all, week, month
+        
+        let dateFilter = '';
+        if (timeframe === 'week') {
+            dateFilter = "AND p.created_at >= DATEADD(week, -1, GETDATE())";
+        } else if (timeframe === 'month') {
+            dateFilter = "AND p.created_at >= DATEADD(month, -1, GETDATE())";
+        }
+        
+        const result = await pool.request()
+            .input('limit', sql.Int, limit)
+            .query(`
+                SELECT TOP (@limit)
+                    p.id, p.name, p.description, p.image_urls,
+                    p.buy_button_1_name, p.buy_button_1_url,
+                    p.rating_average, p.review_count, p.views_count,
+                    c.name as category_name,
+                    (p.views_count * 0.3 + ISNULL(p.rating_average, 0) * p.review_count * 0.7) as popularity_score
+                FROM Products p
+                INNER JOIN Categories c ON p.category_id = c.id
+                WHERE 1=1 ${dateFilter}
+                ORDER BY popularity_score DESC, p.created_at DESC
+            `);
+
+        const duration = Date.now() - startTime;
+
+        res.json({
+            status: 'success',
+            message: 'Popular products retrieved successfully',
+            data: {
+                products: result.recordset,
+                timeframe: timeframe
+            },
+            meta: {
+                count: result.recordset.length,
+                query_time: `${duration}ms`
+            }
+        });
+
+    } catch (error) {
+        console.error('Get popular products error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to retrieve popular products',
             error: error.message
         });
     }

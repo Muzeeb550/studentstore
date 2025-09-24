@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import ProductCard from '../../components/ProductCard';
@@ -50,6 +50,12 @@ interface ProductPageData {
   related_products: RelatedProduct[];
 }
 
+// 🚀 NEW: Cache management types
+interface CacheData {
+  data: ProductPageData;
+  timestamp: number;
+}
+
 export default function ProductPage() {
   const params = useParams();
   const productId = params.id as string;
@@ -60,10 +66,22 @@ export default function ProductPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [images, setImages] = useState<string[]>([]);
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
+  
+  // 🚀 NEW: Enhanced loading states
+  const [loadingStates, setLoadingStates] = useState({
+    initial: true,
+    reviews: false,
+    relatedProducts: false
+  });
+
+  // 🚀 NEW: Cache configuration (matches backend TTL: 300s = 5 minutes)
+  const CACHE_CONFIG = {
+    ttl: 5 * 60 * 1000, // 5 minutes (matches backend product cache)
+  };
 
   useEffect(() => {
     if (productId) {
-      fetchProductDetails();
+      initializeProductPage();
     }
   }, [productId]);
 
@@ -87,16 +105,194 @@ export default function ProductPage() {
     }
   }, [data]);
 
-  const fetchProductDetails = async () => {
+  // 🚀 NEW: Smart refresh interval for cache management
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkAndRefreshExpiredCache();
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [productId]);
+
+  // 🚀 NEW: Initialize with smart caching
+  const initializeProductPage = async () => {
     try {
-      setLoading(true);
+      const cachedData = loadFromCache();
+      
+      if (cachedData) {
+        // Instant display from cache
+        setData(cachedData);
+        setLoading(false);
+        setLoadingStates({ initial: false, reviews: false, relatedProducts: false });
+        console.log(`🚀 Product ${productId} loaded from cache (instant display)`);
+        
+        // Background refresh if cache is getting old (> 2 minutes)
+        const age = Date.now() - getCacheTimestamp();
+        if (age > 120000) { // 2 minutes
+          await fetchProductDetails(false);
+        }
+      } else {
+        // No cache, fetch fresh data
+        await fetchProductDetails(true);
+      }
+    } catch (error) {
+      console.error('Product initialization error:', error);
+      await fetchProductDetails(true);
+    }
+  };
+
+  // 🚀 NEW: Load from cache with validation
+  const loadFromCache = (): ProductPageData | null => {
+    try {
+      const cacheKey = `studentstore_product_${productId}`;
+      const cached = localStorage.getItem(cacheKey);
+      
+      if (cached) {
+        const { data, timestamp }: CacheData = JSON.parse(cached);
+        const age = Date.now() - timestamp;
+        
+        // Return cached data if it's fresh (within TTL)
+        if (age < CACHE_CONFIG.ttl) {
+          console.log(`📊 Cache hit for product ${productId} (age: ${Math.floor(age/1000)}s)`);
+          return data;
+        } else {
+          // Cache expired, remove it
+          localStorage.removeItem(cacheKey);
+          console.log(`⏰ Cache expired for product ${productId}`);
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Cache loading error:', error);
+      return null;
+    }
+  };
+
+  // 🚀 NEW: Save to cache
+  const saveToCache = (productData: ProductPageData) => {
+    try {
+      const cacheKey = `studentstore_product_${productId}`;
+      const cacheData: CacheData = {
+        data: productData,
+        timestamp: Date.now()
+      };
+      
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log(`💾 Cached product ${productId}`);
+    } catch (error) {
+      console.error('Cache save error:', error);
+    }
+  };
+
+  // 🚀 NEW: Get cache timestamp
+  const getCacheTimestamp = (): number => {
+    try {
+      const cacheKey = `studentstore_product_${productId}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { timestamp } = JSON.parse(cached);
+        return timestamp;
+      }
+    } catch (error) {
+      console.error('Cache timestamp error:', error);
+    }
+    return 0;
+  };
+
+  // 🚀 NEW: Check and refresh expired cache
+  const checkAndRefreshExpiredCache = useCallback(async () => {
+    if (!data || !productId) return;
+    
+    const age = Date.now() - getCacheTimestamp();
+    
+    // If current cache is expired, refresh in background
+    if (age >= CACHE_CONFIG.ttl) {
+      console.log('🔄 Background refresh triggered for expired product cache');
+      await fetchProductDetails(false);
+    }
+  }, [productId, data]);
+
+  // 🚀 NEW: Force refresh (for admin updates)
+  const forceRefresh = useCallback(async () => {
+    console.log(`🚀 Force refresh product ${productId}`);
+    
+    // Clear cache for this product
+    const cacheKey = `studentstore_product_${productId}`;
+    localStorage.removeItem(cacheKey);
+    
+    await fetchProductDetails(false);
+  }, [productId]);
+
+  // 🚀 NEW: Listen for admin updates
+  useEffect(() => {
+    const handleAdminUpdate = (event: CustomEvent) => {
+      const { type, productId: updatedProductId } = event.detail;
+      
+      // Refresh if this product was updated or if it's a review update
+      if (type === 'product' || type === 'review' || 
+          (updatedProductId && updatedProductId === parseInt(productId))) {
+        console.log('🔄 Admin update detected for product:', event.detail);
+        forceRefresh();
+      }
+    };
+
+    window.addEventListener('adminUpdate' as any, handleAdminUpdate);
+    return () => window.removeEventListener('adminUpdate' as any, handleAdminUpdate);
+  }, [productId, forceRefresh]);
+
+  // 🚀 NEW: Listen for review updates (real-time rating updates)
+  useEffect(() => {
+    const handleReviewUpdate = (event: CustomEvent) => {
+      const { productId: reviewProductId } = event.detail;
+      
+      if (reviewProductId === parseInt(productId)) {
+        console.log('🔄 Review update detected, refreshing product data');
+        // Clear cache and refresh
+        forceRefresh();
+        // Also refresh the review key for ReviewList component
+        setReviewRefreshKey(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('reviewUpdate' as any, handleReviewUpdate);
+    return () => window.removeEventListener('reviewUpdate' as any, handleReviewUpdate);
+  }, [productId, forceRefresh]);
+
+  // 🚀 ENHANCED: Fetch product details with smart caching
+  const fetchProductDetails = async (showMainLoading: boolean = true) => {
+    try {
+      if (showMainLoading) {
+        setLoading(true);
+        setLoadingStates({ initial: true, reviews: false, relatedProducts: false });
+      }
+
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/public/products/${productId}`);
+      
+      // 🚀 Cache busting for admin updates
+      const cacheBuster = `t=${Date.now()}&v=${Math.random().toString(36).substr(2, 9)}`;
+      
+      const response = await fetch(
+        `${apiUrl}/api/public/products/${productId}?${cacheBuster}`,
+        {
+          headers: { 
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        }
+      );
+      
       const result = await response.json();
 
       if (result.status === 'success') {
-        setData(result.data);
+        const productData = result.data;
+        setData(productData);
         setError('');
+        
+        // Cache the successful result
+        saveToCache(productData);
+        
+        console.log(`🔄 Product ${productId} updated from API`);
       } else {
         setError(result.message || 'Failed to load product details');
       }
@@ -105,15 +301,29 @@ export default function ProductPage() {
       setError('Failed to load product details');
     } finally {
       setLoading(false);
+      setLoadingStates({ initial: false, reviews: false, relatedProducts: false });
     }
   };
 
-  const handleReviewUpdate = () => {
+  // 🚀 ENHANCED: Handle review updates with cache invalidation
+  const handleReviewUpdate = useCallback(() => {
+    // Clear product cache (rating/review count changed)
+    const cacheKey = `studentstore_product_${productId}`;
+    localStorage.removeItem(cacheKey);
+    
     // Refresh product data to update rating counts
-    fetchProductDetails();
+    fetchProductDetails(false);
+    
     // Trigger review list refresh
     setReviewRefreshKey(prev => prev + 1);
-  };
+    
+    // Dispatch event for other components
+    window.dispatchEvent(new CustomEvent('reviewUpdate', {
+      detail: { productId: parseInt(productId) }
+    }));
+    
+    console.log('📝 Review updated, product cache invalidated');
+  }, [productId]);
 
   const getImageSrc = (imageUrl: string) => {
     return imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMDAgMjYwQzE3MSAyNjAgMTQ4IDIzNyAxNDggMjA4QzE0OCAxNzkgMTcxIDE1NiAyMDAgMTU2QzIyOSAxNTYgMjUyIDE3OSAyNTIgMjA4QzI1MiAyMzcgMjI5IDI2MCAyMDAgMjYwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
@@ -146,15 +356,56 @@ export default function ProductPage() {
     return rating ? rating.toFixed(1) : '0.0';
   };
 
-  if (loading) {
+  // 🚀 NEW: Enhanced loading component with skeleton
+  const ProductSkeleton = () => (
+    <div className="max-w-7xl mx-auto px-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Image skeleton */}
+        <div className="space-y-4">
+          <div className="animate-pulse bg-gray-200 h-96 rounded-2xl"></div>
+          <div className="flex space-x-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="animate-pulse bg-gray-200 h-20 rounded-lg flex-1"></div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Content skeleton */}
+        <div className="space-y-6">
+          <div className="animate-pulse bg-gray-200 h-8 rounded w-3/4"></div>
+          <div className="animate-pulse bg-gray-200 h-12 rounded"></div>
+          <div className="animate-pulse bg-gray-200 h-24 rounded"></div>
+          <div className="animate-pulse bg-gray-200 h-16 rounded"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // 🚀 NEW: Cache status indicator (development only)
+  const CacheStatusIndicator = () => {
+    const cacheAge = getCacheTimestamp();
+    const age = cacheAge ? Math.floor((Date.now() - cacheAge) / 1000) : 0;
+    
+    return (
+      <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-xs z-50">
+        Cache: {age > 0 ? `${age}s` : 'none'}
+        <button 
+          onClick={forceRefresh} 
+          className="ml-2 text-yellow-300 hover:text-yellow-100"
+          title="Force refresh"
+        >
+          ↻
+        </button>
+      </div>
+    );
+  };
+
+  if (loading && loadingStates.initial) {
     return (
       <div className="min-h-screen bg-student-page">
         <Navbar />
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <div className="loading-shimmer rounded-full h-16 w-16 mx-auto mb-4"></div>
-            <p className="text-student-secondary font-medium">Loading product details...</p>
-          </div>
+        <div className="py-20">
+          <ProductSkeleton />
         </div>
       </div>
     );
@@ -170,7 +421,7 @@ export default function ProductPage() {
             <h1 className="text-2xl font-bold text-student-primary mb-4">Oops! Something went wrong</h1>
             <p className="text-student-secondary mb-6">{error}</p>
             <button
-              onClick={fetchProductDetails}
+              onClick={() => fetchProductDetails(true)}
               className="btn-primary"
             >
               Try Again
@@ -207,6 +458,9 @@ export default function ProductPage() {
     <div className="min-h-screen bg-student-page">
       <Navbar />
 
+      {/* 🚀 NEW: Cache status indicator (development only) */}
+      {process.env.NODE_ENV === 'development' && <CacheStatusIndicator />}
+
       {/* Enhanced Breadcrumb - StudentStore Style */}
       <div className="max-w-7xl mx-auto px-4 pt-8">
         <nav className="flex items-center space-x-2 text-sm text-student-secondary mb-6 bg-student-card rounded-xl p-4 shadow-md">
@@ -233,7 +487,7 @@ export default function ProductPage() {
           {/* Product Images - Enhanced */}
           <div className="space-y-4">
             {/* Main Image Container */}
-            <div className="bg-student-card rounded-2xl p-4 shadow-xl border border-border-light">
+            <div className="bg-student-card rounded-2xl p-4 shadow-xl border border-border-light relative">
               <img
                 src={getImageSrc(images[currentImageIndex] || '')}
                 alt={product.name}

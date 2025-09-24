@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Slider from 'react-slick';
 import Navbar from './components/Navbar';
 import CategoryCard from './components/CategoryCard';
@@ -25,6 +25,7 @@ interface Category {
   name: string;
   description: string;
   icon_url: string;
+  product_count?: number; // 🚀 NEW: From optimized backend
 }
 
 interface Product {
@@ -35,11 +36,22 @@ interface Product {
   category_name: string;
   buy_button_1_name: string;
   buy_button_1_url: string;
+  rating_average?: number; // 🚀 NEW: Rating support
+  review_count?: number;
+  views_count?: number;
 }
 
 interface RecentlyViewed {
   product: Product;
   viewedAt: number;
+}
+
+// 🚀 NEW: Cache management types
+interface CacheState {
+  banners: { data: Banner[]; timestamp: number; };
+  categories: { data: Category[]; timestamp: number; };
+  products: { data: Product[]; timestamp: number; };
+  trendingProducts: { data: Product[]; timestamp: number; };
 }
 
 export default function HomePage() {
@@ -49,81 +61,289 @@ export default function HomePage() {
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewed[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // 🚀 NEW: Enhanced loading states
+  const [loadingStates, setLoadingStates] = useState({
+    banners: false,
+    categories: false,
+    products: false,
+    trending: false
+  });
+
+  // 🚀 NEW: Cache management
+  const [cacheState, setCacheState] = useState<Partial<CacheState>>({});
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
 
   // Refs for manual navigation
   const categorySliderRef = useRef<any>(null);
   const recentlyViewedSliderRef = useRef<any>(null);
   const trendingSliderRef = useRef<any>(null);
 
+  // 🚀 NEW: Cache configuration (matches backend TTL)
+  const CACHE_CONFIG = {
+    banners: 5 * 60 * 1000,      // 5 minutes (matches backend 300s)
+    categories: 10 * 60 * 1000,   // 10 minutes (matches backend 600s)
+    products: 5 * 60 * 1000,      // 5 minutes (matches backend 300s)
+    trending: 5 * 60 * 1000,      // 5 minutes
+  };
+
   useEffect(() => {
-    fetchPublicData();
+    initializeHomepage();
     loadRecentlyViewed();
   }, []);
 
-  // Add refresh interval for recently viewed (for testing)
+  // 🚀 NEW: Smart refresh interval (checks for cache expiry)
   useEffect(() => {
     const interval = setInterval(() => {
+      checkAndRefreshExpiredCache();
       loadRecentlyViewed();
-    }, 3000); // Check every 3 seconds
+    }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [cacheState]);
 
-  const fetchPublicData = async () => {
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const timestamp = Date.now(); // Cache busting parameter
-    
-    // Fetch banners with cache busting
-    const bannerRes = await fetch(`${apiUrl}/api/public/banners?t=${timestamp}`);
-    const bannerData = await bannerRes.json();
-    console.log('📊 Banner API Response:', bannerData); // Debug log
-    if (bannerData.status === 'success') {
-      setBanners(bannerData.data);
-    }
-
-    // Fetch categories with cache busting
-    const categoryRes = await fetch(`${apiUrl}/api/public/categories?t=${timestamp}`);
-    const categoryData = await categoryRes.json();
-    console.log('📂 Category API Response:', categoryData); // Debug log
-    if (categoryData.status === 'success') {
-      setCategories(categoryData.data);
-    }
-
-    // Fetch trending products
-    const productRes = await fetch(`${apiUrl}/api/public/products?limit=10&t=${timestamp}`);
-    const productData = await productRes.json();
-    if (productData.status === 'success') {
-      setTrendingProducts(productData.data.products.slice(0, 10));
-    }
-
-    // Fetch featured products
-    const featuredRes = await fetch(`${apiUrl}/api/public/products?limit=12&t=${timestamp}`);
-    const featuredData = await featuredRes.json();
-    if (featuredData.status === 'success') {
-      setProducts(featuredData.data.products);
-    }
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // Recently Viewed Products Management - Updated
-  const loadRecentlyViewed = () => {
-    const recentProducts = getRecentlyViewed();
-    setRecentlyViewed(recentProducts);
-    console.log('📚 Loaded recently viewed products:', recentProducts.length);
-    
-    // Debug: Log localStorage contents
-    const stored = localStorage.getItem('studentstore_recently_viewed');
-    if (stored) {
-      console.log('🔍 Raw localStorage data:', JSON.parse(stored));
+  // 🚀 NEW: Initialize homepage with smart caching
+  const initializeHomepage = async () => {
+    try {
+      const cachedData = loadFromLocalCache();
+      
+      if (cachedData.hasValidCache) {
+        // Load from cache first for instant display
+        if (cachedData.banners) setBanners(cachedData.banners);
+        if (cachedData.categories) setCategories(cachedData.categories);
+        if (cachedData.products) setProducts(cachedData.products);
+        if (cachedData.trending) setTrendingProducts(cachedData.trending);
+        setLoading(false);
+        
+        console.log('🚀 Homepage loaded from cache (instant display)');
+      }
+      
+      // Always fetch fresh data in background (stale-while-revalidate)
+      await fetchAndUpdateData(!cachedData.hasValidCache);
+      
+    } catch (error) {
+      console.error('Homepage initialization error:', error);
+      await fetchAndUpdateData(true);
     }
   };
 
-  // Custom Arrow Components - Positioned at EXTREME ENDS with StudentStore Colors
+  // 🚀 NEW: Load from local cache with expiry check
+  const loadFromLocalCache = () => {
+    try {
+      const now = Date.now();
+      const cached = {
+        banners: null as Banner[] | null,
+        categories: null as Category[] | null,
+        products: null as Product[] | null,
+        trending: null as Product[] | null,
+        hasValidCache: false
+      };
+
+      // Check banners cache
+      const bannersCache = localStorage.getItem('studentstore_cache_banners');
+      if (bannersCache) {
+        const { data, timestamp } = JSON.parse(bannersCache);
+        if (now - timestamp < CACHE_CONFIG.banners) {
+          cached.banners = data;
+        }
+      }
+
+      // Check categories cache
+      const categoriesCache = localStorage.getItem('studentstore_cache_categories');
+      if (categoriesCache) {
+        const { data, timestamp } = JSON.parse(categoriesCache);
+        if (now - timestamp < CACHE_CONFIG.categories) {
+          cached.categories = data;
+        }
+      }
+
+      // Check products cache
+      const productsCache = localStorage.getItem('studentstore_cache_products');
+      if (productsCache) {
+        const { data, timestamp } = JSON.parse(productsCache);
+        if (now - timestamp < CACHE_CONFIG.products) {
+          cached.products = data;
+        }
+      }
+
+      // Check trending cache
+      const trendingCache = localStorage.getItem('studentstore_cache_trending');
+      if (trendingCache) {
+        const { data, timestamp } = JSON.parse(trendingCache);
+        if (now - timestamp < CACHE_CONFIG.trending) {
+          cached.trending = data;
+        }
+      }
+
+      cached.hasValidCache = !!(cached.banners && cached.categories && cached.products);
+      return cached;
+      
+    } catch (error) {
+      console.error('Cache loading error:', error);
+      return { hasValidCache: false, banners: null, categories: null, products: null, trending: null };
+    }
+  };
+
+  // 🚀 NEW: Enhanced data fetching with smart caching
+  const fetchAndUpdateData = async (showLoading: boolean = false) => {
+    if (showLoading) setLoading(true);
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const now = Date.now();
+      
+      // 🚀 Cache busting for force refresh (admin updates)
+      const cacheBuster = `t=${now}&v=${Math.random().toString(36).substr(2, 9)}`;
+
+      // Parallel fetch for better performance
+      const [bannerRes, categoryRes, productsRes, trendingRes] = await Promise.all([
+        fetch(`${apiUrl}/api/public/banners?${cacheBuster}`, {
+          headers: { 'Cache-Control': 'no-cache' }
+        }),
+        fetch(`${apiUrl}/api/public/categories?${cacheBuster}`, {
+          headers: { 'Cache-Control': 'no-cache' }
+        }),
+        fetch(`${apiUrl}/api/public/products?limit=12&${cacheBuster}`, {
+          headers: { 'Cache-Control': 'no-cache' }
+        }),
+        fetch(`${apiUrl}/api/public/products?limit=10&sort=trending&${cacheBuster}`, {
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+      ]);
+
+      // Process banners
+      const bannerData = await bannerRes.json();
+      if (bannerData.status === 'success') {
+        const bannersData = bannerData.data;
+        setBanners(bannersData);
+        saveToLocalCache('banners', bannersData);
+        console.log('🔄 Banners updated from API');
+      }
+
+      // Process categories
+      const categoryData = await categoryRes.json();
+      if (categoryData.status === 'success') {
+        const categoriesData = categoryData.data;
+        setCategories(categoriesData);
+        saveToLocalCache('categories', categoriesData);
+        console.log('🔄 Categories updated from API');
+      }
+
+      // Process products
+      const productsData = await productsRes.json();
+      if (productsData.status === 'success') {
+        const productList = productsData.data.products;
+        setProducts(productList);
+        saveToLocalCache('products', productList);
+        console.log('🔄 Products updated from API');
+      }
+
+      // Process trending
+      const trendingData = await trendingRes.json();
+      if (trendingData.status === 'success') {
+        const trendingList = trendingData.data.products?.slice(0, 10) || [];
+        setTrendingProducts(trendingList);
+        saveToLocalCache('trending', trendingList);
+        console.log('🔄 Trending products updated from API');
+      }
+
+      setLastRefresh(now);
+      
+    } catch (error) {
+      console.error('❌ Data fetch error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🚀 NEW: Save to local cache
+  const saveToLocalCache = (key: string, data: any) => {
+    try {
+      const cacheData = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`studentstore_cache_${key}`, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error(`Cache save error for ${key}:`, error);
+    }
+  };
+
+  // 🚀 NEW: Type-safe cache refresh with specific cache keys
+const checkAndRefreshExpiredCache = useCallback(async () => {
+  const now = Date.now();
+  const needsRefresh: Array<keyof typeof CACHE_CONFIG> = []; // Even more type-safe
+
+  // Type-safe iteration
+  (Object.keys(CACHE_CONFIG) as Array<keyof typeof CACHE_CONFIG>).forEach((key) => {
+    const cached = localStorage.getItem(`studentstore_cache_${key}`);
+    if (cached) {
+      try {
+        const parsedCache: { data: any; timestamp: number } = JSON.parse(cached);
+        if (now - parsedCache.timestamp >= CACHE_CONFIG[key]) {
+          needsRefresh.push(key);
+        }
+      } catch (error) {
+        console.error(`Cache parse error for ${key}:`, error);
+        needsRefresh.push(key);
+      }
+    }
+  });
+
+  if (needsRefresh.length > 0) {
+    console.log('🔄 Refreshing expired cache for:', needsRefresh);
+    await fetchAndUpdateData(false);
+  }
+}, []);
+
+
+  // 🚀 NEW: Force refresh (for admin updates)
+  const forceRefresh = useCallback(async () => {
+    console.log('🚀 Force refresh triggered');
+    
+    // Clear all cache
+    ['banners', 'categories', 'products', 'trending'].forEach(key => {
+      localStorage.removeItem(`studentstore_cache_${key}`);
+    });
+    
+    // Show loading states
+    setLoadingStates({
+      banners: true,
+      categories: true,
+      products: true,
+      trending: true
+    });
+
+    await fetchAndUpdateData(false);
+    
+    setLoadingStates({
+      banners: false,
+      categories: false,
+      products: false,
+      trending: false
+    });
+  }, []);
+
+  // 🚀 NEW: Expose force refresh for admin actions
+  useEffect(() => {
+    // Listen for admin update events
+    const handleAdminUpdate = (event: CustomEvent) => {
+      console.log('🔄 Admin update detected:', event.detail);
+      forceRefresh();
+    };
+
+    window.addEventListener('adminUpdate' as any, handleAdminUpdate);
+    return () => window.removeEventListener('adminUpdate' as any, handleAdminUpdate);
+  }, [forceRefresh]);
+
+  // Recently Viewed Products Management - Enhanced
+  const loadRecentlyViewed = useCallback(() => {
+    const recentProducts = getRecentlyViewed();
+    setRecentlyViewed(recentProducts);
+    console.log('📚 Loaded recently viewed products:', recentProducts.length);
+  }, []);
+
+  // Custom Arrow Components - Enhanced with loading states
   const CustomPrevArrow = ({ onClick }: any) => (
     <button
       onClick={onClick}
@@ -148,7 +368,7 @@ export default function HomePage() {
     </button>
   );
 
-  // Banner carousel settings - With swipe buttons on EXTREME ENDS
+  // Banner carousel settings - Enhanced
   const bannerSettings = {
     dots: true,
     infinite: true,
@@ -164,7 +384,7 @@ export default function HomePage() {
     dotsClass: "slick-dots custom-dots",
   };
 
-  // Product carousel settings - With swipe buttons
+  // Product carousel settings - Enhanced
   const productCarouselSettings = {
     dots: false,
     infinite: false,
@@ -190,7 +410,7 @@ export default function HomePage() {
     ],
   };
 
-  // Category slider settings - With swipe buttons
+  // Category slider settings - Enhanced
   const categorySettings = {
     dots: false,
     infinite: false,
@@ -220,12 +440,43 @@ export default function HomePage() {
     ],
   };
 
+  // 🚀 NEW: Enhanced loading component
+  const LoadingSection = ({ title }: { title: string }) => (
+    <div className="animate-pulse">
+      <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-gray-200 h-64 rounded-lg"></div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // 🚀 NEW: Cache status indicator (for debugging)
+  const CacheStatusIndicator = () => {
+    const cacheAge = lastRefresh ? Math.floor((Date.now() - lastRefresh) / 1000) : 0;
+    
+    return (
+      <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-xs z-50">
+        Cache: {cacheAge}s ago
+        <button 
+          onClick={forceRefresh} 
+          className="ml-2 text-yellow-300 hover:text-yellow-100"
+          title="Force refresh"
+        >
+          ↻
+        </button>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-student-page flex items-center justify-center">
         <div className="text-center">
           <div className="loading-shimmer rounded-full h-16 w-16 mx-auto mb-4"></div>
           <p className="text-student-secondary font-medium">Loading StudentStore...</p>
+          <p className="text-student-secondary text-sm mt-2">Setting up your personalized experience</p>
         </div>
       </div>
     );
@@ -236,10 +487,15 @@ export default function HomePage() {
       {/* 1. Navbar */}
       <Navbar />
 
-      {/* 2. Banner Carousel - With swipe buttons on EXTREME ENDS */}
+      {/* 🚀 NEW: Cache status indicator (remove in production) */}
+      {process.env.NODE_ENV === 'development' && <CacheStatusIndicator />}
+
+      {/* 2. Banner Carousel - Enhanced with loading states */}
       <section className="relative max-w-7xl mx-auto mt-8 px-4">
         <div className="rounded-2xl overflow-hidden shadow-2xl relative">
-          {banners.length > 0 ? (
+          {loadingStates.banners ? (
+            <div className="animate-pulse bg-gray-200 h-64 md:h-80 lg:h-96 xl:h-[500px] rounded-2xl"></div>
+          ) : banners.length > 0 ? (
             <Slider {...bannerSettings}>
               {banners.map((banner) => (
                 <div key={banner.id} className="relative">
@@ -262,6 +518,7 @@ export default function HomePage() {
                         src={banner.media_url}
                         alt={banner.name}
                         className="w-full h-64 md:h-80 lg:h-96 xl:h-[500px] object-cover"
+                        loading="eager" // Priority loading for banners
                       />
                     )}
                     
@@ -293,7 +550,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. Recently Visited Products - "Continue with these so you won't miss" */}
+      {/* 3. Recently Visited Products - Enhanced */}
       {recentlyViewed.length > 0 && (
         <section className="max-w-7xl mx-auto mt-16 px-4">
           <div className="mb-8">
@@ -315,7 +572,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* 4. Trending Popular Products */}
+      {/* 4. Trending Popular Products - Enhanced */}
       {trendingProducts.length > 0 && (
         <section className="max-w-7xl mx-auto mt-16 px-4">
           <div className="mb-8">
@@ -325,26 +582,32 @@ export default function HomePage() {
             <p className="text-student-secondary text-lg">What students are buying right now - join the trend!</p>
           </div>
           
-          <div className="relative">
-            <Slider {...productCarouselSettings}>
-              {trendingProducts.map((product) => (
-                <div key={`trending-${product.id}`} className="px-2">
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </Slider>
-          </div>
+          {loadingStates.trending ? (
+            <LoadingSection title="Trending Products" />
+          ) : (
+            <div className="relative">
+              <Slider {...productCarouselSettings}>
+                {trendingProducts.map((product) => (
+                  <div key={`trending-${product.id}`} className="px-2">
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </Slider>
+            </div>
+          )}
         </section>
       )}
 
-      {/* 5. Category Cards - With swipe buttons on both ends */}
+      {/* 5. Category Cards - Enhanced */}
       <section className="max-w-7xl mx-auto mt-16 px-4">
         <div className="mb-8">
           <h3 className="text-3xl md:text-4xl font-bold text-student-primary mb-2">Shop by Category</h3>
           <p className="text-student-secondary text-lg">Find exactly what you need for your student life</p>
         </div>
         
-        {categories.length > 0 ? (
+        {loadingStates.categories ? (
+          <LoadingSection title="Categories" />
+        ) : categories.length > 0 ? (
           <div className="relative">
             <Slider {...categorySettings}>
               {categories.map((category) => (
@@ -373,7 +636,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* 6. Featured Products - Will add category-wise later */}
+      {/* 6. Featured Products - Enhanced */}
       <section className="max-w-7xl mx-auto mt-16 px-4">
         <div className="text-center mb-12">
           <h3 className="text-3xl md:text-4xl font-bold text-student-primary mb-4">
@@ -384,7 +647,9 @@ export default function HomePage() {
           </p>
         </div>
         
-        {products.length > 0 ? (
+        {loadingStates.products ? (
+          <LoadingSection title="Featured Products" />
+        ) : products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -399,7 +664,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* 7. Footer - Trust hub with social proof */}
+      {/* 7. Footer */}
       <Footer />
     </div>
   );

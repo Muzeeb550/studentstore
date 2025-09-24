@@ -1,6 +1,7 @@
 const express = require('express');
 const { requireAdmin } = require('../middleware/adminAuth');
 const { getPool, sql } = require('../config/database');
+const { invalidateCache } = require('../config/redis'); // 🚀 ADDED: Enterprise cache invalidation
 const router = express.Router();
 const imagekit = require('../config/imagekit');
 
@@ -194,7 +195,7 @@ router.get('/products/:id', async (req, res) => {
     }
 });
 
-// Delete product (PERMANENT DELETION)
+// 🚀 ENHANCED: Delete product with intelligent cache invalidation
 router.delete('/products/:id', async (req, res) => {
     try {
         const pool = await getPool();
@@ -206,13 +207,13 @@ router.delete('/products/:id', async (req, res) => {
         try {
             await transaction.begin();
             
-            // Check if product exists and belongs to admin
-            const productCheck = await transaction.request()
+            // 🚀 ENHANCED: Get product info BEFORE deletion for cache invalidation
+            const productInfo = await transaction.request()
                 .input('id', sql.Int, id)
                 .input('adminId', sql.Int, req.user.id)
-                .query('SELECT id, name FROM Products WHERE id = @id AND admin_id = @adminId');
+                .query('SELECT id, name, category_id FROM Products WHERE id = @id AND admin_id = @adminId');
             
-            if (productCheck.recordset.length === 0) {
+            if (productInfo.recordset.length === 0) {
                 await transaction.rollback();
                 return res.status(404).json({
                     status: 'error',
@@ -220,7 +221,8 @@ router.delete('/products/:id', async (req, res) => {
                 });
             }
             
-            const productName = productCheck.recordset[0].name;
+            const productName = productInfo.recordset[0].name;
+            const categoryId = productInfo.recordset[0].category_id; // 🚀 NEEDED for cache invalidation
             
             // Delete related data in correct order (children first, then parent)
             
@@ -243,8 +245,18 @@ router.delete('/products/:id', async (req, res) => {
             // Commit the transaction
             await transaction.commit();
             
+            // 🚀 ENTERPRISE CACHE INVALIDATION (like Amazon, Shopify)
+            try {
+                await invalidateCache.products(categoryId, parseInt(id));
+                console.log(`🔄 Cache invalidated for deleted product: ${productName} (ID: ${id}, Category: ${categoryId})`);
+            } catch (cacheError) {
+                console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+                // Don't fail the request if cache invalidation fails
+            }
+            
             console.log(`✅ Product "${productName}" and related data deleted:`, {
                 productId: id,
+                categoryId: categoryId,
                 reviewsDeleted: reviewsDeleted.rowsAffected[0],
                 wishlistsDeleted: wishlistsDeleted.rowsAffected[0]
             });
@@ -254,8 +266,10 @@ router.delete('/products/:id', async (req, res) => {
                 message: `Product "${productName}" permanently deleted along with ${reviewsDeleted.rowsAffected[0]} reviews and ${wishlistsDeleted.rowsAffected[0]} wishlist entries`,
                 data: {
                     productId: id,
+                    categoryId: categoryId,
                     reviewsDeleted: reviewsDeleted.rowsAffected[0],
-                    wishlistsDeleted: wishlistsDeleted.rowsAffected[0]
+                    wishlistsDeleted: wishlistsDeleted.rowsAffected[0],
+                    cacheCleared: true // 🚀 ADDED: Cache status
                 }
             });
             
@@ -284,8 +298,7 @@ router.delete('/products/:id', async (req, res) => {
     }
 });
 
-
-// Create new category
+// 🚀 ENHANCED: Create new category with instant cache invalidation
 router.post('/categories', async (req, res) => {
     try {
         const pool = await getPool();
@@ -329,10 +342,19 @@ router.post('/categories', async (req, res) => {
                 VALUES (@name, @description, @iconUrl, @sortOrder)
             `);
         
+        // 🚀 INSTANT CACHE INVALIDATION (like major e-commerce sites)
+        try {
+            await invalidateCache.categories();
+            console.log(`🔄 Cache invalidated for new category: ${name}`);
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+        
         res.json({
             status: 'success',
             message: 'Category created successfully',
-            data: result.recordset[0]
+            data: result.recordset[0],
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
         
     } catch (error) {
@@ -345,7 +367,7 @@ router.post('/categories', async (req, res) => {
     }
 });
 
-// Update category with thumbnail
+// 🚀 ENHANCED: Update category with instant cache invalidation
 router.put('/categories/:id', async (req, res) => {
     try {
         const pool = await getPool();
@@ -391,9 +413,19 @@ router.put('/categories/:id', async (req, res) => {
             });
         }
         
+        // 🚀 INSTANT CACHE INVALIDATION + Related products
+        try {
+            await invalidateCache.categories();
+            await invalidateCache.products(parseInt(id)); // Also clear products in this category
+            console.log(`🔄 Cache invalidated for updated category: ${name} (ID: ${id})`);
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+        
         res.json({
             status: 'success',
-            message: 'Category updated successfully'
+            message: 'Category updated successfully',
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
         
     } catch (error) {
@@ -406,7 +438,7 @@ router.put('/categories/:id', async (req, res) => {
     }
 });
 
-// Delete category (PERMANENT DELETION)
+// 🚀 ENHANCED: Delete category with intelligent cache invalidation
 router.delete('/categories/:id', async (req, res) => {
     try {
         const pool = await getPool();
@@ -424,6 +456,13 @@ router.delete('/categories/:id', async (req, res) => {
             });
         }
         
+        // 🚀 ENHANCED: Get category info for logging
+        const categoryInfo = await pool.request()
+            .input('id', sql.Int, id)
+            .query('SELECT name FROM Categories WHERE id = @id');
+        
+        const categoryName = categoryInfo.recordset[0]?.name || `ID:${id}`;
+        
         // HARD DELETE - permanently remove the record
         const result = await pool.request()
             .input('id', sql.Int, id)
@@ -436,9 +475,18 @@ router.delete('/categories/:id', async (req, res) => {
             });
         }
         
+        // 🚀 INSTANT CACHE INVALIDATION
+        try {
+            await invalidateCache.categories();
+            console.log(`🔄 Cache invalidated for deleted category: ${categoryName} (ID: ${id})`);
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+        
         res.json({
             status: 'success',
-            message: 'Category permanently deleted'
+            message: 'Category permanently deleted',
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
         
     } catch (error) {
@@ -465,7 +513,7 @@ router.get('/imagekit-auth', async (req, res) => {
     }
 });
 
-// Create new product
+// 🚀 ENHANCED: Create new product with intelligent cache invalidation
 router.post('/products', async (req, res) => {
     try {
         const pool = await getPool();
@@ -521,10 +569,21 @@ router.post('/products', async (req, res) => {
                 )
             `);
 
+        const newProduct = result.recordset[0];
+
+        // 🚀 MULTI-LEVEL CACHE INVALIDATION (like Amazon)
+        try {
+            await invalidateCache.products(category_id, newProduct.id);
+            console.log(`🔄 Cache invalidated for new product: ${name} (ID: ${newProduct.id}, Category: ${category_id})`);
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+
         res.json({
             status: 'success',
             message: 'Product created successfully',
-            data: result.recordset[0]
+            data: newProduct,
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
 
     } catch (error) {
@@ -537,7 +596,7 @@ router.post('/products', async (req, res) => {
     }
 });
 
-// Update existing product
+// 🚀 ENHANCED: Update existing product with intelligent cache invalidation
 router.put('/products/:id', async (req, res) => {
     try {
         const pool = await getPool();
@@ -562,6 +621,13 @@ router.put('/products/:id', async (req, res) => {
                 message: 'Missing required fields: name, description, category_id, buy_button_1_name, buy_button_1_url'
             });
         }
+
+        // 🚀 ENHANCED: Get old category for comprehensive cache invalidation
+        const oldProductInfo = await pool.request()
+            .input('id', sql.Int, id)
+            .query('SELECT category_id FROM Products WHERE id = @id');
+        
+        const oldCategoryId = oldProductInfo.recordset[0]?.category_id;
 
         // Update product
         const result = await pool.request()
@@ -600,9 +666,26 @@ router.put('/products/:id', async (req, res) => {
             });
         }
 
+        // 🚀 INTELLIGENT CACHE INVALIDATION (handles category changes)
+        try {
+            // Clear cache for current category
+            await invalidateCache.products(category_id, parseInt(id));
+            
+            // If category changed, also clear old category cache
+            if (oldCategoryId && oldCategoryId !== category_id) {
+                await invalidateCache.products(oldCategoryId);
+                console.log(`🔄 Cache invalidated for updated product: ${name} (ID: ${id}) - Old Category: ${oldCategoryId}, New Category: ${category_id}`);
+            } else {
+                console.log(`🔄 Cache invalidated for updated product: ${name} (ID: ${id}, Category: ${category_id})`);
+            }
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+
         res.json({
             status: 'success',
-            message: 'Product updated successfully'
+            message: 'Product updated successfully',
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
 
     } catch (error) {
@@ -687,7 +770,7 @@ router.get('/banners/:id', async (req, res) => {
     }
 });
 
-// Create new banner
+// 🚀 ENHANCED: Create new banner with instant cache invalidation
 router.post('/banners', async (req, res) => {
     try {
         const pool = await getPool();
@@ -714,10 +797,19 @@ router.post('/banners', async (req, res) => {
                 VALUES (@name, @mediaUrl, @linkUrl, @displayOrder, @adminId, 1, GETDATE(), GETDATE())
             `);
 
+        // 🚀 INSTANT BANNER CACHE INVALIDATION
+        try {
+            await invalidateCache.banners();
+            console.log(`🔄 Cache invalidated for new banner: ${name}`);
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+
         res.json({
             status: 'success',
             message: 'Banner created successfully',
-            data: result.recordset[0]
+            data: result.recordset[0],
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
 
     } catch (error) {
@@ -730,7 +822,7 @@ router.post('/banners', async (req, res) => {
     }
 });
 
-// Update existing banner
+// 🚀 ENHANCED: Update existing banner with instant cache invalidation
 router.put('/banners/:id', async (req, res) => {
     try {
         const pool = await getPool();
@@ -770,9 +862,18 @@ router.put('/banners/:id', async (req, res) => {
             });
         }
 
+        // 🚀 INSTANT BANNER CACHE INVALIDATION
+        try {
+            await invalidateCache.banners();
+            console.log(`🔄 Cache invalidated for updated banner: ${name} (ID: ${id})`);
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+
         res.json({
             status: 'success',
-            message: 'Banner updated successfully'
+            message: 'Banner updated successfully',
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
 
     } catch (error) {
@@ -785,11 +886,19 @@ router.put('/banners/:id', async (req, res) => {
     }
 });
 
-// Delete banner (permanent deletion)
+// 🚀 ENHANCED: Delete banner with instant cache invalidation
 router.delete('/banners/:id', async (req, res) => {
     try {
         const pool = await getPool();
         const { id } = req.params;
+        
+        // 🚀 ENHANCED: Get banner info for logging
+        const bannerInfo = await pool.request()
+            .input('id', sql.Int, id)
+            .input('adminId', sql.Int, req.user.id)
+            .query('SELECT name FROM Banners WHERE id = @id AND admin_id = @adminId');
+        
+        const bannerName = bannerInfo.recordset[0]?.name || `ID:${id}`;
         
         // HARD DELETE - permanently remove the record
         const result = await pool.request()
@@ -804,9 +913,18 @@ router.delete('/banners/:id', async (req, res) => {
             });
         }
         
+        // 🚀 INSTANT BANNER CACHE INVALIDATION
+        try {
+            await invalidateCache.banners();
+            console.log(`🔄 Cache invalidated for deleted banner: ${bannerName} (ID: ${id})`);
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+        
         res.json({
             status: 'success',
-            message: 'Banner permanently deleted'
+            message: 'Banner permanently deleted',
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
         
     } catch (error) {

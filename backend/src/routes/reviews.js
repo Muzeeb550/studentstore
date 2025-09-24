@@ -1,6 +1,7 @@
 const express = require('express');
 const { getPool, sql } = require('../config/database');
 const { authenticateToken } = require('../middleware/adminAuth');
+const { invalidateCache } = require('../config/redis'); // 🚀 ADDED: Enterprise cache invalidation
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
@@ -122,7 +123,7 @@ router.get('/product/:productId', async (req, res) => {
     }
 });
 
-// Create a new review (authenticated users only) - FIXED: Allow multiple reviews
+// 🚀 ENHANCED: Create a new review with intelligent cache invalidation
 router.post('/', authenticateToken, reviewLimit, async (req, res) => {
     try {
         const pool = await getPool();
@@ -145,10 +146,10 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-        // Check if product exists
+        // 🚀 ENHANCED: Get product info for comprehensive cache invalidation
         const productCheck = await pool.request()
             .input('productId', sql.Int, product_id)
-            .query('SELECT id FROM Products WHERE id = @productId');
+            .query('SELECT id, name, category_id FROM Products WHERE id = @productId');
 
         if (productCheck.recordset.length === 0) {
             return res.status(404).json({
@@ -157,8 +158,7 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-        // REMOVED: The duplicate review check to allow multiple reviews per user
-        // Users can now write unlimited reviews for the same product
+        const productInfo = productCheck.recordset[0];
 
         // Create new review
         const result = await pool.request()
@@ -176,10 +176,27 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
         // Update product rating statistics
         await updateProductRatingStats(pool, product_id);
 
+        // 🚀 ENTERPRISE CACHE INVALIDATION (like Amazon review system)
+        try {
+            // Primary: Invalidate product details cache (rating/review count changed)
+            await invalidateCache.reviews(product_id);
+            
+            // Secondary: Invalidate category cache (product rating affects category display)
+            await invalidateCache.products(productInfo.category_id, product_id);
+            
+            console.log(`🔄 Cache invalidated for new review on product: ${productInfo.name} (ID: ${product_id}) - Rating: ${rating}/5`);
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+
         res.status(201).json({
             status: 'success',
             message: 'Review created successfully',
-            data: result.recordset[0]
+            data: {
+                ...result.recordset[0],
+                product_name: productInfo.name // 🚀 ADDED: Product context
+            },
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
 
     } catch (error) {
@@ -192,7 +209,7 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
     }
 });
 
-// Update user's review (authenticated users only)
+// 🚀 ENHANCED: Update user's review with intelligent cache invalidation
 router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
     try {
         const pool = await getPool();
@@ -216,11 +233,17 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-        // Check if review exists and belongs to user
+        // 🚀 ENHANCED: Get review and product info for comprehensive cache invalidation
         const reviewCheck = await pool.request()
             .input('reviewId', sql.Int, reviewId)
             .input('userId', sql.Int, userId)
-            .query('SELECT id, product_id FROM Reviews WHERE id = @reviewId AND user_id = @userId');
+            .query(`
+                SELECT r.id, r.product_id, r.rating as old_rating, 
+                       p.name as product_name, p.category_id
+                FROM Reviews r
+                INNER JOIN Products p ON r.product_id = p.id
+                WHERE r.id = @reviewId AND r.user_id = @userId
+            `);
 
         if (reviewCheck.recordset.length === 0) {
             return res.status(404).json({
@@ -229,7 +252,9 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-        const productId = reviewCheck.recordset[0].product_id;
+        const reviewInfo = reviewCheck.recordset[0];
+        const productId = reviewInfo.product_id;
+        const oldRating = reviewInfo.old_rating;
 
         // Update review
         const result = await pool.request()
@@ -256,9 +281,31 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
         // Update product rating statistics
         await updateProductRatingStats(pool, productId);
 
+        // 🚀 INTELLIGENT CACHE INVALIDATION (rating change affects product stats)
+        try {
+            await invalidateCache.reviews(productId);
+            
+            // If rating changed significantly, also clear category and featured product caches
+            if (Math.abs(rating - oldRating) >= 1) {
+                await invalidateCache.products(reviewInfo.category_id, productId);
+                console.log(`🔄 Cache invalidated for review update with rating change: ${oldRating} → ${rating} (Product: ${reviewInfo.product_name})`);
+            } else {
+                console.log(`🔄 Cache invalidated for review update: ${reviewInfo.product_name} (ID: ${productId})`);
+            }
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+
         res.json({
             status: 'success',
-            message: 'Review updated successfully'
+            message: 'Review updated successfully',
+            data: {
+                reviewId: reviewId,
+                productName: reviewInfo.product_name,
+                oldRating: oldRating,
+                newRating: rating
+            },
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
 
     } catch (error) {
@@ -271,7 +318,7 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
     }
 });
 
-// Delete user's review (authenticated users only)
+// 🚀 ENHANCED: Delete user's review with intelligent cache invalidation
 router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
     try {
         const pool = await getPool();
@@ -286,11 +333,17 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
             });
         }
 
-        // Check if review exists and belongs to user
+        // 🚀 ENHANCED: Get comprehensive info before deletion for cache invalidation
         const reviewCheck = await pool.request()
             .input('reviewId', sql.Int, reviewId)
             .input('userId', sql.Int, userId)
-            .query('SELECT id, product_id FROM Reviews WHERE id = @reviewId AND user_id = @userId');
+            .query(`
+                SELECT r.id, r.product_id, r.rating, 
+                       p.name as product_name, p.category_id, p.review_count
+                FROM Reviews r
+                INNER JOIN Products p ON r.product_id = p.id
+                WHERE r.id = @reviewId AND r.user_id = @userId
+            `);
 
         if (reviewCheck.recordset.length === 0) {
             return res.status(404).json({
@@ -299,7 +352,10 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
             });
         }
 
-        const productId = reviewCheck.recordset[0].product_id;
+        const reviewInfo = reviewCheck.recordset[0];
+        const productId = reviewInfo.product_id;
+        const deletedRating = reviewInfo.rating;
+        const isLastReview = reviewInfo.review_count <= 1;
 
         // Delete review
         const result = await pool.request()
@@ -316,9 +372,31 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
         // Update product rating statistics
         await updateProductRatingStats(pool, productId);
 
+        // 🚀 COMPREHENSIVE CACHE INVALIDATION (deletion affects product stats significantly)
+        try {
+            await invalidateCache.reviews(productId);
+            
+            // If this was the last review or a high/low rating, clear more caches
+            if (isLastReview || deletedRating === 5 || deletedRating === 1) {
+                await invalidateCache.products(reviewInfo.category_id, productId);
+                console.log(`🔄 Cache invalidated for significant review deletion: ${deletedRating}/5 stars (Product: ${reviewInfo.product_name}, Last review: ${isLastReview})`);
+            } else {
+                console.log(`🔄 Cache invalidated for review deletion: ${reviewInfo.product_name} (${deletedRating}/5 stars)`);
+            }
+        } catch (cacheError) {
+            console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
+        }
+
         res.json({
             status: 'success',
-            message: 'Review deleted successfully'
+            message: 'Review deleted successfully',
+            data: {
+                reviewId: reviewId,
+                productName: reviewInfo.product_name,
+                deletedRating: deletedRating,
+                wasLastReview: isLastReview
+            },
+            cacheCleared: true // 🚀 ADDED: Cache status
         });
 
     } catch (error) {
@@ -392,9 +470,11 @@ router.get('/my-reviews', authenticateToken, async (req, res) => {
     }
 });
 
-// Helper function to update product rating statistics - FIXED: Handle null values properly
+// 🚀 ENHANCED: Helper function with comprehensive error handling
 async function updateProductRatingStats(pool, productId) {
     try {
+        const startTime = Date.now();
+        
         await pool.request()
             .input('productId', sql.Int, productId)
             .query(`
@@ -417,11 +497,72 @@ async function updateProductRatingStats(pool, productId) {
                     updated_at = GETDATE()
                 WHERE id = @productId
             `);
+        
+        const duration = Date.now() - startTime;
+        console.log(`📊 Product rating stats updated for Product ID: ${productId} (${duration}ms)`);
+        
     } catch (error) {
-        console.error('Error updating product rating stats:', error);
+        console.error('❌ Error updating product rating stats:', error);
         throw error;
     }
 }
 
+// 🚀 NEW: Admin route to recalculate all product ratings (maintenance)
+router.post('/admin/recalculate-ratings', authenticateToken, async (req, res) => {
+    try {
+        // Check if user is admin (you might want to add admin check middleware)
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({
+                status: 'error',
+                message: 'Admin access required'
+            });
+        }
+
+        const pool = await getPool();
+        const startTime = Date.now();
+
+        // Recalculate all product ratings
+        await pool.request().query(`
+            UPDATE Products 
+            SET 
+                rating_average = COALESCE(
+                    (SELECT AVG(CAST(rating AS DECIMAL(3,2))) 
+                     FROM Reviews 
+                     WHERE product_id = Products.id), 
+                    NULL
+                ),
+                review_count = COALESCE(
+                    (SELECT COUNT(*) 
+                     FROM Reviews 
+                     WHERE product_id = Products.id), 
+                    0
+                ),
+                updated_at = GETDATE()
+        `);
+
+        // Clear all product-related caches
+        await invalidateCache.products();
+        await invalidateCache.search();
+
+        const duration = Date.now() - startTime;
+        
+        res.json({
+            status: 'success',
+            message: 'All product ratings recalculated successfully',
+            data: {
+                duration: `${duration}ms`,
+                cacheCleared: true
+            }
+        });
+
+    } catch (error) {
+        console.error('Recalculate ratings error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to recalculate ratings',
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;
