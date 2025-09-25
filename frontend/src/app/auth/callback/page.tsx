@@ -1,8 +1,6 @@
 'use client';
 
-export const dynamic = 'force-dynamic'; // This line must be here
-
-
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
@@ -14,8 +12,30 @@ interface User {
   exp: number;
 }
 
-
 export default function AuthCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🎓</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              StudentStore Authentication
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Loading authentication...
+            </p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
+  );
+}
+
+function AuthCallbackContent() {
   const [status, setStatus] = useState('Processing authentication...');
   const searchParams = useSearchParams();
 

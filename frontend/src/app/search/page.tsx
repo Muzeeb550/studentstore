@@ -1,14 +1,11 @@
 'use client';
 
-export const dynamic = 'force-dynamic'; // Add this line
-
+import { Suspense } from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import Footer from '../components/Footer';
-
-
 
 interface Product {
   id: number;
@@ -59,8 +56,26 @@ interface CacheData {
 
 type ViewMode = 'grid' | 'list';
 
-
 export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-student-page">
+        <Navbar />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="loading-shimmer rounded-full h-16 w-16 mx-auto mb-4"></div>
+            <p className="text-student-secondary font-medium">Loading search...</p>
+            <p className="text-student-secondary text-sm mt-2">Preparing your student marketplace</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <SearchPageContent />
+    </Suspense>
+  );
+}
+
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const categoryFilter = searchParams.get('category');
