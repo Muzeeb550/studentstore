@@ -26,13 +26,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS Configuration
 // Needs to be (for multiple domains)
+// CORS Configuration
 app.use(cors({
     origin: [
-        process.env.FRONTEND_URL || 'http://localhost:3000',
-        // Will add Vercel URL here after deployment
+        'http://localhost:3000',  // Keep for local development
+        'https://studentstore-zeta.vercel.app'  // Your Vercel URL
     ],
     credentials: true
 }));
+
 
 // Session Configuration
 app.use(session({
