@@ -7,7 +7,10 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+    paths:
+      - 'backend/**'                                      # 🎯 ONLY deploy for backend changes
+      - '.github/workflows/main_studentstore-server.yml'  # Deploy if workflow changes
+  workflow_dispatch:                                       # Manual trigger always available
 
 jobs:
   build:
@@ -40,8 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
-      contents: read
+      contents: read                                       # 🚀 REMOVED: id-token: write (not needed)
 
     steps:
       - name: Download artifact from build job
@@ -49,18 +51,14 @@ jobs:
         with:
           name: node-app
       
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_6285F1F2CC6143B1B4B5378FE2AAAE0A }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9747512822AC4679B8470CDF1DBF5AA3 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C277C0670C9340C0B8EFA9D96F927C39 }}
-
-
+      # 🔥 REMOVED: Complex Azure login with service principal
+      # 🚀 REPLACED: With simple publish profile deployment
+      
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'studentstore-server'
           slot-name: 'Production'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}  # 🎯 SIMPLE & RELIABLE
           package: .
