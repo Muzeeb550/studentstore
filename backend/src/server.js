@@ -26,14 +26,38 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS Configuration
 // Needs to be (for multiple domains)
-// CORS Configuration
 app.use(cors({
-    origin: [
-        'http://localhost:3000',  // Keep for local development
-        'https://studentstore-zeta.vercel.app'  // Your Vercel URL
-    ],
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        
+        if (origin === 'http://localhost:3000') {
+            return callback(null, true);
+        }
+        
+        if (origin === 'https://studentstore-zeta.vercel.app') {
+            return callback(null, true);
+        }
+        
+        // Git-based deployments (staging, feature branches)
+        if (origin.includes('studentstore-git-') && 
+            origin.includes('muzeebs-projects.vercel.app') && 
+            origin.startsWith('https://')) {
+            return callback(null, true);
+        }
+        
+        // Random hash deployments (Vercel auto-generated)
+        if (origin.includes('muzeebs-projects.vercel.app') && 
+            origin.startsWith('https://studentstore-') &&
+            !origin.includes('git-')) {
+            return callback(null, true);
+        }
+        
+        console.log(`🚨 CORS blocked: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
+
 
 
 // Session Configuration
