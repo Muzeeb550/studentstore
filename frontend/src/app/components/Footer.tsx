@@ -8,6 +8,7 @@ export default function Footer() {
     averageRating: '4.8'
   };
 
+
   return (
     <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white mt-20 relative overflow-hidden">
       {/* Subtle background pattern - MUCH MORE SUBTLE */}
@@ -17,6 +18,7 @@ export default function Footer() {
         }}></div>
       </div>
 
+
       <div className="max-w-7xl mx-auto px-4 py-16 relative z-10">
         {/* TRUST HUB - Student Success Stats */}
         <div className="text-center mb-16">
@@ -24,7 +26,7 @@ export default function Footer() {
             <span className="bg-gradient-to-r from-student-blue to-student-green bg-clip-text text-transparent">
               Trusted by Students
             </span>{" "}
-            <span className="text-white">Everywhere</span>
+            <span className="text-violet-400">Everywhere</span>
           </h2>
           <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto font-medium">
             Join thousands of students who've made StudentStore their go-to shopping companion
@@ -55,6 +57,7 @@ export default function Footer() {
           </div>
         </div>
 
+
         {/* Student Success Stories - BETTER CONTRAST */}
         <div className="mb-16">
           <h3 className="text-2xl font-bold text-center mb-8 text-white drop-shadow-lg">
@@ -81,6 +84,7 @@ export default function Footer() {
               </div>
             </div>
 
+
             {/* Testimonial 2 */}
             <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-xl">
               <div className="flex items-center mb-4">
@@ -100,6 +104,7 @@ export default function Footer() {
                 <span className="ml-2 text-xs text-gray-400 bg-slate-700/50 px-2 py-1 rounded-full">Verified Student</span>
               </div>
             </div>
+
 
             {/* Testimonial 3 */}
             <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-xl">
@@ -122,6 +127,7 @@ export default function Footer() {
             </div>
           </div>
         </div>
+
 
         {/* Main Footer Content - IMPROVED CONTRAST */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
@@ -171,6 +177,7 @@ export default function Footer() {
               </ul>
             </div>
 
+
             {/* Enhanced Social Links - BETTER CONTRAST */}
             <div className="flex space-x-4">
               <a href="#" className="w-12 h-12 bg-slate-800/80 backdrop-blur-sm hover:bg-student-blue/80 rounded-full flex items-center justify-center transition-all duration-300 border border-slate-700 hover:border-student-blue hover:scale-110 shadow-lg">
@@ -187,6 +194,7 @@ export default function Footer() {
               </a>
             </div>
           </div>
+
 
           {/* Enhanced Navigation Links - BETTER READABILITY */}
           <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -205,6 +213,7 @@ export default function Footer() {
               </ul>
             </div>
 
+
             {/* Community & Support */}
             <div>
               <h3 className="text-lg font-bold mb-6 text-white flex items-center drop-shadow-sm">
@@ -219,6 +228,7 @@ export default function Footer() {
                 <li><a href="/contact" className="text-gray-300 hover:text-student-green transition-all duration-200 hover:translate-x-1 inline-block font-medium">Get Help & Support</a></li>
               </ul>
             </div>
+
 
             {/* About & Trust */}
             <div>
@@ -236,6 +246,7 @@ export default function Footer() {
             </div>
           </div>
         </div>
+
 
         {/* Enhanced Bottom Bar - PERFECT VISIBILITY */}
         <div className="border-t border-slate-700 mt-12 pt-8">
