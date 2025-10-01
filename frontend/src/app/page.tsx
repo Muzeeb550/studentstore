@@ -367,16 +367,16 @@ export default function HomePage() {
     </button>
   );
 
-  // Enhanced Banner carousel settings - Mobile vs Desktop Optimized
+  // 🔧 FIXED: Enhanced Banner carousel settings - Consistent Mobile & Desktop
   const bannerSettings = {
     dots: true,
-    infinite: true,
-    speed: 500, // Faster transitions
+    infinite: banners.length > 1, // Only infinite if more than 1 banner
+    speed: 500,
     slidesToShow: 1,
     slidesToScroll: 1,
-    autoplay: true,
+    autoplay: banners.length > 1, // Only autoplay if more than 1 banner
     autoplaySpeed: 4500,
-    fade: true,
+    fade: false, // Use slide instead of fade for consistency
     
     // Desktop-only arrows (hidden on mobile via CSS)
     prevArrow: <DesktopPrevArrow />,
@@ -384,14 +384,21 @@ export default function HomePage() {
     
     pauseOnHover: true,
     pauseOnFocus: true,
+    pauseOnDotsHover: true,
     
     // Enhanced mobile settings
     swipe: true,
     swipeToSlide: true,
     touchMove: true,
-    touchThreshold: 5, // More sensitive
+    touchThreshold: 10, // Less sensitive to prevent accidental swipes
     draggable: true,
     accessibility: true,
+    useCSS: true,
+    useTransform: true,
+    
+    // Consistent behavior across devices
+    waitForAnimate: false,
+    focusOnSelect: false,
     
     dotsClass: "slick-dots mobile-banner-dots",
     
@@ -400,11 +407,12 @@ export default function HomePage() {
         breakpoint: 1023, // Mobile and tablet
         settings: {
           arrows: false, // No arrows on mobile
-          fade: false, // Slide instead of fade for better mobile performance
           speed: 400,
           autoplaySpeed: 5000,
+          touchThreshold: 8, // Optimized for touch
           swipe: true,
           touchMove: true,
+          draggable: true,
         }
       }
     ]
