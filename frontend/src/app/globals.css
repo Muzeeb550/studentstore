@@ -296,6 +296,361 @@ body {
   background: linear-gradient(135deg, var(--student-blue) 0%, #7C3AED 50%, var(--student-green) 100%);
 }
 
+/* ===========================================
+   ENHANCED MOBILE-FIRST BANNER SYSTEM
+   =========================================== */
+
+/* Desktop-Only Custom Arrow Buttons - Faster & Smoother */
+.desktop-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  
+  /* Enhanced for faster interaction */
+  width: 3.5rem;
+  height: 3.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  
+  /* Faster, smoother transitions */
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Better hover responsiveness */
+  will-change: transform, background-color, box-shadow;
+}
+
+.desktop-carousel-arrow:hover {
+  background: var(--student-blue);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+}
+
+.desktop-carousel-arrow:active {
+  transform: translateY(-50%) scale(1.05);
+  transition: all 0.1s ease;
+}
+
+.desktop-carousel-arrow.prev {
+  left: 1rem;
+}
+
+.desktop-carousel-arrow.next {
+  right: 1rem;
+}
+
+/* Hide arrows on mobile and tablet */
+@media (max-width: 1023px) {
+  .desktop-carousel-arrow {
+    display: none !important;
+  }
+}
+
+/* Mobile-First Banner Dots */
+.mobile-banner-dots {
+  bottom: 12px !important;
+  text-align: center;
+}
+
+.mobile-banner-dots li {
+  margin: 0 2px;
+  display: inline-block;
+}
+
+.mobile-banner-dots li button {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  padding: 0 !important;
+  transition: all 0.3s ease !important;
+}
+
+.mobile-banner-dots li.slick-active button {
+  background: white !important;
+  transform: scale(1.5);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+/* Desktop banner dots */
+@media (min-width: 1024px) {
+  .mobile-banner-dots {
+    bottom: 20px !important;
+  }
+  
+  .mobile-banner-dots li {
+    margin: 0 4px;
+  }
+  
+  .mobile-banner-dots li button {
+    width: 10px !important;
+    height: 10px !important;
+  }
+}
+
+/* ===========================================
+   RESPONSIVE BANNER HEIGHTS & TYPOGRAPHY
+   =========================================== */
+
+/* Mobile-first banner container */
+.banner-container {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .banner-container {
+    margin-top: 1rem;
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .banner-container {
+    margin-top: 2rem;
+  }
+}
+
+/* Progressive banner image heights */
+.banner-image {
+  width: 100%;
+  object-fit: cover;
+  
+  /* Mobile: 200px */
+  height: 12.5rem;
+}
+
+@media (min-width: 640px) {
+  .banner-image {
+    /* Tablet: 280px */
+    height: 17.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .banner-image {
+    /* Small desktop: 320px */
+    height: 20rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .banner-image {
+    /* Desktop: 400px */
+    height: 25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .banner-image {
+    /* Large desktop: 500px */
+    height: 31.25rem;
+  }
+}
+
+/* Mobile-first banner text overlay */
+.banner-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  
+  /* Mobile padding */
+  padding: 1rem;
+  
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+}
+
+@media (min-width: 640px) {
+  .banner-overlay {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .banner-overlay {
+    padding: 2rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+  }
+}
+
+@media (min-width: 1280px) {
+  .banner-overlay {
+    padding: 3rem;
+  }
+}
+
+/* Responsive banner title */
+.banner-title {
+  color: white;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  
+  /* Mobile: 18px */
+  font-size: 1.125rem;
+}
+
+@media (min-width: 640px) {
+  .banner-title {
+    /* Tablet: 22px */
+    font-size: 1.375rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .banner-title {
+    /* Small desktop: 28px */
+    font-size: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .banner-title {
+    /* Desktop: 36px */
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .banner-title {
+    /* Large desktop: 42px */
+    font-size: 2.625rem;
+  }
+}
+
+/* Mobile-optimized banner button */
+.banner-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  background: linear-gradient(45deg, var(--student-orange) 0%, var(--warning) 100%);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  
+  /* Mobile button sizing */
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  min-height: 44px; /* Touch-friendly */
+  
+  transition: all 0.2s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+  
+  /* Touch optimizations */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.banner-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+}
+
+.banner-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@media (min-width: 640px) {
+  .banner-btn {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9375rem;
+    border-radius: 0.625rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .banner-btn {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 0.75rem;
+  }
+}
+
+/* ===========================================
+   MOBILE TOUCH OPTIMIZATIONS
+   =========================================== */
+
+/* Remove iOS button styling */
+.touch-optimized {
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* Enhanced mobile button styles */
+@media (max-width: 1023px) {
+  .btn-primary,
+  .btn-action,
+  .btn-success {
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .btn-primary:active,
+  .btn-action:active,
+  .btn-success:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* ===========================================
+   ENHANCED LOADING STATES
+   =========================================== */
+
+.banner-loading {
+  background: linear-gradient(90deg, var(--bg-light) 25%, var(--bg-card) 50%, var(--bg-light) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.75rem;
+  
+  /* Mobile height matches banner-image */
+  height: 12.5rem;
+}
+
+@media (min-width: 640px) {
+  .banner-loading {
+    height: 17.5rem;
+    border-radius: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .banner-loading {
+    height: 20rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .banner-loading {
+    height: 25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .banner-loading {
+    height: 31.25rem;
+    border-radius: 1rem;
+  }
+}
+
 /* Custom carousel dots styling (keeping your existing styles) */
 .custom-dots {
   bottom: 20px !important;

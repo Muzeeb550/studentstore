@@ -270,32 +270,31 @@ export default function HomePage() {
   };
 
   // 🚀 NEW: Type-safe cache refresh with specific cache keys
-const checkAndRefreshExpiredCache = useCallback(async () => {
-  const now = Date.now();
-  const needsRefresh: Array<keyof typeof CACHE_CONFIG> = []; // Even more type-safe
+  const checkAndRefreshExpiredCache = useCallback(async () => {
+    const now = Date.now();
+    const needsRefresh: Array<keyof typeof CACHE_CONFIG> = []; // Even more type-safe
 
-  // Type-safe iteration
-  (Object.keys(CACHE_CONFIG) as Array<keyof typeof CACHE_CONFIG>).forEach((key) => {
-    const cached = localStorage.getItem(`studentstore_cache_${key}`);
-    if (cached) {
-      try {
-        const parsedCache: { data: any; timestamp: number } = JSON.parse(cached);
-        if (now - parsedCache.timestamp >= CACHE_CONFIG[key]) {
+    // Type-safe iteration
+    (Object.keys(CACHE_CONFIG) as Array<keyof typeof CACHE_CONFIG>).forEach((key) => {
+      const cached = localStorage.getItem(`studentstore_cache_${key}`);
+      if (cached) {
+        try {
+          const parsedCache: { data: any; timestamp: number } = JSON.parse(cached);
+          if (now - parsedCache.timestamp >= CACHE_CONFIG[key]) {
+            needsRefresh.push(key);
+          }
+        } catch (error) {
+          console.error(`Cache parse error for ${key}:`, error);
           needsRefresh.push(key);
         }
-      } catch (error) {
-        console.error(`Cache parse error for ${key}:`, error);
-        needsRefresh.push(key);
       }
+    });
+
+    if (needsRefresh.length > 0) {
+      console.log('🔄 Refreshing expired cache for:', needsRefresh);
+      await fetchAndUpdateData(false);
     }
-  });
-
-  if (needsRefresh.length > 0) {
-    console.log('🔄 Refreshing expired cache for:', needsRefresh);
-    await fetchAndUpdateData(false);
-  }
-}, []);
-
+  }, []);
 
   // 🚀 NEW: Force refresh (for admin updates)
   const forceRefresh = useCallback(async () => {
@@ -343,69 +342,96 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
     console.log('📚 Loaded recently viewed products:', recentProducts.length);
   }, []);
 
-  // Custom Arrow Components - Enhanced with loading states
-  const CustomPrevArrow = ({ onClick }: any) => (
+  // Enhanced Desktop-Only Arrow Components (Faster & Smoother)
+  const DesktopPrevArrow = ({ onClick }: any) => (
     <button
       onClick={onClick}
-      className="absolute top-1/2 left-2 z-20 transform -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-xl border border-gray-200 hover:shadow-2xl hover:scale-110 transition-all duration-200 flex items-center justify-center group hover:bg-student-blue"
-      aria-label="Previous"
+      className="desktop-carousel-arrow prev"
+      aria-label="Previous slide"
     >
-      <svg className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
       </svg>
     </button>
   );
 
-  const CustomNextArrow = ({ onClick }: any) => (
+  const DesktopNextArrow = ({ onClick }: any) => (
     <button
       onClick={onClick}
-      className="absolute top-1/2 right-2 z-20 transform -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-xl border border-gray-200 hover:shadow-2xl hover:scale-110 transition-all duration-200 flex items-center justify-center group hover:bg-student-blue"
-      aria-label="Next"
+      className="desktop-carousel-arrow next"
+      aria-label="Next slide"
     >
-      <svg className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
       </svg>
     </button>
   );
 
-  // Banner carousel settings - Enhanced
+  // Enhanced Banner carousel settings - Mobile vs Desktop Optimized
   const bannerSettings = {
     dots: true,
     infinite: true,
-    speed: 800,
+    speed: 500, // Faster transitions
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 5000,
+    autoplaySpeed: 4500,
     fade: true,
-    prevArrow: <CustomPrevArrow />,
-    nextArrow: <CustomNextArrow />,
+    
+    // Desktop-only arrows (hidden on mobile via CSS)
+    prevArrow: <DesktopPrevArrow />,
+    nextArrow: <DesktopNextArrow />,
+    
     pauseOnHover: true,
-    dotsClass: "slick-dots custom-dots",
+    pauseOnFocus: true,
+    
+    // Enhanced mobile settings
+    swipe: true,
+    swipeToSlide: true,
+    touchMove: true,
+    touchThreshold: 5, // More sensitive
+    draggable: true,
+    accessibility: true,
+    
+    dotsClass: "slick-dots mobile-banner-dots",
+    
+    responsive: [
+      {
+        breakpoint: 1023, // Mobile and tablet
+        settings: {
+          arrows: false, // No arrows on mobile
+          fade: false, // Slide instead of fade for better mobile performance
+          speed: 400,
+          autoplaySpeed: 5000,
+          swipe: true,
+          touchMove: true,
+        }
+      }
+    ]
   };
 
   // Product carousel settings - Enhanced
   const productCarouselSettings = {
     dots: false,
     infinite: false,
-    speed: 500,
+    speed: 400,
     slidesToShow: 4,
     slidesToScroll: 2,
-    prevArrow: <CustomPrevArrow />,
-    nextArrow: <CustomNextArrow />,
+    prevArrow: <DesktopPrevArrow />,
+    nextArrow: <DesktopNextArrow />,
     swipeToSlide: true,
     responsive: [
       {
         breakpoint: 1280,
-        settings: { slidesToShow: 3, slidesToScroll: 1 },
+        settings: { slidesToShow: 3, slidesToScroll: 1, arrows: false },
       },
       {
         breakpoint: 1024,
-        settings: { slidesToShow: 2, slidesToScroll: 1 },
+        settings: { slidesToShow: 2, slidesToScroll: 1, arrows: false },
       },
       {
         breakpoint: 640,
-        settings: { slidesToShow: 1, slidesToScroll: 1 },
+        settings: { slidesToShow: 1, slidesToScroll: 1, arrows: false },
       },
     ],
   };
@@ -414,28 +440,28 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
   const categorySettings = {
     dots: false,
     infinite: false,
-    speed: 500,
+    speed: 400,
     slidesToShow: 5,
     slidesToScroll: 2,
-    prevArrow: <CustomPrevArrow />,
-    nextArrow: <CustomNextArrow />,
+    prevArrow: <DesktopPrevArrow />,
+    nextArrow: <DesktopNextArrow />,
     swipeToSlide: true,
     responsive: [
       {
         breakpoint: 1280,
-        settings: { slidesToShow: 4, slidesToScroll: 1 },
+        settings: { slidesToShow: 4, slidesToScroll: 1, arrows: false },
       },
       {
         breakpoint: 1024,
-        settings: { slidesToShow: 3, slidesToScroll: 1 },
+        settings: { slidesToShow: 3, slidesToScroll: 1, arrows: false },
       },
       {
         breakpoint: 768,
-        settings: { slidesToShow: 2, slidesToScroll: 1 },
+        settings: { slidesToShow: 2, slidesToScroll: 1, arrows: false },
       },
       {
         breakpoint: 480,
-        settings: { slidesToShow: 1, slidesToScroll: 1 },
+        settings: { slidesToShow: 1, slidesToScroll: 1, arrows: false },
       },
     ],
   };
@@ -490,11 +516,11 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
       {/* 🚀 NEW: Cache status indicator (remove in production) */}
       {process.env.NODE_ENV === 'development' && <CacheStatusIndicator />}
 
-      {/* 2. Banner Carousel - Enhanced with loading states */}
-      <section className="relative max-w-7xl mx-auto mt-8 px-4">
-        <div className="rounded-2xl overflow-hidden shadow-2xl relative">
+      {/* 2. Enhanced Mobile-First Banner Carousel */}
+      <section className="banner-container relative max-w-7xl mx-auto">
+        <div className="rounded-xl lg:rounded-2xl overflow-hidden shadow-lg lg:shadow-2xl relative">
           {loadingStates.banners ? (
-            <div className="animate-pulse bg-gray-200 h-64 md:h-80 lg:h-96 xl:h-[500px] rounded-2xl"></div>
+            <div className="banner-loading"></div>
           ) : banners.length > 0 ? (
             <Slider {...bannerSettings}>
               {banners.map((banner) => (
@@ -503,7 +529,7 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
                     href={banner.link_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block relative"
+                    className="block relative touch-optimized"
                   >
                     {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
                       <video
@@ -511,24 +537,23 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
                         autoPlay
                         muted
                         loop
-                        className="w-full h-64 md:h-80 lg:h-96 xl:h-[500px] object-cover"
+                        playsInline
+                        className="banner-image touch-optimized"
                       />
                     ) : (
                       <img
                         src={banner.media_url}
                         alt={banner.name}
-                        className="w-full h-64 md:h-80 lg:h-96 xl:h-[500px] object-cover"
-                        loading="eager" // Priority loading for banners
+                        className="banner-image touch-optimized"
+                        loading="eager"
                       />
                     )}
                     
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-                    
-                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12">
-                      <h2 className="text-white text-2xl md:text-3xl lg:text-4xl font-bold mb-2 drop-shadow-lg">
+                    <div className="banner-overlay">
+                      <h2 className="banner-title">
                         {banner.name}
                       </h2>
-                      <button className="btn-action inline-flex items-center">
+                      <button className="banner-btn">
                         Shop Now
                         <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -540,10 +565,10 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
               ))}
             </Slider>
           ) : (
-            <div className="bg-student-hero h-64 md:h-80 lg:h-96 flex items-center justify-center rounded-2xl">
-              <div className="text-center text-white">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Welcome to StudentStore</h2>
-                <p className="text-xl opacity-90">Your personal shopping companion for student life</p>
+            <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
+              <div className="text-center text-white px-4">
+                <h2 className="banner-title">Welcome to StudentStore</h2>
+                <p className="text-sm sm:text-base lg:text-lg opacity-90">Your personal shopping companion for student life</p>
               </div>
             </div>
           )}
@@ -552,12 +577,12 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
 
       {/* 3. Recently Visited Products - Enhanced */}
       {recentlyViewed.length > 0 && (
-        <section className="max-w-7xl mx-auto mt-16 px-4">
-          <div className="mb-8">
-            <h3 className="text-3xl md:text-4xl font-bold text-student-primary mb-2">
+        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+          <div className="mb-6 lg:mb-8">
+            <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">
               Continue with these so you won't miss
             </h3>
-            <p className="text-student-secondary text-lg">Pick up where you left off - don't lose these great finds!</p>
+            <p className="text-student-secondary text-base lg:text-lg">Pick up where you left off - don't lose these great finds!</p>
           </div>
           
           <div className="relative">
@@ -574,12 +599,12 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
 
       {/* 4. Trending Popular Products - Enhanced */}
       {trendingProducts.length > 0 && (
-        <section className="max-w-7xl mx-auto mt-16 px-4">
-          <div className="mb-8">
-            <h3 className="text-3xl md:text-4xl font-bold text-student-primary mb-2">
+        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+          <div className="mb-6 lg:mb-8">
+            <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">
               🔥 Trending Among Students
             </h3>
-            <p className="text-student-secondary text-lg">What students are buying right now - join the trend!</p>
+            <p className="text-student-secondary text-base lg:text-lg">What students are buying right now - join the trend!</p>
           </div>
           
           {loadingStates.trending ? (
@@ -599,10 +624,10 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
       )}
 
       {/* 5. Category Cards - Enhanced */}
-      <section className="max-w-7xl mx-auto mt-16 px-4">
-        <div className="mb-8">
-          <h3 className="text-3xl md:text-4xl font-bold text-student-primary mb-2">Shop by Category</h3>
-          <p className="text-student-secondary text-lg">Find exactly what you need for your student life</p>
+      <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+        <div className="mb-6 lg:mb-8">
+          <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">Shop by Category</h3>
+          <p className="text-student-secondary text-base lg:text-lg">Find exactly what you need for your student life</p>
         </div>
         
         {loadingStates.categories ? (
@@ -637,12 +662,12 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
       </section>
 
       {/* 6. Featured Products - Enhanced */}
-      <section className="max-w-7xl mx-auto mt-16 px-4">
-        <div className="text-center mb-12">
-          <h3 className="text-3xl md:text-4xl font-bold text-student-primary mb-4">
+      <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+        <div className="text-center mb-8 lg:mb-12">
+          <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-4">
             Featured Products
           </h3>
-          <p className="text-student-secondary text-lg max-w-2xl mx-auto">
+          <p className="text-student-secondary text-base lg:text-lg max-w-2xl mx-auto">
             Handpicked products that students love, with the best deals and reviews
           </p>
         </div>
@@ -650,7 +675,7 @@ const checkAndRefreshExpiredCache = useCallback(async () => {
         {loadingStates.products ? (
           <LoadingSection title="Featured Products" />
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
