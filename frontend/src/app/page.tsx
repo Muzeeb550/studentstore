@@ -444,73 +444,83 @@ export default function HomePage() {
     ],
   };
 
-// Research-Based Category Settings - Optimal Mobile Experience
+// Enhanced Category Settings - Smooth Bidirectional Swiping + 30% Width
 const categorySettings = {
   dots: false,
-  infinite: false, // Research shows this prevents confusion
-  speed: 350, // Optimal transition speed
+  infinite: false,
+  speed: 300, // Smooth but not too fast
   slidesToShow: 5,
   slidesToScroll: 1,
   prevArrow: <DesktopPrevArrow />,
   nextArrow: <DesktopNextArrow />,
   
-  // Research-based smooth swiping
+  // Enhanced bidirectional swiping
   swipe: true,
   swipeToSlide: true,
   touchMove: true,
-  touchThreshold: 4, // Balanced sensitivity
+  touchThreshold: 5, // Balanced for both directions
   draggable: true,
   accessibility: true,
-  cssEase: 'ease-out',
+  cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)', // Smooth easing both ways
   useCSS: true,
   useTransform: true,
   waitForAnimate: false,
+  focusOnSelect: false,
+  
+  // Enhanced mobile momentum
+  edgeFriction: 0.15, // Smooth edge handling
   
   responsive: [
     {
       breakpoint: 1280,
       settings: { 
-        slidesToShow: 5,
+        slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 300,
-        touchThreshold: 4
+        speed: 280,
+        touchThreshold: 5,
+        edgeFriction: 0.15
       },
     },
     {
       breakpoint: 1024,
       settings: { 
-        slidesToShow: 4,
+        slidesToShow: 3.3, // 30% width - shows 3.3 cards
         slidesToScroll: 1,
         arrows: false,
-        speed: 300,
-        touchThreshold: 4
+        speed: 280,
+        touchThreshold: 5,
+        edgeFriction: 0.15,
+        centerPadding: '5px'
       },
     },
     {
       breakpoint: 768,
       settings: { 
-        slidesToShow: 4,
+        slidesToShow: 3.3, // 30% width system
         slidesToScroll: 1,
         arrows: false,
-        speed: 300,
-        touchThreshold: 4,
-        centerPadding: '10px' // Show 0.3 of next card
+        speed: 260,
+        touchThreshold: 5,
+        edgeFriction: 0.15,
+        centerPadding: '8px'
       },
     },
     {
       breakpoint: 480,
       settings: { 
-        slidesToShow: 4,
+        slidesToShow: 3.2, // 30% width on small mobile
         slidesToScroll: 1,
         arrows: false,
-        speed: 300,
-        touchThreshold: 4,
-        centerPadding: '15px' // Show 0.3 of next card
+        speed: 260,
+        touchThreshold: 5,
+        edgeFriction: 0.15,
+        centerPadding: '10px'
       },
     },
   ],
 };
+
 
 
   // 🚀 NEW: Enhanced loading component
@@ -670,13 +680,13 @@ const categorySettings = {
         </section>
       )}
 
-      {/* 5. Category Cards - Research-Based Design */}
+     {/* 5. Category Cards - 30% Width + Light Red Background */}
 <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-  {/* Research-Based Light Gray Background */}
+  {/* Light Red Background Container */}
   <div className="category-section-research">
     <div className="mb-6 lg:mb-8 text-center">
-      <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">Shop by Category</h3>
-      <p className="text-student-secondary text-base lg:text-lg">Find exactly what you need for your student life</p>
+      <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2">Shop by Category</h3>
+      <p className="text-red-50 text-base lg:text-lg opacity-90">Find exactly what you need for your student life</p>
     </div>
     
     {loadingStates.categories ? (
@@ -685,14 +695,14 @@ const categorySettings = {
       <div className="relative">
         <Slider {...categorySettings}>
           {categories.map((category) => (
-            <div key={category.id} className="px-2">
+            <div key={category.id} className="px-1"> {/* 3px padding each side */}
               <CategoryCard category={category} />
             </div>
           ))}
         </Slider>
       </div>
     ) : (
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+      <div className="flex gap-1.5"> {/* 6px total gap */}
         {[
           { icon: '📚', name: 'Textbooks', desc: 'New & used books' },
           { icon: '💻', name: 'Electronics', desc: 'Laptops & gadgets' },
@@ -700,7 +710,7 @@ const categorySettings = {
           { icon: '🎒', name: 'Campus Gear', desc: 'Backpacks & more' },
           { icon: '📖', name: 'Courses', desc: 'Online learning' },
         ].map((category, index) => (
-          <div key={index} className="category-card-research">
+          <div key={index} className="category-card-research flex-1">
             <div className="category-image-area">
               <div className="text-4xl">{category.icon}</div>
             </div>
@@ -713,6 +723,7 @@ const categorySettings = {
     )}
   </div>
 </section>
+
 
 
 

@@ -165,7 +165,7 @@ body {
 }
 
 /* ===========================================
-   RESEARCH-BASED MOBILE CATEGORY SYSTEM
+   RESEARCH-BASED MOBILE CATEGORY SYSTEM - UPDATED
    =========================================== */
 
 /* Category Touch Optimization */
@@ -175,11 +175,11 @@ body {
   user-select: none;
 }
 
-/* Research-Based Category Card - Following E-commerce Best Practices */
+/* Research-Based Category Card - 30% Width */
 .category-card-research {
   background-color: var(--bg-card);
   border: 1px solid var(--border-light);
-  border-radius: 12px; /* Slightly rounded corners */
+  border-radius: 12px;
   text-align: center;
   transition: all 0.25s ease-out;
   cursor: pointer;
@@ -190,12 +190,12 @@ body {
   position: relative;
   overflow: hidden;
   
-  /* Research-Based Uniform Sizing */
+  /* 30% Width System */
   width: 100%;
-  height: 120px; /* Optimal mobile height */
+  height: 120px;
   min-height: 120px;
   max-height: 120px;
-  padding: 10px; /* Balanced padding */
+  padding: 10px;
   
   /* Optimal touch interactions */
   touch-action: manipulation;
@@ -220,18 +220,18 @@ body {
   transition: all 0.15s ease;
 }
 
-/* 70% Image Area - Research-Based */
+/* 70% Image Area */
 .category-image-area {
-  flex: 0.7; /* 70% of space */
+  flex: 0.7;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   margin-bottom: 4px;
-  height: 84px; /* 70% of 120px */
+  height: 84px;
 }
 
-/* Research-Based Icon Size - 48px optimal */
+/* Research-Based Icon Size */
 .category-icon-research {
   width: 48px;
   height: 48px;
@@ -243,26 +243,26 @@ body {
 .category-fallback-research {
   width: 48px;
   height: 48px;
-  font-size: 1.25rem; /* 20px */
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
-/* 30% Text Area - Research-Based */
+/* 30% Text Area */
 .category-text-area {
-  flex: 0.3; /* 30% of space */
+  flex: 0.3;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 36px; /* 30% of 120px */
+  height: 36px;
 }
 
 /* Research-Based Typography */
 .category-title-research {
-  font-size: 0.8125rem; /* 13px - optimal mobile size */
+  font-size: 0.8125rem;
   line-height: 1.1;
   margin: 0;
-  font-weight: 500; /* Medium weight - research-based */
+  font-weight: 500;
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -282,7 +282,7 @@ body {
   }
   
   .category-image-area {
-    height: 77px; /* 70% of 110px */
+    height: 77px;
   }
   
   .category-icon-research {
@@ -293,15 +293,15 @@ body {
   .category-fallback-research {
     width: 42px;
     height: 42px;
-    font-size: 1.125rem; /* 18px */
+    font-size: 1.125rem;
   }
   
   .category-text-area {
-    height: 33px; /* 30% of 110px */
+    height: 33px;
   }
   
   .category-title-research {
-    font-size: 0.75rem; /* 12px */
+    font-size: 0.75rem;
   }
 }
 
@@ -315,7 +315,7 @@ body {
   }
   
   .category-image-area {
-    height: 80px; /* 70% of 115px */
+    height: 80px;
   }
   
   .category-icon-research {
@@ -326,15 +326,15 @@ body {
   .category-fallback-research {
     width: 45px;
     height: 45px;
-    font-size: 1.1875rem; /* 19px */
+    font-size: 1.1875rem;
   }
   
   .category-text-area {
-    height: 35px; /* 30% of 115px */
+    height: 35px;
   }
   
   .category-title-research {
-    font-size: 0.8125rem; /* 13px */
+    font-size: 0.8125rem;
   }
 }
 
@@ -349,7 +349,7 @@ body {
   }
   
   .category-image-area {
-    height: 91px; /* 70% of 130px */
+    height: 91px;
   }
   
   .category-icon-research {
@@ -360,15 +360,15 @@ body {
   .category-fallback-research {
     width: 52px;
     height: 52px;
-    font-size: 1.375rem; /* 22px */
+    font-size: 1.375rem;
   }
   
   .category-text-area {
-    height: 39px; /* 30% of 130px */
+    height: 39px;
   }
   
   .category-title-research {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
   }
 }
 
@@ -383,7 +383,7 @@ body {
   }
   
   .category-image-area {
-    height: 98px; /* 70% of 140px */
+    height: 98px;
   }
   
   .category-icon-research {
@@ -394,15 +394,15 @@ body {
   .category-fallback-research {
     width: 56px;
     height: 56px;
-    font-size: 1.5rem; /* 24px */
+    font-size: 1.5rem;
   }
   
   .category-text-area {
-    height: 42px; /* 30% of 140px */
+    height: 42px;
   }
   
   .category-title-research {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
     font-weight: 500;
   }
 }
@@ -418,7 +418,7 @@ body {
   }
   
   .category-image-area {
-    height: 112px; /* 70% of 160px */
+    height: 112px;
   }
   
   .category-icon-research {
@@ -429,24 +429,25 @@ body {
   .category-fallback-research {
     width: 64px;
     height: 64px;
-    font-size: 1.75rem; /* 28px */
+    font-size: 1.75rem;
   }
   
   .category-text-area {
-    height: 48px; /* 30% of 160px */
+    height: 48px;
   }
   
   .category-title-research {
-    font-size: 0.9375rem; /* 15px */
+    font-size: 0.9375rem;
   }
 }
 
-/* Research-Based Section Background - Light Gray */
+/* UPDATED: Light Red Background - Red-400 */
 .category-section-research {
-  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%); /* red-400 gradient */
   border-radius: 20px;
   padding: 1.5rem 1rem;
   margin: 1rem 0;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1); /* subtle red shadow */
 }
 
 @media (min-width: 768px) {
