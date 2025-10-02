@@ -2345,3 +2345,168 @@ select:focus {
     margin: 0; /* No margins needed without arrows */
   }
 }
+
+/* ===========================================
+   MOBILE CAROUSEL ENHANCEMENTS - 2 CARD + PEEK LAYOUT FIX
+   =========================================== */
+
+/* Recently Viewed Carousel Container - Better Spacing */
+.recently-viewed-carousel {
+  position: relative;
+  margin: 0;
+  padding: 0 0.5rem; /* Small padding to prevent edge clipping */
+  overflow: visible;
+}
+
+/* Trending Carousel Container - Better Spacing */
+.trending-carousel-container {
+  position: relative;
+  margin: 0;
+  padding: 0 0.5rem; /* Small padding to prevent edge clipping */
+  overflow: visible;
+}
+
+/* Mobile Optimization - Perfect Card Gap */
+@media (max-width: 640px) {
+  .recently-viewed-carousel .slick-list,
+  .trending-carousel-container .slick-list {
+    padding: 0 !important;
+    margin: 0 -0.25rem; /* Tighter spacing for mobile */
+    overflow: visible;
+  }
+  
+  .recently-viewed-carousel .slick-slide,
+  .trending-carousel-container .slick-slide {
+    padding: 0 0.25rem; /* Consistent gap between cards */
+  }
+  
+  /* Remove any extra margins */
+  .recently-viewed-carousel .slick-track,
+  .trending-carousel-container .slick-track {
+    margin: 0;
+    display: flex;
+    align-items: stretch;
+  }
+}
+
+/* Ultra-Smooth Touch Scrolling for Mobile */
+@media (max-width: 768px) {
+  .recently-viewed-carousel .slick-list,
+  .trending-carousel-container .slick-list {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+  
+  .recently-viewed-carousel .slick-track,
+  .trending-carousel-container .slick-track {
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+  }
+  
+  /* Better touch response */
+  .recently-viewed-carousel .slick-slide,
+  .trending-carousel-container .slick-slide {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  
+  /* Smooth dragging feedback */
+  .recently-viewed-carousel .slick-list.dragging,
+  .trending-carousel-container .slick-list.dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+}
+
+/* Peek Indicator - Visual Cue for More Content */
+@media (max-width: 640px) {
+  .recently-viewed-carousel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(
+      to bottom, 
+      transparent 15%, 
+      rgba(79, 70, 229, 0.15) 50%, 
+      transparent 85%
+    );
+    pointer-events: none;
+    z-index: 5;
+  }
+  
+  .trending-carousel-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(
+      to bottom, 
+      transparent 15%, 
+      rgba(249, 115, 22, 0.15) 50%, 
+      transparent 85%
+    );
+    pointer-events: none;
+    z-index: 5;
+  }
+}
+
+/* Ensure Cards Don't Overflow on Small Screens */
+@media (max-width: 480px) {
+  .recently-viewed-card,
+  .trending-card {
+    max-width: 100%;
+    min-width: 0;
+  }
+  
+  .recently-viewed-carousel,
+  .trending-carousel-container {
+    padding: 0 0.25rem;
+  }
+}
+
+/* Fix Card Consistency Across Breakpoints */
+@media (min-width: 641px) and (max-width: 768px) {
+  .recently-viewed-carousel .slick-slide,
+  .trending-carousel-container .slick-slide {
+    padding: 0 0.5rem;
+  }
+}
+
+/* Desktop Arrow Positioning Fix */
+@media (min-width: 1280px) {
+  .recently-viewed-carousel {
+    margin: 0 3.5rem;
+    padding: 0;
+  }
+  
+  .trending-carousel-container {
+    margin: 0 3.5rem;
+    padding: 0;
+  }
+  
+  .desktop-carousel-arrow.enhanced-arrow,
+  .trending-carousel-arrow.ultra-smooth-arrow {
+    pointer-events: auto;
+    z-index: 50;
+  }
+}
+
+/* Prevent Card Stretching */
+.recently-viewed-carousel .slick-slide > div,
+.trending-carousel-container .slick-slide > div {
+  height: 100%;
+  display: flex;
+}
+
+.recently-viewed-carousel .slick-slide > div > *,
+.trending-carousel-container .slick-slide > div > * {
+  width: 100%;
+}
