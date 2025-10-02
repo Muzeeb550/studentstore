@@ -165,26 +165,24 @@ body {
 }
 
 /* ===========================================
-   MOBILE-FIRST LARGE IMAGE CATEGORY SYSTEM
+   UNIFORM MOBILE-FIRST CATEGORY SYSTEM
    =========================================== */
 
 /* Mobile Touch Category Optimization */
 .mobile-touch-category {
-  /* Enhanced touch responsiveness */
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
 }
 
-/* Base Category Card - Mobile First with Large Images */
-.category-card {
+/* Base Uniform Category Card - Fixed Sizing */
+.category-card-uniform {
   background-color: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 16px;
+  border: 2px solid var(--border-light);
+  border-radius: 20px;
   text-align: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -192,232 +190,271 @@ body {
   position: relative;
   overflow: hidden;
   
-  /* Mobile-first sizing with large images */
-  min-height: 140px;
+  /* UNIFORM SIZING - All cards same size */
+  width: 100%;
+  height: 160px;
+  min-height: 160px;
+  max-height: 160px;
   padding: 12px;
   
   /* Enhanced touch optimizations */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transform: translateZ(0); /* Hardware acceleration */
+  transform: translateZ(0);
   backface-visibility: hidden;
+  
+  /* Enhanced shadow for visibility */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* Mobile Category Card Specific Styles */
+/* Mobile Category Card Touch Feedback */
 .mobile-category-card {
-  /* Smoother mobile touch feedback */
   transition: all 0.2s ease-out;
   will-change: transform;
 }
 
-.mobile-category-card:active {
-  transform: scale(0.96);
-  box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25);
+.mobile-category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: var(--student-orange);
 }
 
-/* Mobile Large Icon Container - 80% Space */
-.mobile-large-icon-container {
-  /* Takes 80% of card height */
-  flex: 0.8;
+.mobile-category-card:active {
+  transform: scale(0.97);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.25);
+}
+
+/* 90% Image Section - Large and Prominent */
+.category-image-section {
+  flex: 0.9; /* 90% of space */
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin-bottom: 8px;
-  
-  /* Mobile: Large container */
-  min-height: 80px;
+  margin-bottom: 4px;
+  min-height: 120px; /* Ensures uniform image area */
 }
 
-/* Mobile Large Category Icon - Much Bigger */
-.mobile-large-category-icon {
-  /* Mobile: Much larger icons */
-  width: 4rem;
-  height: 4rem;
-  max-width: 90%;
-  max-height: 90%;
+/* Large Category Icon - Prominent */
+.category-icon-large {
+  width: 5rem;
+  height: 5rem;
+  max-width: 85%;
+  max-height: 85%;
 }
 
-/* Mobile Large Category Fallback */
-.mobile-large-category-fallback {
-  /* Mobile: Large fallback */
-  width: 4rem;
-  height: 4rem;
-  font-size: 1.5rem; /* Large text */
+/* Large Category Fallback */
+.category-fallback-large {
+  width: 5rem;
+  height: 5rem;
+  font-size: 1.75rem;
+  font-weight: 600;
 }
 
-/* Mobile Category Text Section - 20% Space */
-.mobile-category-text-section {
-  /* Takes 20% of card height */
-  flex: 0.2;
+/* 10% Text Section - Minimal */
+.category-text-section {
+  flex: 0.1; /* 10% of space */
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 24px;
+  min-height: 24px; /* Ensures uniform text area */
 }
 
-/* Mobile Large Category Title - Better Typography */
-.mobile-large-category-title {
-  /* Mobile: Larger, more readable text */
-  font-size: 0.9375rem; /* 15px */
+/* Uniform Category Title - Less Bold */
+.category-title-uniform {
+  font-size: 0.875rem; /* 14px */
   line-height: 1.1;
   margin: 0;
-  font-weight: 600;
+  font-weight: 500; /* Less bold - was 600/700 */
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 /* Small Mobile (up to 480px) */
 @media (max-width: 480px) {
-  .category-card {
-    min-height: 130px;
+  .category-card-uniform {
+    height: 140px;
+    min-height: 140px;
+    max-height: 140px;
     padding: 10px;
-    border-radius: 14px;
+    border-radius: 16px;
   }
   
-  .mobile-large-icon-container {
-    min-height: 75px;
-    margin-bottom: 6px;
+  .category-image-section {
+    min-height: 105px;
   }
   
-  .mobile-large-category-icon {
-    width: 3.5rem;
-    height: 3.5rem;
+  .category-icon-large {
+    width: 4rem;
+    height: 4rem;
   }
   
-  .mobile-large-category-fallback {
-    width: 3.5rem;
-    height: 3.5rem;
-    font-size: 1.375rem;
+  .category-fallback-large {
+    width: 4rem;
+    height: 4rem;
+    font-size: 1.5rem;
   }
   
-  .mobile-large-category-title {
-    font-size: 0.875rem; /* 14px */
+  .category-title-uniform {
+    font-size: 0.8125rem; /* 13px */
   }
 }
 
 /* Large Mobile/Small Tablet (481px - 640px) */
 @media (min-width: 481px) and (max-width: 640px) {
-  .category-card {
+  .category-card-uniform {
+    height: 150px;
     min-height: 150px;
-    padding: 14px;
+    max-height: 150px;
+    padding: 12px;
   }
   
-  .mobile-large-icon-container {
-    min-height: 90px;
-    margin-bottom: 8px;
+  .category-image-section {
+    min-height: 112px;
   }
   
-  .mobile-large-category-icon {
+  .category-icon-large {
     width: 4.5rem;
     height: 4.5rem;
   }
   
-  .mobile-large-category-fallback {
+  .category-fallback-large {
     width: 4.5rem;
     height: 4.5rem;
     font-size: 1.625rem;
   }
   
-  .mobile-large-category-title {
-    font-size: 1rem; /* 16px */
+  .category-title-uniform {
+    font-size: 0.875rem; /* 14px */
   }
 }
 
 /* Tablet (641px - 768px) */
 @media (min-width: 641px) and (max-width: 768px) {
-  .category-card {
+  .category-card-uniform {
+    height: 170px;
     min-height: 170px;
-    padding: 16px;
-    border-radius: 16px;
+    max-height: 170px;
+    padding: 14px;
+    border-radius: 18px;
   }
   
-  .mobile-large-icon-container {
-    min-height: 100px;
-    margin-bottom: 10px;
+  .category-image-section {
+    min-height: 125px;
   }
   
-  .mobile-large-category-icon {
-    width: 5rem;
-    height: 5rem;
+  .category-icon-large {
+    width: 5.5rem;
+    height: 5.5rem;
   }
   
-  .mobile-large-category-fallback {
-    width: 5rem;
-    height: 5rem;
-    font-size: 1.75rem;
+  .category-fallback-large {
+    width: 5.5rem;
+    height: 5.5rem;
+    font-size: 1.875rem;
   }
   
-  .mobile-large-category-title {
-    font-size: 1.0625rem; /* 17px */
+  .category-title-uniform {
+    font-size: 0.9375rem; /* 15px */
   }
 }
 
-/* Desktop Styles (769px and above) */
+/* Desktop (769px and above) */
 @media (min-width: 769px) {
-  .category-card {
-    /* Desktop: Full feature set */
+  .category-card-uniform {
+    height: 200px;
     min-height: 200px;
-    height: 240px;
-    max-height: 240px;
-    padding: 20px;
-    border-radius: 16px;
-    justify-content: space-between; /* Full layout on desktop */
+    max-height: 200px;
+    padding: 16px;
+    border-radius: 20px;
   }
   
-  .category-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.15);
-    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-light) 100%);
-    border-color: var(--student-green);
+  .category-image-section {
+    min-height: 150px;
   }
   
-  .mobile-large-icon-container {
-    /* Desktop: Reset to normal container */
-    flex: none;
+  .category-icon-large {
     width: 6rem;
     height: 6rem;
-    margin-bottom: 1.5rem;
-    min-height: auto;
   }
   
-  .mobile-large-category-icon {
-    width: 4rem;
-    height: 4rem;
-  }
-  
-  .mobile-large-category-fallback {
-    width: 4rem;
-    height: 4rem;
+  .category-fallback-large {
+    width: 6rem;
+    height: 6rem;
     font-size: 2rem;
   }
   
-  .mobile-category-text-section {
-    /* Desktop: Reset to normal flex */
-    flex: 1;
-    min-height: auto;
-  }
-  
-  .mobile-large-category-title {
-    font-size: 1.125rem; /* 18px */
-    margin-bottom: 0.75rem;
-    font-weight: 700;
+  .category-title-uniform {
+    font-size: 1rem; /* 16px */
+    font-weight: 500; /* Consistent less bold */
   }
 }
 
 /* Large Desktop (1280px and above) */
 @media (min-width: 1280px) {
-  .category-card {
-    height: 260px;
-    min-height: 260px;
-    max-height: 260px;
-    padding: 24px;
+  .category-card-uniform {
+    height: 220px;
+    min-height: 220px;
+    max-height: 220px;
+    padding: 18px;
   }
   
-  .mobile-large-category-title {
-    font-size: 1.25rem; /* 20px */
+  .category-image-section {
+    min-height: 165px;
+  }
+  
+  .category-icon-large {
+    width: 6.5rem;
+    height: 6.5rem;
+  }
+  
+  .category-fallback-large {
+    width: 6.5rem;
+    height: 6.5rem;
+    font-size: 2.25rem;
+  }
+  
+  .category-title-uniform {
+    font-size: 1.0625rem; /* 17px */
   }
 }
+
+/* Light Orange Category Section Background */
+.category-section-bg {
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+  border-radius: 24px;
+  padding: 2rem 1rem;
+  margin: 1rem 0;
+}
+
+@media (min-width: 768px) {
+  .category-section-bg {
+    padding: 3rem 2rem;
+    margin: 2rem 0;
+  }
+}
+
+/* Mobile Touch Ripple Effect */
+.mobile-touch-ripple {
+  pointer-events: none;
+  border-radius: inherit;
+  transition: opacity 0.2s ease;
+}
+
+/* Clean up old category card styles */
+.category-card,
+.mobile-large-icon-container,
+.mobile-large-category-icon,
+.mobile-large-category-fallback,
+.mobile-category-text-section,
+.mobile-large-category-title {
+  display: none; /* Hide old styles */
+}
+
 
 /* ===========================================
    ENHANCED MOBILE TOUCH INTERACTIONS

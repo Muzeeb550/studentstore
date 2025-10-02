@@ -444,80 +444,73 @@ export default function HomePage() {
     ],
   };
 
-  // 🔧 FIXED: Category slider settings - Smooth Touch Mobile-First (Type-Safe)
+  // Ultra-Smooth Category Settings - Buttery Smooth Swiping
 const categorySettings = {
   dots: false,
-  infinite: false,
-  speed: 300, // Faster transitions for smoother feel
+  infinite: true, // Enable infinite for smoother experience
+  speed: 250, // Super fast transitions
   slidesToShow: 5,
-  slidesToScroll: 1, // Single slide scroll for smoother experience
+  slidesToScroll: 1,
   prevArrow: <DesktopPrevArrow />,
   nextArrow: <DesktopNextArrow />,
   
-  // Enhanced mobile touch settings
+  // Ultra-smooth mobile settings
   swipe: true,
   swipeToSlide: true,
   touchMove: true,
-  touchThreshold: 5, // More sensitive for smoother swiping
+  touchThreshold: 3, // Very sensitive
   draggable: true,
   accessibility: true,
+  cssEase: 'ease-out', // Smoother easing
   useCSS: true,
   useTransform: true,
-  lazyLoad: 'ondemand' as const, // Fixed: Proper TypeScript typing
-  
-  // Smooth animation settings
-  cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)',
-  waitForAnimate: false,
-  focusOnSelect: false,
   
   responsive: [
     {
       breakpoint: 1280,
       settings: { 
-        slidesToShow: 4, 
-        slidesToScroll: 1, 
+        slidesToShow: 4,
+        slidesToScroll: 1,
         arrows: false,
-        speed: 250,
-        touchThreshold: 4
+        speed: 200,
+        touchThreshold: 2
       },
     },
     {
       breakpoint: 1024,
       settings: { 
-        slidesToShow: 3, 
-        slidesToScroll: 1, 
+        slidesToShow: 3,
+        slidesToScroll: 1,
         arrows: false,
-        speed: 250,
-        touchThreshold: 4
+        speed: 200,
+        touchThreshold: 2
       },
     },
     {
       breakpoint: 768,
       settings: { 
-        slidesToShow: 2.2, // Show partial next card for better UX
-        slidesToScroll: 1, 
+        slidesToShow: 2.5, // Show partial cards
+        slidesToScroll: 1,
         arrows: false,
-        speed: 200,
-        touchThreshold: 3,
-        centerPadding: '10px',
-        swipeToSlide: true
+        speed: 180,
+        touchThreshold: 2,
+        centerPadding: '15px'
       },
     },
     {
       breakpoint: 480,
       settings: { 
-        slidesToShow: 1.3, // Show partial next card
-        slidesToScroll: 1, 
+        slidesToShow: 1.8, // Show partial next card
+        slidesToScroll: 1,
         arrows: false,
-        speed: 200,
-        touchThreshold: 3,
-        centerPadding: '20px',
-        swipeToSlide: true,
-        variableWidth: false
+        speed: 180,
+        touchThreshold: 2,
+        centerPadding: '25px'
       },
     },
   ],
 };
+
 
 
   // 🚀 NEW: Enhanced loading component
@@ -677,43 +670,50 @@ const categorySettings = {
         </section>
       )}
 
-      {/* 5. Category Cards - Enhanced Mobile-First */}
-      <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-        <div className="mb-6 lg:mb-8">
-          <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">Shop by Category</h3>
-          <p className="text-student-secondary text-base lg:text-lg">Find exactly what you need for your student life</p>
-        </div>
-        
-        {loadingStates.categories ? (
-          <LoadingSection title="Categories" />
-        ) : categories.length > 0 ? (
-          <div className="relative">
-            <Slider {...categorySettings}>
-              {categories.map((category) => (
-                <div key={category.id} className="px-2">
-                  <CategoryCard category={category} />
-                </div>
-              ))}
-            </Slider>
+      {/* 5. Category Cards - Enhanced Mobile-First with Light Orange Background */}
+<section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+  {/* Light Orange Background Container */}
+  <div className="category-section-bg">
+    <div className="mb-6 lg:mb-8 text-center">
+      <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">Shop by Category</h3>
+      <p className="text-student-secondary text-base lg:text-lg">Find exactly what you need for your student life</p>
+    </div>
+    
+    {loadingStates.categories ? (
+      <LoadingSection title="Categories" />
+    ) : categories.length > 0 ? (
+      <div className="relative">
+        <Slider {...categorySettings}>
+          {categories.map((category) => (
+            <div key={category.id} className="px-2">
+              <CategoryCard category={category} />
+            </div>
+          ))}
+        </Slider>
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        {[
+          { icon: '📚', name: 'Textbooks', desc: 'New & used books' },
+          { icon: '💻', name: 'Electronics', desc: 'Laptops & gadgets' },
+          { icon: '✏️', name: 'Stationery', desc: 'Pens & notebooks' },
+          { icon: '🎒', name: 'Campus Gear', desc: 'Backpacks & more' },
+          { icon: '📖', name: 'Courses', desc: 'Online learning' },
+        ].map((category, index) => (
+          <div key={index} className="category-card-uniform">
+            <div className="category-image-section">
+              <div className="text-4xl">{category.icon}</div>
+            </div>
+            <div className="category-text-section">
+              <h4 className="category-title-uniform font-medium text-student-primary">{category.name}</h4>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {[
-              { icon: '📚', name: 'Textbooks', desc: 'New & used books' },
-              { icon: '💻', name: 'Electronics', desc: 'Laptops & gadgets' },
-              { icon: '✏️', name: 'Stationery', desc: 'Pens & notebooks' },
-              { icon: '🎒', name: 'Campus Gear', desc: 'Backpacks & more' },
-              { icon: '📖', name: 'Courses', desc: 'Online learning' },
-            ].map((category, index) => (
-              <div key={index} className="category-card">
-                <div className="text-4xl mb-4">{category.icon}</div>
-                <h4 className="font-semibold text-student-primary mb-1">{category.name}</h4>
-                <p className="text-sm text-student-secondary">{category.desc}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
 
       {/* 6. Featured Products - Enhanced */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
