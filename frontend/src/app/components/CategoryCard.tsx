@@ -29,24 +29,15 @@ export default function CategoryCard({ category }: CategoryCardProps) {
   }, []);
 
   return (
-    <Link href={`/categories/${category.id}`} className="group cursor-pointer mobile-touch-friendly">
+    <Link href={`/categories/${category.id}`} className="group cursor-pointer mobile-touch-category">
       <div className="category-card mobile-category-card">
-        {/* Mobile-First Icon Container */}
-        <div className={`
-          mx-auto mb-3 sm:mb-4 md:mb-6 
-          bg-gradient-to-br from-student-blue/10 to-student-green/10 
-          rounded-2xl sm:rounded-3xl 
-          flex items-center justify-center 
-          group-hover:from-student-blue/20 group-hover:to-student-green/20 
-          transition-all duration-300 group-hover:scale-110 
-          shadow-lg group-hover:shadow-xl
-          mobile-icon-container
-        `}>
+        {/* Mobile-First Large Image Container - 80% */}
+        <div className="mobile-large-icon-container">
           {category.icon_url ? (
             <img 
               src={category.icon_url} 
               alt={category.name}
-              className="mobile-category-icon object-contain transition-transform duration-300 group-hover:scale-110"
+              className="mobile-large-category-icon object-contain transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
@@ -56,16 +47,16 @@ export default function CategoryCard({ category }: CategoryCardProps) {
             />
           ) : null}
           
-          {/* Mobile-Optimized Fallback */}
+          {/* Large Mobile-Optimized Fallback */}
           <div 
             className={`
+              mobile-large-category-fallback
               bg-gradient-to-br from-student-blue to-student-green 
-              rounded-xl sm:rounded-2xl 
+              rounded-2xl sm:rounded-3xl 
               flex items-center justify-center 
               text-white font-bold 
-              transition-transform duration-300 group-hover:scale-110 
-              shadow-inner
-              mobile-category-fallback
+              transition-transform duration-300 group-hover:scale-105
+              shadow-lg
               ${category.icon_url ? 'hidden' : 'flex'}
             `}
             style={{ display: category.icon_url ? 'none' : 'flex' }}
@@ -74,21 +65,19 @@ export default function CategoryCard({ category }: CategoryCardProps) {
           </div>
         </div>
         
-        {/* Mobile vs Desktop Content */}
-        <div className="flex-1 flex flex-col justify-between mobile-category-content">
-          <div>
-            {/* Category Name - Mobile Optimized */}
-            <h4 className="mobile-category-title font-bold text-student-primary group-hover:text-student-blue transition-colors duration-200 text-center">
-              {category.name}
-            </h4>
-            
-            {/* Description - Hidden on Mobile, Shown on Desktop */}
-            {!isMobile && (
-              <p className="text-sm text-student-secondary leading-relaxed line-clamp-2 text-center mb-4 desktop-only-description">
-                {category.description}
-              </p>
-            )}
-          </div>
+        {/* Mobile vs Desktop Content - 20% */}
+        <div className="mobile-category-text-section">
+          {/* Category Name - Mobile Optimized Large Text */}
+          <h4 className="mobile-large-category-title font-bold text-student-primary group-hover:text-student-blue transition-colors duration-200 text-center">
+            {category.name}
+          </h4>
+          
+          {/* Description - Hidden on Mobile, Shown on Desktop */}
+          {!isMobile && (
+            <p className="text-sm text-student-secondary leading-relaxed line-clamp-2 text-center mb-4 desktop-only-description">
+              {category.description}
+            </p>
+          )}
           
           {/* Desktop-Only Hover Action */}
           {!isMobile && (

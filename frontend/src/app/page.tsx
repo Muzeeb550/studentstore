@@ -444,19 +444,32 @@ export default function HomePage() {
     ],
   };
 
-  // Category slider settings - Enhanced Mobile-First
+  // 🔧 FIXED: Category slider settings - Smooth Touch Mobile-First (Type-Safe)
 const categorySettings = {
   dots: false,
   infinite: false,
-  speed: 400,
+  speed: 300, // Faster transitions for smoother feel
   slidesToShow: 5,
-  slidesToScroll: 2,
+  slidesToScroll: 1, // Single slide scroll for smoother experience
   prevArrow: <DesktopPrevArrow />,
   nextArrow: <DesktopNextArrow />,
+  
+  // Enhanced mobile touch settings
+  swipe: true,
   swipeToSlide: true,
-  touchThreshold: 8, // Optimized for mobile touch
+  touchMove: true,
+  touchThreshold: 5, // More sensitive for smoother swiping
   draggable: true,
   accessibility: true,
+  useCSS: true,
+  useTransform: true,
+  lazyLoad: 'ondemand' as const, // Fixed: Proper TypeScript typing
+  
+  // Smooth animation settings
+  cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  waitForAnimate: false,
+  focusOnSelect: false,
+  
   responsive: [
     {
       breakpoint: 1280,
@@ -464,7 +477,8 @@ const categorySettings = {
         slidesToShow: 4, 
         slidesToScroll: 1, 
         arrows: false,
-        touchThreshold: 6
+        speed: 250,
+        touchThreshold: 4
       },
     },
     {
@@ -473,28 +487,33 @@ const categorySettings = {
         slidesToShow: 3, 
         slidesToScroll: 1, 
         arrows: false,
-        touchThreshold: 6
+        speed: 250,
+        touchThreshold: 4
       },
     },
     {
       breakpoint: 768,
       settings: { 
-        slidesToShow: 2, 
+        slidesToShow: 2.2, // Show partial next card for better UX
         slidesToScroll: 1, 
         arrows: false,
-        touchThreshold: 5,
-        centerPadding: '20px'
+        speed: 200,
+        touchThreshold: 3,
+        centerPadding: '10px',
+        swipeToSlide: true
       },
     },
     {
       breakpoint: 480,
       settings: { 
-        slidesToShow: 1, 
+        slidesToShow: 1.3, // Show partial next card
         slidesToScroll: 1, 
         arrows: false,
-        touchThreshold: 5,
-        centerMode: true,
-        centerPadding: '40px'
+        speed: 200,
+        touchThreshold: 3,
+        centerPadding: '20px',
+        swipeToSlide: true,
+        variableWidth: false
       },
     },
   ],
@@ -658,7 +677,7 @@ const categorySettings = {
         </section>
       )}
 
-      {/* 5. Category Cards - Enhanced */}
+      {/* 5. Category Cards - Enhanced Mobile-First */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
         <div className="mb-6 lg:mb-8">
           <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">Shop by Category</h3>

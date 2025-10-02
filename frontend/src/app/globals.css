@@ -165,172 +165,191 @@ body {
 }
 
 /* ===========================================
-   MOBILE-FIRST CATEGORY CARD SYSTEM
+   MOBILE-FIRST LARGE IMAGE CATEGORY SYSTEM
    =========================================== */
 
-/* Base Category Card - Mobile First */
+/* Mobile Touch Category Optimization */
+.mobile-touch-category {
+  /* Enhanced touch responsiveness */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* Base Category Card - Mobile First with Large Images */
 .category-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-light);
-  border-radius: 12px; /* Smaller radius on mobile */
+  border-radius: 16px;
   text-align: center;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Center content on mobile */
+  justify-content: center;
   align-items: center;
   position: relative;
   overflow: hidden;
   
-  /* Mobile-first sizing */
-  min-height: 120px; /* Much shorter on mobile */
-  padding: 12px; /* Less padding on mobile */
+  /* Mobile-first sizing with large images */
+  min-height: 140px;
+  padding: 12px;
   
-  /* Touch optimizations */
+  /* Enhanced touch optimizations */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0); /* Hardware acceleration */
+  backface-visibility: hidden;
 }
 
 /* Mobile Category Card Specific Styles */
 .mobile-category-card {
-  /* Enhanced mobile touch feedback */
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Smoother mobile touch feedback */
+  transition: all 0.2s ease-out;
+  will-change: transform;
 }
 
 .mobile-category-card:active {
-  transform: scale(0.98);
-  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2);
+  transform: scale(0.96);
+  box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25);
 }
 
-/* Mobile Icon Container */
-.mobile-icon-container {
-  /* Mobile: 48px container */
-  width: 3rem;
-  height: 3rem;
+/* Mobile Large Icon Container - 80% Space */
+.mobile-large-icon-container {
+  /* Takes 80% of card height */
+  flex: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 8px;
+  
+  /* Mobile: Large container */
+  min-height: 80px;
 }
 
-/* Mobile Category Icon */
-.mobile-category-icon {
-  /* Mobile: 32px icon */
-  width: 2rem;
-  height: 2rem;
+/* Mobile Large Category Icon - Much Bigger */
+.mobile-large-category-icon {
+  /* Mobile: Much larger icons */
+  width: 4rem;
+  height: 4rem;
+  max-width: 90%;
+  max-height: 90%;
 }
 
-/* Mobile Category Fallback */
-.mobile-category-fallback {
-  /* Mobile: 48px fallback */
-  width: 3rem;
-  height: 3rem;
-  font-size: 1.25rem; /* 20px text */
+/* Mobile Large Category Fallback */
+.mobile-large-category-fallback {
+  /* Mobile: Large fallback */
+  width: 4rem;
+  height: 4rem;
+  font-size: 1.5rem; /* Large text */
 }
 
-/* Mobile Category Title */
-.mobile-category-title {
-  /* Mobile: 14px title */
-  font-size: 0.875rem;
-  line-height: 1.2;
-  margin-bottom: 0;
+/* Mobile Category Text Section - 20% Space */
+.mobile-category-text-section {
+  /* Takes 20% of card height */
+  flex: 0.2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-height: 24px;
 }
 
-/* Mobile Category Content */
-.mobile-category-content {
-  min-height: auto; /* Let content determine height on mobile */
-}
-
-/* Mobile Touch Friendly */
-.mobile-touch-friendly {
-  /* Minimum touch target size */
-  min-height: 48px;
-  min-width: 48px;
+/* Mobile Large Category Title - Better Typography */
+.mobile-large-category-title {
+  /* Mobile: Larger, more readable text */
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.1;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* Small Mobile (up to 480px) */
 @media (max-width: 480px) {
   .category-card {
-    min-height: 110px;
+    min-height: 130px;
     padding: 10px;
-    border-radius: 10px;
+    border-radius: 14px;
   }
   
-  .mobile-icon-container {
-    width: 2.5rem;
-    height: 2.5rem;
-    margin-bottom: 0.5rem;
+  .mobile-large-icon-container {
+    min-height: 75px;
+    margin-bottom: 6px;
   }
   
-  .mobile-category-icon {
-    width: 1.75rem;
-    height: 1.75rem;
+  .mobile-large-category-icon {
+    width: 3.5rem;
+    height: 3.5rem;
   }
   
-  .mobile-category-fallback {
-    width: 2.5rem;
-    height: 2.5rem;
-    font-size: 1rem;
+  .mobile-large-category-fallback {
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1.375rem;
   }
   
-  .mobile-category-title {
-    font-size: 0.8125rem; /* 13px */
+  .mobile-large-category-title {
+    font-size: 0.875rem; /* 14px */
   }
 }
 
 /* Large Mobile/Small Tablet (481px - 640px) */
 @media (min-width: 481px) and (max-width: 640px) {
   .category-card {
-    min-height: 130px;
+    min-height: 150px;
     padding: 14px;
   }
   
-  .mobile-icon-container {
-    width: 3.5rem;
-    height: 3.5rem;
+  .mobile-large-icon-container {
+    min-height: 90px;
+    margin-bottom: 8px;
   }
   
-  .mobile-category-icon {
-    width: 2.25rem;
-    height: 2.25rem;
+  .mobile-large-category-icon {
+    width: 4.5rem;
+    height: 4.5rem;
   }
   
-  .mobile-category-fallback {
-    width: 3.5rem;
-    height: 3.5rem;
-    font-size: 1.375rem;
+  .mobile-large-category-fallback {
+    width: 4.5rem;
+    height: 4.5rem;
+    font-size: 1.625rem;
   }
   
-  .mobile-category-title {
-    font-size: 0.9375rem; /* 15px */
+  .mobile-large-category-title {
+    font-size: 1rem; /* 16px */
   }
 }
 
 /* Tablet (641px - 768px) */
 @media (min-width: 641px) and (max-width: 768px) {
   .category-card {
-    min-height: 160px;
+    min-height: 170px;
     padding: 16px;
-    border-radius: 14px;
+    border-radius: 16px;
   }
   
-  .mobile-icon-container {
-    width: 4rem;
-    height: 4rem;
-    margin-bottom: 1rem;
+  .mobile-large-icon-container {
+    min-height: 100px;
+    margin-bottom: 10px;
   }
   
-  .mobile-category-icon {
-    width: 2.5rem;
-    height: 2.5rem;
+  .mobile-large-category-icon {
+    width: 5rem;
+    height: 5rem;
   }
   
-  .mobile-category-fallback {
-    width: 4rem;
-    height: 4rem;
-    font-size: 1.5rem;
+  .mobile-large-category-fallback {
+    width: 5rem;
+    height: 5rem;
+    font-size: 1.75rem;
   }
   
-  .mobile-category-title {
-    font-size: 1rem; /* 16px */
+  .mobile-large-category-title {
+    font-size: 1.0625rem; /* 17px */
   }
 }
 
@@ -353,26 +372,36 @@ body {
     border-color: var(--student-green);
   }
   
-  .mobile-icon-container {
+  .mobile-large-icon-container {
+    /* Desktop: Reset to normal container */
+    flex: none;
     width: 6rem;
     height: 6rem;
     margin-bottom: 1.5rem;
+    min-height: auto;
   }
   
-  .mobile-category-icon {
+  .mobile-large-category-icon {
     width: 4rem;
     height: 4rem;
   }
   
-  .mobile-category-fallback {
+  .mobile-large-category-fallback {
     width: 4rem;
     height: 4rem;
     font-size: 2rem;
   }
   
-  .mobile-category-title {
+  .mobile-category-text-section {
+    /* Desktop: Reset to normal flex */
+    flex: 1;
+    min-height: auto;
+  }
+  
+  .mobile-large-category-title {
     font-size: 1.125rem; /* 18px */
     margin-bottom: 0.75rem;
+    font-weight: 700;
   }
 }
 
@@ -385,19 +414,20 @@ body {
     padding: 24px;
   }
   
-  .mobile-category-title {
+  .mobile-large-category-title {
     font-size: 1.25rem; /* 20px */
   }
 }
 
 /* ===========================================
-   MOBILE CATEGORY TOUCH INTERACTIONS
+   ENHANCED MOBILE TOUCH INTERACTIONS
    =========================================== */
 
 /* Mobile Touch Ripple Effect */
 .mobile-touch-ripple {
   pointer-events: none;
   border-radius: inherit;
+  transition: opacity 0.2s ease;
 }
 
 /* Desktop-only elements (hidden on mobile) */
@@ -407,6 +437,26 @@ body {
   .desktop-only-badge {
     display: none !important;
   }
+}
+
+/* Enhanced Mobile Scrolling Performance */
+@media (max-width: 768px) {
+  .category-card {
+    /* Optimized for mobile scrolling */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
+
+/* Legacy mobile styles cleanup - Remove old classes */
+.mobile-icon-container,
+.mobile-category-icon,
+.mobile-category-fallback,
+.mobile-category-title,
+.mobile-category-content,
+.mobile-touch-friendly {
+  /* These classes are replaced by the new large image system */
+  display: none;
 }
 
 /* Responsive card sizing for mobile/desktop consistency */
