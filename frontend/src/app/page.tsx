@@ -390,167 +390,177 @@ export default function HomePage() {
     ],
   };
 
-  // FIXED: Enhanced Recently Viewed Carousel Settings - Desktop Arrows Work Smoothly
-  const recentlyViewedSettings = {
-    dots: false,
-    infinite: false,
-    speed: 400, // Optimized speed
-    slidesToShow: 4,
-    slidesToScroll: 1, // Scroll 1 card for precision
-    prevArrow: <DesktopPrevArrow />,
-    nextArrow: <DesktopNextArrow />,
-    swipeToSlide: true,
-    
-    // FIXED: Desktop arrow optimization
-    touchThreshold: 5,
-    cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-    useCSS: true,
-    useTransform: true,
-    waitForAnimate: false,
-    focusOnSelect: false,
-    accessibility: true,
-    
-    responsive: [
-      { 
-        breakpoint: 1280, 
-        settings: { 
-          slidesToShow: 3, 
-          slidesToScroll: 1, 
-          arrows: true,
-          speed: 350,
-          touchThreshold: 4
-        } 
-      },
-      { 
-        breakpoint: 1024, 
-        settings: { 
-          slidesToShow: 2, 
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 300,
-          touchThreshold: 4,
-          centerPadding: '10px'
-        } 
-      },
-      { 
-        breakpoint: 640, 
-        settings: { 
-          slidesToShow: 1.8, 
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 280,
-          touchThreshold: 3,
-          centerPadding: '15px'
-        } 
-      },
-      { 
-        breakpoint: 480, 
-        settings: { 
-          slidesToShow: 1.4, 
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 250,
-          touchThreshold: 3,
-          centerPadding: '20px'
-        } 
-      },
-    ],
-  };
+// MOBILE-OPTIMIZED: Recently Viewed Carousel Settings - 2 Cards + Peek
+const recentlyViewedSettings = {
+  dots: false,
+  infinite: false,
+  speed: 350, // Faster for mobile
+  slidesToShow: 4,
+  slidesToScroll: 1,
+  prevArrow: <DesktopPrevArrow />,
+  nextArrow: <DesktopNextArrow />,
+  swipeToSlide: true,
+  
+  // Enhanced mobile physics
+  touchThreshold: 4,
+  cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+  useCSS: true,
+  useTransform: true,
+  waitForAnimate: false,
+  focusOnSelect: false,
+  accessibility: true,
+  
+  responsive: [
+    { 
+      breakpoint: 1280, 
+      settings: { 
+        slidesToShow: 3, 
+        slidesToScroll: 1, 
+        arrows: true,
+        speed: 320,
+        touchThreshold: 3
+      } 
+    },
+    { 
+      breakpoint: 1024, 
+      settings: { 
+        slidesToShow: 2.8, // Show more cards on tablet
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 300,
+        touchThreshold: 3,
+        centerPadding: '12px'
+      } 
+    },
+    { 
+      breakpoint: 768, 
+      settings: { 
+        slidesToShow: 2.5, // 2.5 cards for better preview
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 280,
+        touchThreshold: 2,
+        centerPadding: '15px'
+      } 
+    },
+    { 
+      breakpoint: 640, 
+      settings: { 
+        slidesToShow: 2.3, // OPTIMAL: 2 full + 30% peek
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 250,
+        touchThreshold: 2,
+        centerPadding: '18px'
+      } 
+    },
+    { 
+      breakpoint: 480, 
+      settings: { 
+        slidesToShow: 2.1, // 2 full + 10% peek on small mobile
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 230,
+        touchThreshold: 1,
+        centerPadding: '20px'
+      } 
+    },
+  ],
+};
 
-  // FIXED: Ultra-Smooth Trending Carousel Settings
-  const trendingSettings = {
-    dots: false,
-    infinite: false,
-    speed: 400, // Optimized speed
-    slidesToShow: 4,
-    slidesToScroll: 1, // FIXED: Scroll 1 card at a time for precision
-    prevArrow: <TrendingPrevArrow />,
-    nextArrow: <TrendingNextArrow />,
-    swipeToSlide: true,
-    
-    // FIXED: Ultra-smooth optimizations
-    touchThreshold: 5,
-    swipeThreshold: 10, // Higher threshold to prevent accidental swipes
-    cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Smoother easing
-    useCSS: true,
-    useTransform: true,
-    waitForAnimate: false,
-    focusOnSelect: false,
-    accessibility: true,
-    draggable: true,
-    
-    // FIXED: Prevent stickiness
-    touchMove: true,
-    variableWidth: false, // Ensure consistent card widths
-    centerMode: false, // Disable center mode that can cause stickiness
-    
-    responsive: [
-      { 
-        breakpoint: 1536, // Extra large screens
-        settings: { 
-          slidesToShow: 4, 
-          slidesToScroll: 1,
-          arrows: true,
-          speed: 400,
-          touchThreshold: 5
-        } 
-      },
-      { 
-        breakpoint: 1280, 
-        settings: { 
-          slidesToShow: 3, 
-          slidesToScroll: 1, 
-          arrows: true,
-          speed: 350,
-          touchThreshold: 4
-        } 
-      },
-      { 
-        breakpoint: 1024, 
-        settings: { 
-          slidesToShow: 2.5, // Show partial next card
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 300,
-          touchThreshold: 4,
-          centerPadding: '20px'
-        } 
-      },
-      { 
-        breakpoint: 768, 
-        settings: { 
-          slidesToShow: 2.2, 
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 280,
-          touchThreshold: 3,
-          centerPadding: '15px'
-        } 
-      },
-      { 
-        breakpoint: 640, 
-        settings: { 
-          slidesToShow: 1.8, 
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 250,
-          touchThreshold: 3,
-          centerPadding: '25px'
-        } 
-      },
-      { 
-        breakpoint: 480, 
-        settings: { 
-          slidesToShow: 1.4, 
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 250,
-          touchThreshold: 2,
-          centerPadding: '30px'
-        } 
-      },
-    ],
-  };
+// MOBILE-OPTIMIZED: Trending Carousel Settings - 2 Cards + Peek  
+const trendingSettings = {
+  dots: false,
+  infinite: false,
+  speed: 350,
+  slidesToShow: 4,
+  slidesToScroll: 1,
+  prevArrow: <TrendingPrevArrow />,
+  nextArrow: <TrendingNextArrow />,
+  swipeToSlide: true,
+  
+  // Enhanced mobile physics
+  touchThreshold: 4,
+  swipeThreshold: 8,
+  cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+  useCSS: true,
+  useTransform: true,
+  waitForAnimate: false,
+  focusOnSelect: false,
+  accessibility: true,
+  draggable: true,
+  touchMove: true,
+  variableWidth: false,
+  centerMode: false,
+  
+  responsive: [
+    { 
+      breakpoint: 1536,
+      settings: { 
+        slidesToShow: 4, 
+        slidesToScroll: 1,
+        arrows: true,
+        speed: 350,
+        touchThreshold: 4
+      } 
+    },
+    { 
+      breakpoint: 1280, 
+      settings: { 
+        slidesToShow: 3, 
+        slidesToScroll: 1, 
+        arrows: true,
+        speed: 320,
+        touchThreshold: 3
+      } 
+    },
+    { 
+      breakpoint: 1024, 
+      settings: { 
+        slidesToShow: 2.8, // Show more cards on tablet
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 300,
+        touchThreshold: 3,
+        centerPadding: '12px'
+      } 
+    },
+    { 
+      breakpoint: 768, 
+      settings: { 
+        slidesToShow: 2.5, // 2.5 cards for better preview
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 280,
+        touchThreshold: 2,
+        centerPadding: '15px'
+      } 
+    },
+    { 
+      breakpoint: 640, 
+      settings: { 
+        slidesToShow: 2.3, // OPTIMAL: 2 full + 30% peek
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 250,
+        touchThreshold: 2,
+        centerPadding: '18px'
+      } 
+    },
+    { 
+      breakpoint: 480, 
+      settings: { 
+        slidesToShow: 2.1, // 2 full + 10% peek on small mobile
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 230,
+        touchThreshold: 1,
+        centerPadding: '20px'
+      } 
+    },
+  ],
+};
+
 
   // FIXED: Enhanced Product Carousel Settings (for other sections)
   const productCarouselSettings = {

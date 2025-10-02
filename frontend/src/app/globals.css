@@ -1505,7 +1505,7 @@ select:focus {
   border: 1px solid rgba(79, 70, 229, 0.1);
 }
 
-/* FIXED: Recently Viewed Card - Mobile Optimized Sizing */
+/* Recently Viewed Card - Mobile Optimized Sizing */
 .recently-viewed-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
   border: 2px solid rgba(79, 70, 229, 0.12);
@@ -1518,13 +1518,13 @@ select:focus {
   position: relative;
   backdrop-filter: blur(10px);
   
-  /* FIXED: Mobile-optimized sizing */
+  /* Mobile-optimized sizing */
   width: 100%;
   height: 380px;
   min-height: 380px;
   max-height: 380px;
   
-  /* FIXED: Enhanced touch optimizations */
+  /* Enhanced touch optimizations */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transform: translateZ(0);
@@ -1546,7 +1546,7 @@ select:focus {
   transition: all 0.15s ease;
 }
 
-/* FIXED: Recently Viewed Image Container - Mobile Optimized */
+/* Recently Viewed Image Container - Mobile Optimized */
 .recently-viewed-image-container {
   position: relative;
   flex: 0.68; /* Slightly larger image area for mobile */
@@ -1612,7 +1612,7 @@ select:focus {
   opacity: 1;
 }
 
-/* FIXED: Recently Viewed Info - Mobile Optimized */
+/* Recently Viewed Info - Mobile Optimized */
 .recently-viewed-info {
   flex: 0.32; /* 32% of card height */
   padding: 14px 16px;
@@ -1661,7 +1661,7 @@ select:focus {
   min-height: 14px;
 }
 
-/* FIXED: Continue CTA - Mobile Touch Optimized */
+/* Continue CTA - Mobile Touch Optimized */
 .recently-viewed-cta {
   background: linear-gradient(45deg, var(--student-blue) 0%, #06b6d4 100%);
   color: white;
@@ -1701,7 +1701,7 @@ select:focus {
   border: 1px solid rgba(249, 115, 22, 0.1);
 }
 
-/* FIXED: Trending Card - Mobile Optimized Sizing */
+/* Trending Card - Mobile Optimized Sizing */
 .trending-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(254, 252, 232, 0.98) 100%);
   border: 2px solid rgba(249, 115, 22, 0.12);
@@ -1714,13 +1714,13 @@ select:focus {
   position: relative;
   backdrop-filter: blur(10px);
   
-  /* FIXED: Mobile-optimized sizing */
+  /* Mobile-optimized sizing */
   width: 100%;
   height: 400px;
   min-height: 400px;
   max-height: 400px;
   
-  /* FIXED: Enhanced touch optimizations */
+  /* Enhanced touch optimizations */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transform: translateZ(0);
@@ -1742,7 +1742,7 @@ select:focus {
   transition: all 0.15s ease;
 }
 
-/* FIXED: Trending Image Container - Mobile Optimized */
+/* Trending Image Container - Mobile Optimized */
 .trending-image-container {
   position: relative;
   flex: 0.68; /* Slightly larger image area for mobile */
@@ -1822,7 +1822,7 @@ select:focus {
   opacity: 0.15;
 }
 
-/* FIXED: Trending Info - Mobile Optimized */
+/* Trending Info - Mobile Optimized */
 .trending-info {
   flex: 0.32; /* 32% of card height */
   padding: 14px 16px;
@@ -1871,7 +1871,7 @@ select:focus {
   min-height: 14px;
 }
 
-/* FIXED: Trending CTA - Mobile Touch Optimized */
+/* Trending CTA - Mobile Touch Optimized */
 .trending-cta {
   background: linear-gradient(45deg, var(--student-orange) 0%, #ef4444 100%);
   color: white;
@@ -1917,24 +1917,231 @@ select:focus {
 }
 
 /* ===========================================
+   MOBILE-OPTIMIZED CARD SIZING - 2 CARD LAYOUT
+   =========================================== */
+
+/* Mobile-Optimized Recently Viewed Cards */
+@media (max-width: 640px) {
+  .recently-viewed-card {
+    height: 320px;
+    min-height: 320px;
+    max-height: 320px;
+  }
+  
+  .recently-viewed-image-container {
+    min-height: 205px; /* 64% of 320px - better for 2-card layout */
+  }
+  
+  .recently-viewed-info {
+    min-height: 115px; /* 36% of 320px */
+    padding: 12px 14px;
+  }
+  
+  .recently-viewed-title {
+    font-size: 0.875rem; /* 14px - better for smaller cards */
+    -webkit-line-clamp: 2;
+  }
+  
+  .recently-viewed-description {
+    font-size: 0.6875rem; /* 11px - compact for mobile */
+    -webkit-line-clamp: 2;
+  }
+  
+  .recently-viewed-context {
+    font-size: 0.625rem; /* 10px */
+  }
+  
+  .recently-viewed-cta {
+    min-height: 40px; /* Slightly smaller but still touch-friendly */
+    font-size: 0.75rem; /* 12px */
+    padding: 8px 12px;
+  }
+}
+
+/* Mobile-Optimized Trending Cards */
+@media (max-width: 640px) {
+  .trending-card {
+    height: 340px;
+    min-height: 340px;
+    max-height: 340px;
+  }
+  
+  .trending-image-container {
+    min-height: 218px; /* 64% of 340px */
+  }
+  
+  .trending-info {
+    min-height: 122px; /* 36% of 340px */
+    padding: 12px 14px;
+  }
+  
+  .trending-title {
+    font-size: 0.875rem; /* 14px - better for smaller cards */
+    -webkit-line-clamp: 2;
+  }
+  
+  .trending-description {
+    font-size: 0.6875rem; /* 11px - compact for mobile */
+    -webkit-line-clamp: 2;
+  }
+  
+  .trending-social-proof {
+    font-size: 0.625rem; /* 10px */
+  }
+  
+  .trending-cta {
+    min-height: 40px; /* Slightly smaller but still touch-friendly */
+    font-size: 0.75rem; /* 12px */
+    padding: 8px 12px;
+  }
+  
+  /* Optimize badge sizing for smaller cards */
+  .trending-rank-badge span,
+  .trending-growth-badge span,
+  .trending-hot-badge span {
+    font-size: 0.625rem; /* 10px */
+    padding: 2px 6px;
+  }
+}
+
+/* Small Mobile Optimizations */
+@media (max-width: 480px) {
+  .recently-viewed-card {
+    height: 300px;
+    min-height: 300px;
+    max-height: 300px;
+  }
+  
+  .recently-viewed-image-container {
+    min-height: 192px; /* 64% of 300px */
+  }
+  
+  .recently-viewed-info {
+    min-height: 108px; /* 36% of 300px */
+    padding: 10px 12px;
+  }
+  
+  .trending-card {
+    height: 320px;
+    min-height: 320px;
+    max-height: 320px;
+  }
+  
+  .trending-image-container {
+    min-height: 205px; /* 64% of 320px */
+  }
+  
+  .trending-info {
+    min-height: 115px; /* 36% of 320px */
+    padding: 10px 12px;
+  }
+}
+
+/* ===========================================
+   ENHANCED MOBILE TOUCH PHYSICS
+   =========================================== */
+
+/* Enhanced Touch Scrolling for Mobile */
+@media (max-width: 768px) {
+  .recently-viewed-carousel,
+  .trending-carousel {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  .recently-viewed-carousel .slick-track,
+  .trending-carousel .slick-track {
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+  }
+  
+  .recently-viewed-carousel .slick-list,
+  .trending-carousel .slick-list {
+    overflow: hidden;
+  }
+  
+  /* Better touch feedback */
+  .recently-viewed-card:active,
+  .trending-card:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* Ultra-smooth mobile scrolling */
+@media (max-width: 768px) {
+  .slick-track {
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    will-change: transform;
+  }
+  
+  .slick-list {
+    transform: translate3d(0, 0, 0);
+  }
+  
+  /* Reduce momentum scrolling issues */
+  .recently-viewed-carousel .slick-list,
+  .trending-carousel .slick-list {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  
+  .recently-viewed-carousel .slick-slide,
+  .trending-carousel .slick-slide {
+    scroll-snap-align: start;
+  }
+  
+  /* Enhanced dragging experience */
+  .slick-list.dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+  
+  .slick-list.dragging * {
+    pointer-events: none;
+  }
+}
+
+/* Peek Indicator Styles */
+@media (max-width: 640px) {
+  .recently-viewed-carousel::after,
+  .trending-carousel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -1px;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent 20%, rgba(79, 70, 229, 0.1) 50%, transparent 80%);
+    pointer-events: none;
+    z-index: 5;
+  }
+  
+  .trending-carousel::after {
+    background: linear-gradient(to bottom, transparent 20%, rgba(249, 115, 22, 0.1) 50%, transparent 80%);
+  }
+}
+
+/* ===========================================
    FIXED TRENDING CAROUSEL - ULTRA SMOOTH
    =========================================== */
 
-/* FIXED: Trending Carousel Container */
+/* Trending Carousel Container */
 .trending-carousel-container {
   position: relative;
   margin: 0 4rem; /* More space for arrows */
   overflow: visible; /* Prevent clipping */
 }
 
-/* FIXED: Ultra-Smooth Trending Arrow Buttons */
+/* Ultra-Smooth Trending Arrow Buttons */
 .trending-carousel-arrow.ultra-smooth-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 50; /* Even higher z-index */
   
-  /* FIXED: Ultra-responsive sizing */
+  /* Ultra-responsive sizing */
   width: 4.5rem;
   height: 4.5rem;
   background: rgba(255, 255, 255, 0.98);
@@ -1942,7 +2149,7 @@ select:focus {
   border: 2px solid rgba(249, 115, 22, 0.2);
   border-radius: 50%;
   
-  /* FIXED: Instant response - no delays */
+  /* Instant response - no delays */
   transition: all 0.15s ease-out;
   cursor: pointer;
   
@@ -1950,13 +2157,13 @@ select:focus {
   align-items: center;
   justify-content: center;
   
-  /* FIXED: Performance optimizations */
+  /* Performance optimizations */
   will-change: transform, background-color, box-shadow;
   transform-origin: center;
   user-select: none;
   pointer-events: auto;
   
-  /* FIXED: Trending-specific styling */
+  /* Trending-specific styling */
   box-shadow: 0 4px 20px rgba(249, 115, 22, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -1980,7 +2187,7 @@ select:focus {
   right: -2.25rem;
 }
 
-/* FIXED: Trending Carousel Slider Overrides */
+/* Trending Carousel Slider Overrides */
 .trending-carousel-container .slick-slider {
   position: relative;
   display: block;
@@ -2010,7 +2217,7 @@ select:focus {
   transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* FIXED: Prevent card stickiness */
+/* Prevent card stickiness */
 .trending-carousel-container .slick-slide {
   float: left;
   height: auto;
@@ -2024,14 +2231,14 @@ select:focus {
   height: 100%;
 }
 
-/* FIXED: Enhanced Desktop Arrow Buttons - More Responsive */
+/* Enhanced Desktop Arrow Buttons - More Responsive */
 .desktop-carousel-arrow.enhanced-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 40; /* Higher z-index */
   
-  /* FIXED: Larger, more clickable area */
+  /* Larger, more clickable area */
   width: 4rem;
   height: 4rem;
   background: rgba(255, 255, 255, 0.95);
@@ -2039,7 +2246,7 @@ select:focus {
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 50%;
   
-  /* FIXED: Instant response */
+  /* Instant response */
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   
@@ -2047,12 +2254,12 @@ select:focus {
   align-items: center;
   justify-content: center;
   
-  /* FIXED: Better performance */
+  /* Better performance */
   will-change: transform, background-color, box-shadow;
   transform-origin: center;
   user-select: none;
   
-  /* FIXED: Enhanced shadow for better visibility */
+  /* Enhanced shadow for better visibility */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
@@ -2076,14 +2283,14 @@ select:focus {
   right: -2rem; /* Better positioning */
 }
 
-/* FIXED: Enhanced Carousel Container */
+/* Enhanced Carousel Container */
 .recently-viewed-carousel,
 .trending-carousel {
   position: relative;
   margin: 0 3rem; /* Space for arrows */
 }
 
-/* FIXED: Mobile responsive adjustments for trending */
+/* Mobile responsive adjustments for trending */
 @media (max-width: 1279px) {
   .trending-carousel-arrow.ultra-smooth-arrow {
     display: none !important;
@@ -2107,7 +2314,7 @@ select:focus {
   }
 }
 
-/* FIXED: Override any conflicting slick carousel styles */
+/* Override any conflicting slick carousel styles */
 .trending-carousel-container .slick-slider .slick-track,
 .trending-carousel-container .slick-slider .slick-list {
   transform: translate3d(0, 0, 0);
@@ -2118,7 +2325,7 @@ select:focus {
   transform: none !important;
 }
 
-/* FIXED: Ensure smooth dragging */
+/* Ensure smooth dragging */
 .trending-carousel-container .slick-list.dragging {
   cursor: grabbing;
 }
@@ -2127,82 +2334,7 @@ select:focus {
   pointer-events: none;
 }
 
-/* FIXED: Mobile Responsive Adjustments */
-@media (max-width: 640px) {
-  .recently-viewed-card {
-    height: 350px;
-    min-height: 350px;
-    max-height: 350px;
-  }
-  
-  .recently-viewed-image-container {
-    min-height: 238px; /* 68% of 350px */
-  }
-  
-  .recently-viewed-info {
-    min-height: 112px; /* 32% of 350px */
-    padding: 12px 14px;
-  }
-  
-  .trending-card {
-    height: 370px;
-    min-height: 370px;
-    max-height: 370px;
-  }
-  
-  .trending-image-container {
-    min-height: 252px; /* 68% of 370px */
-  }
-  
-  .trending-info {
-    min-height: 118px; /* 32% of 370px */
-    padding: 12px 14px;
-  }
-  
-  .recently-viewed-carousel,
-  .trending-carousel {
-    margin: 0 1rem; /* Smaller margins on mobile */
-  }
-}
-
-@media (max-width: 480px) {
-  .recently-viewed-card {
-    height: 330px;
-    min-height: 330px;
-    max-height: 330px;
-  }
-  
-  .recently-viewed-image-container {
-    min-height: 224px; /* 68% of 330px */
-  }
-  
-  .recently-viewed-info {
-    min-height: 106px; /* 32% of 330px */
-    padding: 10px 12px;
-  }
-  
-  .trending-card {
-    height: 350px;
-    min-height: 350px;
-    max-height: 350px;
-  }
-  
-  .trending-image-container {
-    min-height: 238px; /* 68% of 350px */
-  }
-  
-  .trending-info {
-    min-height: 112px; /* 32% of 350px */
-    padding: 10px 12px;
-  }
-  
-  .recently-viewed-carousel,
-  .trending-carousel {
-    margin: 0 0.5rem; /* Even smaller margins on small mobile */
-  }
-}
-
-/* FIXED: Hide arrows on mobile/tablet */
+/* Hide arrows on mobile/tablet */
 @media (max-width: 1279px) {
   .desktop-carousel-arrow.enhanced-arrow {
     display: none !important;
