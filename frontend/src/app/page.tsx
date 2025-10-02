@@ -572,32 +572,34 @@ const categoryDesktopSettings = {
 
 
 
-      {/* Featured Products */}
-      <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-        <div className="text-center mb-8 lg:mb-12">
-          <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-4">
-            Featured Products
-          </h3>
-          <p className="text-student-secondary text-base lg:text-lg max-w-2xl mx-auto">
-            Handpicked products that students love, with the best deals and reviews
-          </p>
-        </div>
-        {loadingStates.products ? (
-          <LoadingSection title="Featured Products" />
-        ) : products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">📦</div>
-            <h4 className="text-xl font-semibold text-student-primary mb-2">No products available</h4>
-            <p className="text-student-secondary">Check back soon for amazing student deals!</p>
-          </div>
-        )}
-      </section>
+ {/* Featured Products - Mobile-Optimized Grid */}
+<section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+  <div className="text-center mb-8 lg:mb-12">
+    <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-4">
+      Featured Products
+    </h3>
+    <p className="text-student-secondary text-base lg:text-lg max-w-2xl mx-auto">
+      Handpicked products that students love, with the best deals and reviews
+    </p>
+  </div>
+  
+  {loadingStates.products ? (
+    <LoadingSection title="Featured Products" />
+  ) : products.length > 0 ? (
+    <div className="product-grid-mobile">
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  ) : (
+    <div className="text-center py-16">
+      <div className="text-6xl mb-4">📦</div>
+      <h4 className="text-xl font-semibold text-student-primary mb-2">No products available</h4>
+      <p className="text-student-secondary">Check back soon for amazing student deals!</p>
+    </div>
+  )}
+</section>
+
 
       <Footer />
     </div>

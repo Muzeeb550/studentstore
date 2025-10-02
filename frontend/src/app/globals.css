@@ -1119,3 +1119,377 @@ select:focus {
     display: none !important;
   }
 }
+
+/* ===========================================
+   MOBILE-FIRST PRODUCT CARD SYSTEM - RESEARCH-BASED
+   =========================================== */
+
+/* Product Card Touch Optimization */
+.product-card-touch-optimized {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* Mobile-First Product Card - Research-Based Dimensions */
+.product-card-mobile {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  
+  /* Mobile-First Sizing - Research-Based */
+  width: 100%;
+  height: 380px; /* Base mobile height */
+  min-height: 380px;
+  max-height: 380px;
+  
+  /* Touch optimizations */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+  
+  /* Mobile-optimized shadow */
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Mobile-Optimized Hover States */
+.product-card-mobile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.12);
+  border-color: var(--student-blue);
+}
+
+.product-card-mobile:active {
+  transform: scale(0.98);
+  transition: all 0.15s ease;
+}
+
+/* Product Image Container - 65% of card height (Research-Based) */
+.product-image-container-mobile {
+  position: relative;
+  flex: 0.65; /* 65% of card height */
+  width: 100%;
+  background: linear-gradient(135deg, var(--bg-light) 0%, var(--border-light) 100%);
+  overflow: hidden;
+  min-height: 247px; /* 65% of 380px */
+}
+
+/* Mobile-Optimized Product Image */
+.product-image-mobile {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.product-card-mobile:hover .product-image-mobile {
+  transform: scale(1.05);
+}
+
+/* Mobile-Optimized Category Badge */
+.product-category-badge-mobile {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+}
+
+/* Mobile-Optimized Trending Badge */
+.product-trending-badge-mobile {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+/* Mobile-Optimized Wishlist Button - Always visible, larger touch target */
+.product-wishlist-mobile {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  min-width: 48px; /* Touch-friendly size */
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile Touch Feedback Overlay */
+.product-touch-overlay-mobile {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.product-card-mobile:active .product-touch-overlay-mobile {
+  opacity: 1;
+}
+
+/* Product Info Container - 35% of card height */
+.product-info-container-mobile {
+  flex: 0.35; /* 35% of card height */
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 133px; /* 35% of 380px */
+}
+
+/* Mobile-Optimized Product Title */
+.product-title-mobile {
+  font-size: 1rem; /* 16px - optimal mobile reading */
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  transition: color 0.2s ease;
+  
+  /* Mobile text optimization */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* Max 2 lines */
+  word-break: break-word;
+}
+
+.product-card-mobile:hover .product-title-mobile {
+  color: var(--student-blue);
+}
+
+/* Mobile-Optimized Description */
+.product-description-mobile {
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  flex: 1;
+  
+  /* Mobile text optimization */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* Max 2 lines for mobile */
+}
+
+/* Mobile-Optimized Stats Row */
+.product-stats-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.75rem; /* 12px */
+  min-height: 16px;
+}
+
+/* Mobile-Optimized CTA Button - Touch-friendly */
+.product-cta-mobile {
+  background: linear-gradient(45deg, var(--student-blue) 0%, var(--student-green) 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem; /* 14px */
+  font-weight: 600;
+  
+  /* Touch-friendly sizing */
+  min-height: 48px; /* Meets accessibility guidelines */
+  width: 100%;
+  padding: 12px 16px;
+  
+  /* Touch optimizations */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  
+  /* Smooth interactions */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+}
+
+.product-cta-mobile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+}
+
+.product-cta-mobile:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Mobile-Optimized Tooltip */
+.product-tooltip-mobile {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.product-card-mobile:hover .product-tooltip-mobile {
+  opacity: 1;
+  bottom: -4px;
+}
+
+/* Mobile-Optimized Grid Layout */
+.product-grid-mobile {
+  display: grid;
+  gap: 16px; /* Optimal mobile spacing */
+  
+  /* Mobile-first responsive grid */
+  grid-template-columns: repeat(2, 1fr); /* 2 columns on mobile */
+}
+
+/* Responsive Grid Adjustments */
+@media (max-width: 480px) {
+  .product-card-mobile {
+    height: 360px;
+    min-height: 360px;
+    max-height: 360px;
+  }
+  
+  .product-image-container-mobile {
+    min-height: 234px; /* 65% of 360px */
+  }
+  
+  .product-info-container-mobile {
+    min-height: 126px; /* 35% of 360px */
+    padding: 10px 14px;
+  }
+  
+  .product-title-mobile {
+    font-size: 0.9375rem; /* 15px */
+  }
+  
+  .product-description-mobile {
+    font-size: 0.75rem; /* 12px */
+    -webkit-line-clamp: 1; /* Single line on small mobile */
+  }
+  
+  .product-cta-mobile {
+    min-height: 44px;
+    font-size: 0.8125rem; /* 13px */
+  }
+  
+  .product-grid-mobile {
+    gap: 12px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 640px) {
+  .product-card-mobile {
+    height: 390px;
+    min-height: 390px;
+    max-height: 390px;
+  }
+  
+  .product-image-container-mobile {
+    min-height: 253px; /* 65% of 390px */
+  }
+  
+  .product-info-container-mobile {
+    min-height: 137px; /* 35% of 390px */
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .product-grid-mobile {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns on tablet */
+    gap: 18px;
+  }
+  
+  .product-card-mobile {
+    height: 400px;
+    min-height: 400px;
+    max-height: 400px;
+  }
+  
+  .product-image-container-mobile {
+    min-height: 260px; /* 65% of 400px */
+  }
+  
+  .product-info-container-mobile {
+    min-height: 140px; /* 35% of 400px */
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .product-grid-mobile {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns on small desktop */
+    gap: 20px;
+  }
+  
+  .product-card-mobile {
+    height: 420px;
+    min-height: 420px;
+    max-height: 420px;
+  }
+  
+  .product-image-container-mobile {
+    min-height: 273px; /* 65% of 420px */
+  }
+  
+  .product-info-container-mobile {
+    min-height: 147px; /* 35% of 420px */
+  }
+}
+
+@media (min-width: 1025px) {
+  .product-grid-mobile {
+    grid-template-columns: repeat(4, 1fr); /* 4 columns on desktop */
+    gap: 24px;
+  }
+  
+  .product-card-mobile {
+    height: 440px;
+    min-height: 440px;
+    max-height: 440px;
+  }
+  
+  .product-image-container-mobile {
+    min-height: 286px; /* 65% of 440px */
+  }
+  
+  .product-info-container-mobile {
+    min-height: 154px; /* 35% of 440px */
+    padding: 16px 18px;
+  }
+  
+  .product-title-mobile {
+    font-size: 1.0625rem; /* 17px */
+  }
+  
+  .product-description-mobile {
+    font-size: 0.875rem; /* 14px */
+    -webkit-line-clamp: 2; /* 2 lines on desktop */
+  }
+}
+
+/* Override old product card styles */
+.product-card {
+  display: none !important;
+}
+
+/* Use mobile cards everywhere */
+@media (min-width: 1px) {
+  .product-card {
+    display: none !important;
+  }
+  .product-card-mobile {
+    display: flex !important;
+  }
+}
+
