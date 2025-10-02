@@ -164,33 +164,249 @@ body {
   border-color: var(--student-blue);
 }
 
-/* Category Card Specific - UNIFORM SIZING */
+/* ===========================================
+   MOBILE-FIRST CATEGORY CARD SYSTEM
+   =========================================== */
+
+/* Base Category Card - Mobile First */
 .category-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-light);
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 12px; /* Smaller radius on mobile */
   text-align: center;
   transition: all 0.2s ease;
   cursor: pointer;
-  /* UNIFORM HEIGHT FOR ALL CATEGORY CARDS */
-  height: 240px;
-  min-height: 240px;
-  max-height: 240px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center; /* Center content on mobile */
   align-items: center;
   position: relative;
   overflow: hidden;
+  
+  /* Mobile-first sizing */
+  min-height: 120px; /* Much shorter on mobile */
+  padding: 12px; /* Less padding on mobile */
+  
+  /* Touch optimizations */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.category-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.15);
-  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-light) 100%);
-  border-color: var(--student-green);
+/* Mobile Category Card Specific Styles */
+.mobile-category-card {
+  /* Enhanced mobile touch feedback */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-category-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2);
+}
+
+/* Mobile Icon Container */
+.mobile-icon-container {
+  /* Mobile: 48px container */
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Mobile Category Icon */
+.mobile-category-icon {
+  /* Mobile: 32px icon */
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Mobile Category Fallback */
+.mobile-category-fallback {
+  /* Mobile: 48px fallback */
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.25rem; /* 20px text */
+}
+
+/* Mobile Category Title */
+.mobile-category-title {
+  /* Mobile: 14px title */
+  font-size: 0.875rem;
+  line-height: 1.2;
+  margin-bottom: 0;
+}
+
+/* Mobile Category Content */
+.mobile-category-content {
+  min-height: auto; /* Let content determine height on mobile */
+}
+
+/* Mobile Touch Friendly */
+.mobile-touch-friendly {
+  /* Minimum touch target size */
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Small Mobile (up to 480px) */
+@media (max-width: 480px) {
+  .category-card {
+    min-height: 110px;
+    padding: 10px;
+    border-radius: 10px;
+  }
+  
+  .mobile-icon-container {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .mobile-category-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  
+  .mobile-category-fallback {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1rem;
+  }
+  
+  .mobile-category-title {
+    font-size: 0.8125rem; /* 13px */
+  }
+}
+
+/* Large Mobile/Small Tablet (481px - 640px) */
+@media (min-width: 481px) and (max-width: 640px) {
+  .category-card {
+    min-height: 130px;
+    padding: 14px;
+  }
+  
+  .mobile-icon-container {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+  
+  .mobile-category-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  
+  .mobile-category-fallback {
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1.375rem;
+  }
+  
+  .mobile-category-title {
+    font-size: 0.9375rem; /* 15px */
+  }
+}
+
+/* Tablet (641px - 768px) */
+@media (min-width: 641px) and (max-width: 768px) {
+  .category-card {
+    min-height: 160px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+  
+  .mobile-icon-container {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .mobile-category-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .mobile-category-fallback {
+    width: 4rem;
+    height: 4rem;
+    font-size: 1.5rem;
+  }
+  
+  .mobile-category-title {
+    font-size: 1rem; /* 16px */
+  }
+}
+
+/* Desktop Styles (769px and above) */
+@media (min-width: 769px) {
+  .category-card {
+    /* Desktop: Full feature set */
+    min-height: 200px;
+    height: 240px;
+    max-height: 240px;
+    padding: 20px;
+    border-radius: 16px;
+    justify-content: space-between; /* Full layout on desktop */
+  }
+  
+  .category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.15);
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-light) 100%);
+    border-color: var(--student-green);
+  }
+  
+  .mobile-icon-container {
+    width: 6rem;
+    height: 6rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .mobile-category-icon {
+    width: 4rem;
+    height: 4rem;
+  }
+  
+  .mobile-category-fallback {
+    width: 4rem;
+    height: 4rem;
+    font-size: 2rem;
+  }
+  
+  .mobile-category-title {
+    font-size: 1.125rem; /* 18px */
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Large Desktop (1280px and above) */
+@media (min-width: 1280px) {
+  .category-card {
+    height: 260px;
+    min-height: 260px;
+    max-height: 260px;
+    padding: 24px;
+  }
+  
+  .mobile-category-title {
+    font-size: 1.25rem; /* 20px */
+  }
+}
+
+/* ===========================================
+   MOBILE CATEGORY TOUCH INTERACTIONS
+   =========================================== */
+
+/* Mobile Touch Ripple Effect */
+.mobile-touch-ripple {
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Desktop-only elements (hidden on mobile) */
+@media (max-width: 768px) {
+  .desktop-only-description,
+  .desktop-only-action,
+  .desktop-only-badge {
+    display: none !important;
+  }
 }
 
 /* Responsive card sizing for mobile/desktop consistency */
@@ -200,13 +416,6 @@ body {
     min-height: 320px;
     max-height: 320px;
   }
-  
-  .category-card {
-    height: 200px;
-    min-height: 200px;
-    max-height: 200px;
-    padding: 20px;
-  }
 }
 
 @media (min-width: 1280px) {
@@ -214,13 +423,6 @@ body {
     height: 400px;
     min-height: 400px;
     max-height: 400px;
-  }
-  
-  .category-card {
-    height: 260px;
-    min-height: 260px;
-    max-height: 260px;
-    padding: 28px;
   }
 }
 

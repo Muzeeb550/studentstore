@@ -444,35 +444,62 @@ export default function HomePage() {
     ],
   };
 
-  // Category slider settings - Enhanced
-  const categorySettings = {
-    dots: false,
-    infinite: false,
-    speed: 400,
-    slidesToShow: 5,
-    slidesToScroll: 2,
-    prevArrow: <DesktopPrevArrow />,
-    nextArrow: <DesktopNextArrow />,
-    swipeToSlide: true,
-    responsive: [
-      {
-        breakpoint: 1280,
-        settings: { slidesToShow: 4, slidesToScroll: 1, arrows: false },
+  // Category slider settings - Enhanced Mobile-First
+const categorySettings = {
+  dots: false,
+  infinite: false,
+  speed: 400,
+  slidesToShow: 5,
+  slidesToScroll: 2,
+  prevArrow: <DesktopPrevArrow />,
+  nextArrow: <DesktopNextArrow />,
+  swipeToSlide: true,
+  touchThreshold: 8, // Optimized for mobile touch
+  draggable: true,
+  accessibility: true,
+  responsive: [
+    {
+      breakpoint: 1280,
+      settings: { 
+        slidesToShow: 4, 
+        slidesToScroll: 1, 
+        arrows: false,
+        touchThreshold: 6
       },
-      {
-        breakpoint: 1024,
-        settings: { slidesToShow: 3, slidesToScroll: 1, arrows: false },
+    },
+    {
+      breakpoint: 1024,
+      settings: { 
+        slidesToShow: 3, 
+        slidesToScroll: 1, 
+        arrows: false,
+        touchThreshold: 6
       },
-      {
-        breakpoint: 768,
-        settings: { slidesToShow: 2, slidesToScroll: 1, arrows: false },
+    },
+    {
+      breakpoint: 768,
+      settings: { 
+        slidesToShow: 2, 
+        slidesToScroll: 1, 
+        arrows: false,
+        touchThreshold: 5,
+        centerPadding: '20px'
       },
-      {
-        breakpoint: 480,
-        settings: { slidesToShow: 1, slidesToScroll: 1, arrows: false },
+    },
+    {
+      breakpoint: 480,
+      settings: { 
+        slidesToShow: 1, 
+        slidesToScroll: 1, 
+        arrows: false,
+        touchThreshold: 5,
+        centerMode: true,
+        centerPadding: '40px'
       },
-    ],
-  };
+    },
+  ],
+};
+
 
   // 🚀 NEW: Enhanced loading component
   const LoadingSection = ({ title }: { title: string }) => (
