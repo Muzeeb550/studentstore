@@ -1917,123 +1917,123 @@ select:focus {
 }
 
 /* ===========================================
-   MOBILE-OPTIMIZED CARD SIZING - 2 CARD LAYOUT
+   PRIORITY MOBILE-OPTIMIZED CARD SIZING - 2 CARD LAYOUT WITH !IMPORTANT
    =========================================== */
 
-/* Mobile-Optimized Recently Viewed Cards */
+/* PRIORITY: Mobile-Optimized Recently Viewed Cards */
 @media (max-width: 640px) {
   .recently-viewed-card {
-    height: 320px;
-    min-height: 320px;
-    max-height: 320px;
+    height: 320px !important;
+    min-height: 320px !important;
+    max-height: 320px !important;
   }
   
   .recently-viewed-image-container {
-    min-height: 205px; /* 64% of 320px - better for 2-card layout */
+    min-height: 205px !important; /* 64% of 320px - better for 2-card layout */
   }
   
   .recently-viewed-info {
-    min-height: 115px; /* 36% of 320px */
-    padding: 12px 14px;
+    min-height: 115px !important; /* 36% of 320px */
+    padding: 12px 14px !important;
   }
   
   .recently-viewed-title {
-    font-size: 0.875rem; /* 14px - better for smaller cards */
+    font-size: 0.875rem !important; /* 14px - better for smaller cards */
     -webkit-line-clamp: 2;
   }
   
   .recently-viewed-description {
-    font-size: 0.6875rem; /* 11px - compact for mobile */
+    font-size: 0.6875rem !important; /* 11px - compact for mobile */
     -webkit-line-clamp: 2;
   }
   
   .recently-viewed-context {
-    font-size: 0.625rem; /* 10px */
+    font-size: 0.625rem !important; /* 10px */
   }
   
   .recently-viewed-cta {
-    min-height: 40px; /* Slightly smaller but still touch-friendly */
-    font-size: 0.75rem; /* 12px */
-    padding: 8px 12px;
+    min-height: 40px !important; /* Slightly smaller but still touch-friendly */
+    font-size: 0.75rem !important; /* 12px */
+    padding: 8px 12px !important;
   }
 }
 
-/* Mobile-Optimized Trending Cards */
+/* PRIORITY: Mobile-Optimized Trending Cards */
 @media (max-width: 640px) {
   .trending-card {
-    height: 340px;
-    min-height: 340px;
-    max-height: 340px;
+    height: 340px !important;
+    min-height: 340px !important;
+    max-height: 340px !important;
   }
   
   .trending-image-container {
-    min-height: 218px; /* 64% of 340px */
+    min-height: 218px !important; /* 64% of 340px */
   }
   
   .trending-info {
-    min-height: 122px; /* 36% of 340px */
-    padding: 12px 14px;
+    min-height: 122px !important; /* 36% of 340px */
+    padding: 12px 14px !important;
   }
   
   .trending-title {
-    font-size: 0.875rem; /* 14px - better for smaller cards */
+    font-size: 0.875rem !important; /* 14px - better for smaller cards */
     -webkit-line-clamp: 2;
   }
   
   .trending-description {
-    font-size: 0.6875rem; /* 11px - compact for mobile */
+    font-size: 0.6875rem !important; /* 11px - compact for mobile */
     -webkit-line-clamp: 2;
   }
   
   .trending-social-proof {
-    font-size: 0.625rem; /* 10px */
+    font-size: 0.625rem !important; /* 10px */
   }
   
   .trending-cta {
-    min-height: 40px; /* Slightly smaller but still touch-friendly */
-    font-size: 0.75rem; /* 12px */
-    padding: 8px 12px;
+    min-height: 40px !important; /* Slightly smaller but still touch-friendly */
+    font-size: 0.75rem !important; /* 12px */
+    padding: 8px 12px !important;
   }
   
   /* Optimize badge sizing for smaller cards */
   .trending-rank-badge span,
   .trending-growth-badge span,
   .trending-hot-badge span {
-    font-size: 0.625rem; /* 10px */
-    padding: 2px 6px;
+    font-size: 0.625rem !important; /* 10px */
+    padding: 2px 6px !important;
   }
 }
 
-/* Small Mobile Optimizations */
+/* PRIORITY: Small Mobile Optimizations */
 @media (max-width: 480px) {
   .recently-viewed-card {
-    height: 300px;
-    min-height: 300px;
-    max-height: 300px;
+    height: 300px !important;
+    min-height: 300px !important;
+    max-height: 300px !important;
   }
   
   .recently-viewed-image-container {
-    min-height: 192px; /* 64% of 300px */
+    min-height: 192px !important; /* 64% of 300px */
   }
   
   .recently-viewed-info {
-    min-height: 108px; /* 36% of 300px */
-    padding: 10px 12px;
+    min-height: 108px !important; /* 36% of 300px */
+    padding: 10px 12px !important;
   }
   
   .trending-card {
-    height: 320px;
-    min-height: 320px;
-    max-height: 320px;
+    height: 320px !important;
+    min-height: 320px !important;
+    max-height: 320px !important;
   }
   
   .trending-image-container {
-    min-height: 205px; /* 64% of 320px */
+    min-height: 205px !important; /* 64% of 320px */
   }
   
   .trending-info {
-    min-height: 115px; /* 36% of 320px */
-    padding: 10px 12px;
+    min-height: 115px !important; /* 36% of 320px */
+    padding: 10px 12px !important;
   }
 }
 

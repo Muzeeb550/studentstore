@@ -394,8 +394,8 @@ export default function HomePage() {
 const recentlyViewedSettings = {
   dots: false,
   infinite: false,
-  speed: 350, // Faster for mobile
-  slidesToShow: 4,
+  speed: 350,
+  slidesToShow: 4, // Desktop default
   slidesToScroll: 1,
   prevArrow: <DesktopPrevArrow />,
   nextArrow: <DesktopNextArrow />,
@@ -435,7 +435,7 @@ const recentlyViewedSettings = {
     { 
       breakpoint: 768, 
       settings: { 
-        slidesToShow: 2.5, // 2.5 cards for better preview
+        slidesToShow: 2.5, // 2.5 cards - better for tablet
         slidesToScroll: 1, 
         arrows: false, 
         speed: 280,
@@ -446,7 +446,7 @@ const recentlyViewedSettings = {
     { 
       breakpoint: 640, 
       settings: { 
-        slidesToShow: 2.3, // OPTIMAL: 2 full + 30% peek
+        slidesToShow: 2.3, // ⭐ KEY: 2 full + 30% peek
         slidesToScroll: 1, 
         arrows: false, 
         speed: 250,
@@ -457,7 +457,7 @@ const recentlyViewedSettings = {
     { 
       breakpoint: 480, 
       settings: { 
-        slidesToShow: 2.1, // 2 full + 10% peek on small mobile
+        slidesToShow: 2.1, // ⭐ KEY: 2 full + 10% peek on small mobile
         slidesToScroll: 1, 
         arrows: false, 
         speed: 230,
@@ -473,7 +473,7 @@ const trendingSettings = {
   dots: false,
   infinite: false,
   speed: 350,
-  slidesToShow: 4,
+  slidesToShow: 4, // Desktop default
   slidesToScroll: 1,
   prevArrow: <TrendingPrevArrow />,
   nextArrow: <TrendingNextArrow />,
@@ -528,7 +528,7 @@ const trendingSettings = {
     { 
       breakpoint: 768, 
       settings: { 
-        slidesToShow: 2.5, // 2.5 cards for better preview
+        slidesToShow: 2.5, // 2.5 cards - better for tablet
         slidesToScroll: 1, 
         arrows: false, 
         speed: 280,
@@ -539,7 +539,7 @@ const trendingSettings = {
     { 
       breakpoint: 640, 
       settings: { 
-        slidesToShow: 2.3, // OPTIMAL: 2 full + 30% peek
+        slidesToShow: 2.3, // ⭐ KEY: 2 full + 30% peek
         slidesToScroll: 1, 
         arrows: false, 
         speed: 250,
@@ -550,7 +550,7 @@ const trendingSettings = {
     { 
       breakpoint: 480, 
       settings: { 
-        slidesToShow: 2.1, // 2 full + 10% peek on small mobile
+        slidesToShow: 2.1, // ⭐ KEY: 2 full + 10% peek on small mobile
         slidesToScroll: 1, 
         arrows: false, 
         speed: 230,
