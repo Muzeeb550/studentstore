@@ -444,11 +444,11 @@ export default function HomePage() {
     ],
   };
 
-  // Ultra-Smooth Category Settings - Buttery Smooth Swiping
+  // Ultra-Smooth Category Settings - 4 Cards on Mobile
 const categorySettings = {
   dots: false,
-  infinite: true, // Enable infinite for smoother experience
-  speed: 250, // Super fast transitions
+  infinite: true,
+  speed: 200, // Ultra-fast transitions
   slidesToShow: 5,
   slidesToScroll: 1,
   prevArrow: <DesktopPrevArrow />,
@@ -458,12 +458,13 @@ const categorySettings = {
   swipe: true,
   swipeToSlide: true,
   touchMove: true,
-  touchThreshold: 3, // Very sensitive
+  touchThreshold: 2, // Hyper-sensitive
   draggable: true,
   accessibility: true,
-  cssEase: 'ease-out', // Smoother easing
+  cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Ultra-smooth easing
   useCSS: true,
   useTransform: true,
+  waitForAnimate: false, // No animation blocking
   
   responsive: [
     {
@@ -472,44 +473,45 @@ const categorySettings = {
         slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 200,
+        speed: 180,
         touchThreshold: 2
       },
     },
     {
       breakpoint: 1024,
       settings: { 
-        slidesToShow: 3,
+        slidesToShow: 4, // 4 cards on tablet
         slidesToScroll: 1,
         arrows: false,
-        speed: 200,
+        speed: 180,
         touchThreshold: 2
       },
     },
     {
       breakpoint: 768,
       settings: { 
-        slidesToShow: 2.5, // Show partial cards
+        slidesToShow: 4, // 4 cards on mobile tablet
         slidesToScroll: 1,
         arrows: false,
-        speed: 180,
-        touchThreshold: 2,
-        centerPadding: '15px'
+        speed: 160,
+        touchThreshold: 1,
+        centerPadding: '5px'
       },
     },
     {
       breakpoint: 480,
       settings: { 
-        slidesToShow: 1.8, // Show partial next card
+        slidesToShow: 4, // 4 cards on small mobile
         slidesToScroll: 1,
         arrows: false,
-        speed: 180,
-        touchThreshold: 2,
-        centerPadding: '25px'
+        speed: 160,
+        touchThreshold: 1,
+        centerPadding: '8px'
       },
     },
   ],
 };
+
 
 
 
