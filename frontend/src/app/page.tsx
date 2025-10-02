@@ -7,7 +7,8 @@ import CategoryCard from './components/CategoryCard';
 import ProductCard from './components/ProductCard';
 import Footer from './components/Footer';
 import { getRecentlyViewed } from './utils/recentlyViewed';
-
+import RecentlyViewedCard from './components/RecentlyViewedCard';
+import TrendingCard from './components/TrendingCard';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -247,18 +248,56 @@ export default function HomePage() {
     setRecentlyViewed(recentProducts);
   }, []);
 
+  // FIXED: Enhanced Desktop Arrow Components - More Responsive
   const DesktopPrevArrow = ({ onClick }: any) => (
-    <button onClick={onClick} className="desktop-carousel-arrow prev" aria-label="Previous slide">
-      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
+    <button 
+      onClick={onClick} 
+      className="desktop-carousel-arrow prev enhanced-arrow" 
+      aria-label="Previous slide"
+      type="button"
+    >
+      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
       </svg>
     </button>
   );
 
   const DesktopNextArrow = ({ onClick }: any) => (
-    <button onClick={onClick} className="desktop-carousel-arrow next" aria-label="Next slide">
-      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+    <button 
+      onClick={onClick} 
+      className="desktop-carousel-arrow next enhanced-arrow" 
+      aria-label="Next slide"
+      type="button"
+    >
+      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+  );
+
+  // FIXED: Ultra-Responsive Trending Arrow Components
+  const TrendingPrevArrow = ({ onClick }: any) => (
+    <button 
+      onClick={onClick} 
+      className="trending-carousel-arrow prev ultra-smooth-arrow" 
+      aria-label="Previous trending products"
+      type="button"
+    >
+      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  );
+
+  const TrendingNextArrow = ({ onClick }: any) => (
+    <button 
+      onClick={onClick} 
+      className="trending-carousel-arrow next ultra-smooth-arrow" 
+      aria-label="Next trending products"
+      type="button"
+    >
+      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
       </svg>
     </button>
   );
@@ -304,44 +343,27 @@ export default function HomePage() {
     ]
   };
 
-  const productCarouselSettings = {
+  // Single-row desktop category slider settings (≥769px ONLY)
+  const categoryDesktopSettings = {
     dots: false,
     infinite: false,
-    speed: 400,
-    slidesToShow: 4,
-    slidesToScroll: 2,
+    speed: 350,
+    slidesToShow: 5,
+    slidesToScroll: 1,
     prevArrow: <DesktopPrevArrow />,
     nextArrow: <DesktopNextArrow />,
+    swipe: true,
     swipeToSlide: true,
-    responsive: [
-      { breakpoint: 1280, settings: { slidesToShow: 3, slidesToScroll: 1, arrows: false } },
-      { breakpoint: 1024, settings: { slidesToShow: 2, slidesToScroll: 1, arrows: false } },
-      { breakpoint: 640, settings: { slidesToShow: 1, slidesToScroll: 1, arrows: false } },
-    ],
+    touchMove: true,
+    touchThreshold: 5,
+    draggable: true,
+    accessibility: true,
+    cssEase: 'ease-out',
+    useCSS: true,
+    useTransform: true,
+    waitForAnimate: false,
+    // NO responsive breakpoints - this is desktop only
   };
-
-// Single-row desktop category slider settings (≥769px ONLY)
-const categoryDesktopSettings = {
-  dots: false,
-  infinite: false,
-  speed: 350,
-  slidesToShow: 5,
-  slidesToScroll: 1,
-  prevArrow: <DesktopPrevArrow />,
-  nextArrow: <DesktopNextArrow />,
-  swipe: true,
-  swipeToSlide: true,
-  touchMove: true,
-  touchThreshold: 5,
-  draggable: true,
-  accessibility: true,
-  cssEase: 'ease-out',
-  useCSS: true,
-  useTransform: true,
-  waitForAnimate: false,
-  // NO responsive breakpoints - this is desktop only
-};
-
 
   // Two independent row sliders for mobile/tablet (<=768px)
   const categoryRowSettings = {
@@ -365,6 +387,222 @@ const categoryDesktopSettings = {
       { breakpoint: 768, settings: { slidesToShow: 3.2, centerPadding: '10px' } },
       { breakpoint: 640, settings: { slidesToShow: 3.2, centerPadding: '10px' } },
       { breakpoint: 480, settings: { slidesToShow: 3.0, centerPadding: '8px' } },
+    ],
+  };
+
+  // FIXED: Enhanced Recently Viewed Carousel Settings - Desktop Arrows Work Smoothly
+  const recentlyViewedSettings = {
+    dots: false,
+    infinite: false,
+    speed: 400, // Optimized speed
+    slidesToShow: 4,
+    slidesToScroll: 1, // Scroll 1 card for precision
+    prevArrow: <DesktopPrevArrow />,
+    nextArrow: <DesktopNextArrow />,
+    swipeToSlide: true,
+    
+    // FIXED: Desktop arrow optimization
+    touchThreshold: 5,
+    cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    useCSS: true,
+    useTransform: true,
+    waitForAnimate: false,
+    focusOnSelect: false,
+    accessibility: true,
+    
+    responsive: [
+      { 
+        breakpoint: 1280, 
+        settings: { 
+          slidesToShow: 3, 
+          slidesToScroll: 1, 
+          arrows: true,
+          speed: 350,
+          touchThreshold: 4
+        } 
+      },
+      { 
+        breakpoint: 1024, 
+        settings: { 
+          slidesToShow: 2, 
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 300,
+          touchThreshold: 4,
+          centerPadding: '10px'
+        } 
+      },
+      { 
+        breakpoint: 640, 
+        settings: { 
+          slidesToShow: 1.8, 
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 280,
+          touchThreshold: 3,
+          centerPadding: '15px'
+        } 
+      },
+      { 
+        breakpoint: 480, 
+        settings: { 
+          slidesToShow: 1.4, 
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 250,
+          touchThreshold: 3,
+          centerPadding: '20px'
+        } 
+      },
+    ],
+  };
+
+  // FIXED: Ultra-Smooth Trending Carousel Settings
+  const trendingSettings = {
+    dots: false,
+    infinite: false,
+    speed: 400, // Optimized speed
+    slidesToShow: 4,
+    slidesToScroll: 1, // FIXED: Scroll 1 card at a time for precision
+    prevArrow: <TrendingPrevArrow />,
+    nextArrow: <TrendingNextArrow />,
+    swipeToSlide: true,
+    
+    // FIXED: Ultra-smooth optimizations
+    touchThreshold: 5,
+    swipeThreshold: 10, // Higher threshold to prevent accidental swipes
+    cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Smoother easing
+    useCSS: true,
+    useTransform: true,
+    waitForAnimate: false,
+    focusOnSelect: false,
+    accessibility: true,
+    draggable: true,
+    
+    // FIXED: Prevent stickiness
+    touchMove: true,
+    variableWidth: false, // Ensure consistent card widths
+    centerMode: false, // Disable center mode that can cause stickiness
+    
+    responsive: [
+      { 
+        breakpoint: 1536, // Extra large screens
+        settings: { 
+          slidesToShow: 4, 
+          slidesToScroll: 1,
+          arrows: true,
+          speed: 400,
+          touchThreshold: 5
+        } 
+      },
+      { 
+        breakpoint: 1280, 
+        settings: { 
+          slidesToShow: 3, 
+          slidesToScroll: 1, 
+          arrows: true,
+          speed: 350,
+          touchThreshold: 4
+        } 
+      },
+      { 
+        breakpoint: 1024, 
+        settings: { 
+          slidesToShow: 2.5, // Show partial next card
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 300,
+          touchThreshold: 4,
+          centerPadding: '20px'
+        } 
+      },
+      { 
+        breakpoint: 768, 
+        settings: { 
+          slidesToShow: 2.2, 
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 280,
+          touchThreshold: 3,
+          centerPadding: '15px'
+        } 
+      },
+      { 
+        breakpoint: 640, 
+        settings: { 
+          slidesToShow: 1.8, 
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 250,
+          touchThreshold: 3,
+          centerPadding: '25px'
+        } 
+      },
+      { 
+        breakpoint: 480, 
+        settings: { 
+          slidesToShow: 1.4, 
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 250,
+          touchThreshold: 2,
+          centerPadding: '30px'
+        } 
+      },
+    ],
+  };
+
+  // FIXED: Enhanced Product Carousel Settings (for other sections)
+  const productCarouselSettings = {
+    dots: false,
+    infinite: false,
+    speed: 400,
+    slidesToShow: 4,
+    slidesToScroll: 1,
+    prevArrow: <DesktopPrevArrow />,
+    nextArrow: <DesktopNextArrow />,
+    swipeToSlide: true,
+    
+    // FIXED: Desktop optimization
+    touchThreshold: 5,
+    cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    useCSS: true,
+    useTransform: true,
+    waitForAnimate: false,
+    focusOnSelect: false,
+    
+    responsive: [
+      { 
+        breakpoint: 1280, 
+        settings: { 
+          slidesToShow: 3, 
+          slidesToScroll: 1, 
+          arrows: true,
+          speed: 350,
+          touchThreshold: 4
+        } 
+      },
+      { 
+        breakpoint: 1024, 
+        settings: { 
+          slidesToShow: 2, 
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 300,
+          touchThreshold: 4
+        } 
+      },
+      { 
+        breakpoint: 640, 
+        settings: { 
+          slidesToShow: 1.8, 
+          slidesToScroll: 1, 
+          arrows: false, 
+          speed: 280,
+          touchThreshold: 3,
+          centerPadding: '10px'
+        } 
+      },
     ],
   };
 
@@ -410,7 +648,7 @@ const categoryDesktopSettings = {
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-student-page">
@@ -456,150 +694,176 @@ const categoryDesktopSettings = {
         </div>
       </section>
 
-      {/* Recently Viewed */}
+      {/* Enhanced Recently Viewed Section */}
       {recentlyViewed.length > 0 && (
         <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-          <div className="mb-6 lg:mb-8">
-            <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">
-              Continue with these so you won't miss
-            </h3>
-            <p className="text-student-secondary text-base lg:text-lg">Pick up where you left off - don't lose these great finds!</p>
-          </div>
-          <div className="relative">
-            <Slider {...productCarouselSettings}>
-              {recentlyViewed.map((item) => (
-                <div key={`recent-${item.product.id}-${item.viewedAt}`} className="px-2">
-                  <ProductCard product={item.product} />
+          <div className="recently-viewed-section">
+            <div className="mb-6 lg:mb-8">
+              <div className="flex items-center mb-4">
+                <div className="w-1 h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-3"></div>
+                <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
+                  🔄 Continue Your Shopping Journey
+                </h3>
+              </div>
+              <p className="text-student-secondary text-base lg:text-lg ml-7">
+                Don't lose track of these great finds - pick up exactly where you left off!
+              </p>
+              <div className="recently-viewed-progress ml-7 mt-3">
+                <div className="flex items-center text-sm text-student-blue">
+                  <div className="w-2 h-2 bg-student-blue rounded-full mr-2 animate-pulse"></div>
+                  <span className="font-medium">{recentlyViewed.length} items in your browsing session</span>
                 </div>
-              ))}
-            </Slider>
-          </div>
-        </section>
-      )}
-
-      {/* Trending */}
-      {trendingProducts.length > 0 && (
-        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-          <div className="mb-6 lg:mb-8">
-            <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">
-              🔥 Trending Among Students
-            </h3>
-            <p className="text-student-secondary text-base lg:text-lg">What students are buying right now - join the trend!</p>
-          </div>
-          {loadingStates.trending ? (
-            <LoadingSection title="Trending Products" />
-          ) : (
-            <div className="relative">
-              <Slider {...productCarouselSettings}>
-                {trendingProducts.map((product) => (
-                  <div key={`trending-${product.id}`} className="px-2">
-                    <ProductCard product={product} />
+              </div>
+            </div>
+            <div className="relative recently-viewed-carousel">
+              <Slider {...recentlyViewedSettings}>
+                {recentlyViewed.map((item) => (
+                  <div key={`recent-${item.product.id}-${item.viewedAt}`} className="px-2">
+                    <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
                   </div>
                 ))}
               </Slider>
             </div>
-          )}
+          </div>
         </section>
       )}
 
-{/* Category Cards - COMPLETELY FIXED Desktop/Mobile Logic */}
-<section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-  <div className="category-section-research">
-    <div className="mb-6 lg:mb-8 text-center">
-      <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2">Shop by Category</h3>
-      <p className="text-red-50 text-base lg:text-lg opacity-90">Find exactly what you need for your student life</p>
-    </div>
-
-    {loadingStates.categories ? (
-      <LoadingSection title="Categories" />
-    ) : categories.length > 0 ? (
-      <>
-        {/* Desktop: ONLY single row with arrows (≥1280px) */}
-        <div className="desktop-category-container hidden xl:block">
-          <Slider {...categoryDesktopSettings}>
-            {categories.map((category) => (
-              <div key={category.id} className="px-1">
-                <CategoryCard category={category} />
+      {/* FIXED: Enhanced Trending Section with Ultra-Smooth Navigation */}
+      {trendingProducts.length > 0 && (
+        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+          <div className="trending-section">
+            <div className="mb-6 lg:mb-8">
+              <div className="flex items-center mb-4">
+                <div className="w-1 h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-3"></div>
+                <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
+                  🔥 What's Trending Among Students
+                </h3>
               </div>
+              <p className="text-student-secondary text-base lg:text-lg ml-7">
+                Join thousands of students discovering these hot products right now!
+              </p>
+              <div className="trending-live-indicator ml-7 mt-3">
+                <div className="flex items-center text-sm text-student-orange">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
+                  <span className="font-medium">Live trending data • Updated every hour</span>
+                </div>
+              </div>
+            </div>
+            {loadingStates.trending ? (
+              <LoadingSection title="Trending Products" />
+            ) : (
+              <div className="relative trending-carousel-container">
+                <Slider 
+                  key="trending-slider-optimized"
+                  {...trendingSettings}
+                >
+                  {trendingProducts.map((product, index) => (
+                    <div key={`trending-${product.id}-${index}`} className="px-2">
+                      <TrendingCard product={product} trendingRank={index + 1} />
+                    </div>
+                  ))}
+                </Slider>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Category Cards - COMPLETELY FIXED Desktop/Mobile Logic */}
+      <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+        <div className="category-section-research">
+          <div className="mb-6 lg:mb-8 text-center">
+            <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2">Shop by Category</h3>
+            <p className="text-red-50 text-base lg:text-lg opacity-90">Find exactly what you need for your student life</p>
+          </div>
+
+          {loadingStates.categories ? (
+            <LoadingSection title="Categories" />
+          ) : categories.length > 0 ? (
+            <>
+              {/* Desktop: ONLY single row with arrows (≥1280px) */}
+              <div className="desktop-category-container hidden xl:block">
+                <Slider {...categoryDesktopSettings}>
+                  {categories.map((category) => (
+                    <div key={category.id} className="px-1">
+                      <CategoryCard category={category} />
+                    </div>
+                  ))}
+                </Slider>
+              </div>
+
+              {/* Mobile/Tablet: ONLY two rows (≤1279px) */}
+              <div className="mobile-category-container block xl:hidden">
+                <div className="category-row mb-3">
+                  <Slider {...categoryRowSettings}>
+                    {topRowCategories.map((category) => (
+                      <div key={category.id} className="px-1">
+                        <CategoryCard category={category} />
+                      </div>
+                    ))}
+                  </Slider>
+                </div>
+                <div className="category-row">
+                  <Slider {...categoryRowSettings}>
+                    {bottomRowCategories.map((category) => (
+                      <div key={category.id} className="px-1">
+                        <CategoryCard category={category} />
+                      </div>
+                    ))}
+                  </Slider>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+              {[
+                { icon: '📚', name: 'Textbooks' },
+                { icon: '💻', name: 'Electronics' },
+                { icon: '✏️', name: 'Stationery' },
+                { icon: '🎒', name: 'Campus Gear' },
+                { icon: '📖', name: 'Courses' },
+              ].map((category, index) => (
+                <div key={index} className="category-card-research">
+                  <div className="category-image-area">
+                    <div className="text-4xl">{category.icon}</div>
+                  </div>
+                  <div className="category-text-area">
+                    <h4 className="category-title-research font-medium text-student-primary">{category.name}</h4>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Featured Products - Mobile-Optimized Grid */}
+      <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+        <div className="text-center mb-8 lg:mb-12">
+          <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-4">
+            Featured Products
+          </h3>
+          <p className="text-student-secondary text-base lg:text-lg max-w-2xl mx-auto">
+            Handpicked products that students love, with the best deals and reviews
+          </p>
+        </div>
+        
+        {loadingStates.products ? (
+          <LoadingSection title="Featured Products" />
+        ) : products.length > 0 ? (
+          <div className="product-grid-mobile">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
             ))}
-          </Slider>
-        </div>
-
-        {/* Mobile/Tablet: ONLY two rows (≤1279px) */}
-        <div className="mobile-category-container block xl:hidden">
-          <div className="category-row mb-3">
-            <Slider {...categoryRowSettings}>
-              {topRowCategories.map((category) => (
-                <div key={category.id} className="px-1">
-                  <CategoryCard category={category} />
-                </div>
-              ))}
-            </Slider>
           </div>
-          <div className="category-row">
-            <Slider {...categoryRowSettings}>
-              {bottomRowCategories.map((category) => (
-                <div key={category.id} className="px-1">
-                  <CategoryCard category={category} />
-                </div>
-              ))}
-            </Slider>
+        ) : (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">📦</div>
+            <h4 className="text-xl font-semibold text-student-primary mb-2">No products available</h4>
+            <p className="text-student-secondary">Check back soon for amazing student deals!</p>
           </div>
-        </div>
-      </>
-    ) : (
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-        {[
-          { icon: '📚', name: 'Textbooks' },
-          { icon: '💻', name: 'Electronics' },
-          { icon: '✏️', name: 'Stationery' },
-          { icon: '🎒', name: 'Campus Gear' },
-          { icon: '📖', name: 'Courses' },
-        ].map((category, index) => (
-          <div key={index} className="category-card-research">
-            <div className="category-image-area">
-              <div className="text-4xl">{category.icon}</div>
-            </div>
-            <div className="category-text-area">
-              <h4 className="category-title-research font-medium text-student-primary">{category.name}</h4>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-</section>
-
-
-
- {/* Featured Products - Mobile-Optimized Grid */}
-<section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-  <div className="text-center mb-8 lg:mb-12">
-    <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-4">
-      Featured Products
-    </h3>
-    <p className="text-student-secondary text-base lg:text-lg max-w-2xl mx-auto">
-      Handpicked products that students love, with the best deals and reviews
-    </p>
-  </div>
-  
-  {loadingStates.products ? (
-    <LoadingSection title="Featured Products" />
-  ) : products.length > 0 ? (
-    <div className="product-grid-mobile">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
-    </div>
-  ) : (
-    <div className="text-center py-16">
-      <div className="text-6xl mb-4">📦</div>
-      <h4 className="text-xl font-semibold text-student-primary mb-2">No products available</h4>
-      <p className="text-student-secondary">Check back soon for amazing student deals!</p>
-    </div>
-  )}
-</section>
-
+        )}
+      </section>
 
       <Footer />
     </div>

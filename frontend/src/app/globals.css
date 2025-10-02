@@ -1086,7 +1086,6 @@ select:focus {
   animation: gradient-shift 3s ease infinite;
 }
 
-
 /* ===========================================
    FIXED DESKTOP/MOBILE CATEGORY CONTAINERS
    =========================================== */
@@ -1493,3 +1492,724 @@ select:focus {
   }
 }
 
+/* ===========================================
+   ENHANCED RECENTLY VIEWED SECTION
+   =========================================== */
+
+/* Recently Viewed Section Container */
+.recently-viewed-section {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.03) 0%, rgba(56, 189, 248, 0.03) 100%);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+/* FIXED: Recently Viewed Card - Mobile Optimized Sizing */
+.recently-viewed-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border: 2px solid rgba(79, 70, 229, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  backdrop-filter: blur(10px);
+  
+  /* FIXED: Mobile-optimized sizing */
+  width: 100%;
+  height: 380px;
+  min-height: 380px;
+  max-height: 380px;
+  
+  /* FIXED: Enhanced touch optimizations */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  will-change: transform;
+  -webkit-overflow-scrolling: touch;
+  
+  /* Enhanced shadow for mobile */
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.recently-viewed-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: rgba(79, 70, 229, 0.2);
+}
+
+.recently-viewed-card:active {
+  transform: scale(0.98);
+  transition: all 0.15s ease;
+}
+
+/* FIXED: Recently Viewed Image Container - Mobile Optimized */
+.recently-viewed-image-container {
+  position: relative;
+  flex: 0.68; /* Slightly larger image area for mobile */
+  width: 100%;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.04) 0%, rgba(56, 189, 248, 0.04) 100%);
+  overflow: hidden;
+  min-height: 258px; /* 68% of 380px */
+}
+
+.recently-viewed-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: saturate(1.05);
+}
+
+.recently-viewed-card:hover .recently-viewed-image {
+  transform: scale(1.02);
+}
+
+/* Time Badge */
+.recently-viewed-time-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+}
+
+/* Continue Badge */
+.recently-viewed-continue-badge {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+/* Wishlist Button */
+.recently-viewed-wishlist {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Continuation Overlay */
+.recently-viewed-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(79, 70, 229, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.recently-viewed-card:hover .recently-viewed-overlay {
+  opacity: 1;
+}
+
+/* FIXED: Recently Viewed Info - Mobile Optimized */
+.recently-viewed-info {
+  flex: 0.32; /* 32% of card height */
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 122px; /* 32% of 380px */
+}
+
+.recently-viewed-title {
+  font-size: 0.9375rem; /* 15px - optimal for mobile */
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  transition: color 0.3s ease;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
+}
+
+.recently-viewed-card:hover .recently-viewed-title {
+  color: var(--student-blue);
+}
+
+.recently-viewed-description {
+  font-size: 0.75rem; /* 12px - compact for mobile */
+  line-height: 1.3;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.recently-viewed-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.6875rem; /* 11px */
+  min-height: 14px;
+}
+
+/* FIXED: Continue CTA - Mobile Touch Optimized */
+.recently-viewed-cta {
+  background: linear-gradient(45deg, var(--student-blue) 0%, #06b6d4 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  min-height: 44px; /* Touch-friendly */
+  width: 100%;
+  padding: 10px 14px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+}
+
+.recently-viewed-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.25);
+}
+
+.recently-viewed-cta:active {
+  transform: scale(0.98);
+}
+
+/* ===========================================
+   ENHANCED TRENDING SECTION
+   =========================================== */
+
+/* Trending Section Container */
+.trending-section {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.03) 0%, rgba(239, 68, 68, 0.03) 100%);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(249, 115, 22, 0.1);
+}
+
+/* FIXED: Trending Card - Mobile Optimized Sizing */
+.trending-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(254, 252, 232, 0.98) 100%);
+  border: 2px solid rgba(249, 115, 22, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  backdrop-filter: blur(10px);
+  
+  /* FIXED: Mobile-optimized sizing */
+  width: 100%;
+  height: 400px;
+  min-height: 400px;
+  max-height: 400px;
+  
+  /* FIXED: Enhanced touch optimizations */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  will-change: transform;
+  -webkit-overflow-scrolling: touch;
+  
+  /* Enhanced shadow for mobile */
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.trending-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(249, 115, 22, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: rgba(249, 115, 22, 0.2);
+}
+
+.trending-card:active {
+  transform: scale(0.98);
+  transition: all 0.15s ease;
+}
+
+/* FIXED: Trending Image Container - Mobile Optimized */
+.trending-image-container {
+  position: relative;
+  flex: 0.68; /* Slightly larger image area for mobile */
+  width: 100%;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.04) 0%, rgba(239, 68, 68, 0.04) 100%);
+  overflow: hidden;
+  min-height: 272px; /* 68% of 400px */
+}
+
+.trending-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: saturate(1.1) contrast(1.02);
+}
+
+.trending-card:hover .trending-image {
+  transform: scale(1.02);
+}
+
+/* Rank Badge */
+.trending-rank-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 15;
+}
+
+/* Growth Badge */
+.trending-growth-badge {
+  position: absolute;
+  top: 45px;
+  left: 10px;
+  z-index: 14;
+}
+
+/* Hot Badge */
+.trending-hot-badge {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 13;
+}
+
+/* Trending Wishlist */
+.trending-wishlist {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pulse Overlay */
+.trending-pulse-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, rgba(249, 115, 22, 0.03) 0%, rgba(239, 68, 68, 0.03) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  animation: trendingPulse 3s ease-in-out infinite;
+}
+
+@keyframes trendingPulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.1; }
+}
+
+.trending-card:hover .trending-pulse-overlay {
+  opacity: 0.15;
+}
+
+/* FIXED: Trending Info - Mobile Optimized */
+.trending-info {
+  flex: 0.32; /* 32% of card height */
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 128px; /* 32% of 400px */
+}
+
+.trending-title {
+  font-size: 0.9375rem; /* 15px - optimal for mobile */
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  transition: color 0.3s ease;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
+}
+
+.trending-card:hover .trending-title {
+  color: var(--student-orange);
+}
+
+.trending-description {
+  font-size: 0.75rem; /* 12px - compact for mobile */
+  line-height: 1.3;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.trending-social-proof {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.6875rem; /* 11px */
+  min-height: 14px;
+}
+
+/* FIXED: Trending CTA - Mobile Touch Optimized */
+.trending-cta {
+  background: linear-gradient(45deg, var(--student-orange) 0%, #ef4444 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  min-height: 44px; /* Touch-friendly */
+  width: 100%;
+  padding: 10px 14px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+  position: relative;
+  overflow: hidden;
+}
+
+.trending-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.25);
+}
+
+.trending-cta:active {
+  transform: scale(0.98);
+}
+
+/* FOMO pulse effect */
+.trending-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.trending-cta:hover::before {
+  left: 100%;
+}
+
+/* ===========================================
+   FIXED TRENDING CAROUSEL - ULTRA SMOOTH
+   =========================================== */
+
+/* FIXED: Trending Carousel Container */
+.trending-carousel-container {
+  position: relative;
+  margin: 0 4rem; /* More space for arrows */
+  overflow: visible; /* Prevent clipping */
+}
+
+/* FIXED: Ultra-Smooth Trending Arrow Buttons */
+.trending-carousel-arrow.ultra-smooth-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50; /* Even higher z-index */
+  
+  /* FIXED: Ultra-responsive sizing */
+  width: 4.5rem;
+  height: 4.5rem;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(249, 115, 22, 0.2);
+  border-radius: 50%;
+  
+  /* FIXED: Instant response - no delays */
+  transition: all 0.15s ease-out;
+  cursor: pointer;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* FIXED: Performance optimizations */
+  will-change: transform, background-color, box-shadow;
+  transform-origin: center;
+  user-select: none;
+  pointer-events: auto;
+  
+  /* FIXED: Trending-specific styling */
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.trending-carousel-arrow.ultra-smooth-arrow:hover {
+  background: var(--student-orange);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 8px 30px rgba(249, 115, 22, 0.4), 0 4px 15px rgba(0, 0, 0, 0.15);
+  border-color: var(--student-orange);
+}
+
+.trending-carousel-arrow.ultra-smooth-arrow:active {
+  transform: translateY(-50%) scale(1.05);
+  transition: all 0.1s ease;
+}
+
+.trending-carousel-arrow.ultra-smooth-arrow.prev {
+  left: -2.25rem;
+}
+
+.trending-carousel-arrow.ultra-smooth-arrow.next {
+  right: -2.25rem;
+}
+
+/* FIXED: Trending Carousel Slider Overrides */
+.trending-carousel-container .slick-slider {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  user-select: none;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.trending-carousel-container .slick-list {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  transform: translate3d(0, 0, 0);
+}
+
+.trending-carousel-container .slick-track {
+  position: relative;
+  top: 0;
+  left: 0;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* FIXED: Prevent card stickiness */
+.trending-carousel-container .slick-slide {
+  float: left;
+  height: auto;
+  min-height: 1px;
+  outline: none;
+  transition: none;
+}
+
+.trending-carousel-container .slick-slide > div {
+  outline: none;
+  height: 100%;
+}
+
+/* FIXED: Enhanced Desktop Arrow Buttons - More Responsive */
+.desktop-carousel-arrow.enhanced-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40; /* Higher z-index */
+  
+  /* FIXED: Larger, more clickable area */
+  width: 4rem;
+  height: 4rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  
+  /* FIXED: Instant response */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* FIXED: Better performance */
+  will-change: transform, background-color, box-shadow;
+  transform-origin: center;
+  user-select: none;
+  
+  /* FIXED: Enhanced shadow for better visibility */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.desktop-carousel-arrow.enhanced-arrow:hover {
+  background: var(--student-blue);
+  transform: translateY(-50%) scale(1.08);
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3), 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--student-blue);
+}
+
+.desktop-carousel-arrow.enhanced-arrow:active {
+  transform: translateY(-50%) scale(1.02);
+  transition: all 0.1s ease;
+}
+
+.desktop-carousel-arrow.enhanced-arrow.prev {
+  left: -2rem; /* Better positioning */
+}
+
+.desktop-carousel-arrow.enhanced-arrow.next {
+  right: -2rem; /* Better positioning */
+}
+
+/* FIXED: Enhanced Carousel Container */
+.recently-viewed-carousel,
+.trending-carousel {
+  position: relative;
+  margin: 0 3rem; /* Space for arrows */
+}
+
+/* FIXED: Mobile responsive adjustments for trending */
+@media (max-width: 1279px) {
+  .trending-carousel-arrow.ultra-smooth-arrow {
+    display: none !important;
+  }
+  
+  .trending-carousel-container {
+    margin: 0 1rem; /* Smaller margins without arrows */
+    overflow: hidden; /* Contain on mobile */
+  }
+}
+
+@media (max-width: 768px) {
+  .trending-carousel-container {
+    margin: 0 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .trending-carousel-container {
+    margin: 0;
+  }
+}
+
+/* FIXED: Override any conflicting slick carousel styles */
+.trending-carousel-container .slick-slider .slick-track,
+.trending-carousel-container .slick-slider .slick-list {
+  transform: translate3d(0, 0, 0);
+}
+
+.trending-carousel-container .slick-slide {
+  transition: none !important;
+  transform: none !important;
+}
+
+/* FIXED: Ensure smooth dragging */
+.trending-carousel-container .slick-list.dragging {
+  cursor: grabbing;
+}
+
+.trending-carousel-container .slick-list.dragging * {
+  pointer-events: none;
+}
+
+/* FIXED: Mobile Responsive Adjustments */
+@media (max-width: 640px) {
+  .recently-viewed-card {
+    height: 350px;
+    min-height: 350px;
+    max-height: 350px;
+  }
+  
+  .recently-viewed-image-container {
+    min-height: 238px; /* 68% of 350px */
+  }
+  
+  .recently-viewed-info {
+    min-height: 112px; /* 32% of 350px */
+    padding: 12px 14px;
+  }
+  
+  .trending-card {
+    height: 370px;
+    min-height: 370px;
+    max-height: 370px;
+  }
+  
+  .trending-image-container {
+    min-height: 252px; /* 68% of 370px */
+  }
+  
+  .trending-info {
+    min-height: 118px; /* 32% of 370px */
+    padding: 12px 14px;
+  }
+  
+  .recently-viewed-carousel,
+  .trending-carousel {
+    margin: 0 1rem; /* Smaller margins on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .recently-viewed-card {
+    height: 330px;
+    min-height: 330px;
+    max-height: 330px;
+  }
+  
+  .recently-viewed-image-container {
+    min-height: 224px; /* 68% of 330px */
+  }
+  
+  .recently-viewed-info {
+    min-height: 106px; /* 32% of 330px */
+    padding: 10px 12px;
+  }
+  
+  .trending-card {
+    height: 350px;
+    min-height: 350px;
+    max-height: 350px;
+  }
+  
+  .trending-image-container {
+    min-height: 238px; /* 68% of 350px */
+  }
+  
+  .trending-info {
+    min-height: 112px; /* 32% of 350px */
+    padding: 10px 12px;
+  }
+  
+  .recently-viewed-carousel,
+  .trending-carousel {
+    margin: 0 0.5rem; /* Even smaller margins on small mobile */
+  }
+}
+
+/* FIXED: Hide arrows on mobile/tablet */
+@media (max-width: 1279px) {
+  .desktop-carousel-arrow.enhanced-arrow {
+    display: none !important;
+  }
+  
+  .recently-viewed-carousel,
+  .trending-carousel {
+    margin: 0; /* No margins needed without arrows */
+  }
+}
