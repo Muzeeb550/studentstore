@@ -17,7 +17,6 @@ export default function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link href={`/categories/${category.id}`} className="group cursor-pointer category-touch-optimized">
       <div className="category-card-research">
-        {/* 70% Image Section - Research-Based */}
         <div className="category-image-area">
           {category.icon_url ? (
             <img 
@@ -32,8 +31,6 @@ export default function CategoryCard({ category }: CategoryCardProps) {
               }}
             />
           ) : null}
-          
-          {/* Research-Based Fallback */}
           <div 
             className={`
               category-fallback-research
@@ -49,15 +46,11 @@ export default function CategoryCard({ category }: CategoryCardProps) {
             {category.name.charAt(0)}
           </div>
         </div>
-        
-        {/* 30% Text Section - Research-Based */}
         <div className="category-text-area">
           <h4 className="category-title-research font-medium text-student-primary group-hover:text-student-blue transition-colors duration-200 text-center">
             {category.name}
           </h4>
         </div>
-
-        {/* Mobile Touch Feedback */}
         <div className="category-touch-ripple absolute inset-0 bg-student-blue/3 rounded-xl opacity-0 group-active:opacity-100 transition-opacity duration-200 md:hidden"></div>
       </div>
     </Link>

@@ -457,6 +457,22 @@ body {
   }
 }
 
+/* ===========================================
+   TWO ROW CATEGORY SYSTEM - MOBILE ONLY
+   =========================================== */
+
+/* Two rows container - Mobile only */
+.category-two-row-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Gap between rows */
+}
+
+/* Individual Row */
+.category-row {
+  width: 100%;
+}
+
 /* Touch Feedback */
 .category-touch-ripple {
   pointer-events: none;
@@ -475,7 +491,6 @@ body {
 .category-section-bg {
   display: none;
 }
-
 
 /* ===========================================
    ENHANCED MOBILE TOUCH INTERACTIONS
@@ -1069,4 +1084,38 @@ select:focus {
 .gradient-animate {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
+}
+
+
+/* ===========================================
+   FIXED DESKTOP/MOBILE CATEGORY CONTAINERS
+   =========================================== */
+
+/* Desktop Container - Only visible on XL+ screens */
+.desktop-category-container {
+  width: 100%;
+}
+
+/* Mobile Container - Only visible on smaller than XL screens */
+.mobile-category-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Ensure proper hiding */
+@media (min-width: 1280px) {
+  .mobile-category-container {
+    display: none !important;
+  }
+  .category-two-row-container {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  .desktop-category-container {
+    display: none !important;
+  }
 }
