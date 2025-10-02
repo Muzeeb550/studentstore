@@ -444,39 +444,37 @@ export default function HomePage() {
     ],
   };
 
-// BUTTERY SMOOTH - Alternative Category Settings
+// Research-Based Category Settings - Optimal Mobile Experience
 const categorySettings = {
   dots: false,
-  infinite: true,
-  speed: 150, // Lightning fast
+  infinite: false, // Research shows this prevents confusion
+  speed: 350, // Optimal transition speed
   slidesToShow: 5,
   slidesToScroll: 1,
-  autoplay: false,
   prevArrow: <DesktopPrevArrow />,
   nextArrow: <DesktopNextArrow />,
   
-  // Buttery smooth settings
+  // Research-based smooth swiping
   swipe: true,
   swipeToSlide: true,
   touchMove: true,
-  touchThreshold: 1, // Maximum sensitivity
+  touchThreshold: 4, // Balanced sensitivity
   draggable: true,
   accessibility: true,
   cssEase: 'ease-out',
   useCSS: true,
   useTransform: true,
   waitForAnimate: false,
-  focusOnSelect: false,
   
   responsive: [
     {
       breakpoint: 1280,
       settings: { 
-        slidesToShow: 4,
+        slidesToShow: 5,
         slidesToScroll: 1,
         arrows: false,
-        speed: 120,
-        touchThreshold: 1
+        speed: 300,
+        touchThreshold: 4
       },
     },
     {
@@ -485,8 +483,8 @@ const categorySettings = {
         slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 120,
-        touchThreshold: 1
+        speed: 300,
+        touchThreshold: 4
       },
     },
     {
@@ -495,8 +493,9 @@ const categorySettings = {
         slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 100,
-        touchThreshold: 1
+        speed: 300,
+        touchThreshold: 4,
+        centerPadding: '10px' // Show 0.3 of next card
       },
     },
     {
@@ -505,8 +504,9 @@ const categorySettings = {
         slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 100,
-        touchThreshold: 1
+        speed: 300,
+        touchThreshold: 4,
+        centerPadding: '15px' // Show 0.3 of next card
       },
     },
   ],
@@ -670,10 +670,10 @@ const categorySettings = {
         </section>
       )}
 
-      {/* 5. Category Cards - Enhanced Mobile-First with Light Orange Background */}
+      {/* 5. Category Cards - Research-Based Design */}
 <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-  {/* Light Orange Background Container */}
-  <div className="category-section-bg">
+  {/* Research-Based Light Gray Background */}
+  <div className="category-section-research">
     <div className="mb-6 lg:mb-8 text-center">
       <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-2">Shop by Category</h3>
       <p className="text-student-secondary text-base lg:text-lg">Find exactly what you need for your student life</p>
@@ -692,7 +692,7 @@ const categorySettings = {
         </Slider>
       </div>
     ) : (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
         {[
           { icon: '📚', name: 'Textbooks', desc: 'New & used books' },
           { icon: '💻', name: 'Electronics', desc: 'Laptops & gadgets' },
@@ -700,12 +700,12 @@ const categorySettings = {
           { icon: '🎒', name: 'Campus Gear', desc: 'Backpacks & more' },
           { icon: '📖', name: 'Courses', desc: 'Online learning' },
         ].map((category, index) => (
-          <div key={index} className="category-card-uniform">
-            <div className="category-image-section">
+          <div key={index} className="category-card-research">
+            <div className="category-image-area">
               <div className="text-4xl">{category.icon}</div>
             </div>
-            <div className="category-text-section">
-              <h4 className="category-title-uniform font-medium text-student-primary">{category.name}</h4>
+            <div className="category-text-area">
+              <h4 className="category-title-research font-medium text-student-primary">{category.name}</h4>
             </div>
           </div>
         ))}
@@ -713,6 +713,7 @@ const categorySettings = {
     )}
   </div>
 </section>
+
 
 
       {/* 6. Featured Products - Enhanced */}

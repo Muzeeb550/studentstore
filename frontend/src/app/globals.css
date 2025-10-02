@@ -165,23 +165,23 @@ body {
 }
 
 /* ===========================================
-   WIDER UNIFORM MOBILE-FIRST CATEGORY SYSTEM
+   RESEARCH-BASED MOBILE CATEGORY SYSTEM
    =========================================== */
 
-/* Mobile Touch Category Optimization */
-.mobile-touch-category {
+/* Category Touch Optimization */
+.category-touch-optimized {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
 }
 
-/* Base Uniform Category Card - Wider & Shorter */
-.category-card-uniform {
+/* Research-Based Category Card - Following E-commerce Best Practices */
+.category-card-research {
   background-color: var(--bg-card);
-  border: 2px solid var(--border-light);
-  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px; /* Slightly rounded corners */
   text-align: center;
-  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Ultra-smooth easing */
+  transition: all 0.25s ease-out;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -190,270 +190,288 @@ body {
   position: relative;
   overflow: hidden;
   
-  /* WIDER & SHORTER UNIFORM SIZING */
+  /* Research-Based Uniform Sizing */
   width: 100%;
-  height: 130px; /* Decreased from 160px */
-  min-height: 130px;
-  max-height: 130px;
-  padding: 10px 14px; /* More horizontal padding for width */
+  height: 120px; /* Optimal mobile height */
+  min-height: 120px;
+  max-height: 120px;
+  padding: 10px; /* Balanced padding */
   
-  /* Ultra-smooth touch optimizations */
+  /* Optimal touch interactions */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transform: translateZ(0);
   backface-visibility: hidden;
-  will-change: transform;
   
-  /* Enhanced shadow for visibility */
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  /* Professional shadow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* Mobile Category Card Touch Feedback - Ultra Smooth */
-.mobile-category-card {
-  transition: all 0.15s ease-out;
-  will-change: transform, box-shadow;
-}
-
-.mobile-category-card:hover {
+/* Hover and Active States */
+.category-card-research:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  border-color: var(--student-orange);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--student-blue);
 }
 
-.mobile-category-card:active {
+.category-card-research:active {
   transform: scale(0.98);
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
-  transition: all 0.1s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: all 0.15s ease;
 }
 
-/* 90% Image Section - Optimized for Shorter Cards */
-.category-image-section {
-  flex: 0.9; /* 90% of space */
+/* 70% Image Area - Research-Based */
+.category-image-area {
+  flex: 0.7; /* 70% of space */
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin-bottom: 2px;
-  min-height: 95px; /* Adjusted for shorter cards */
+  margin-bottom: 4px;
+  height: 84px; /* 70% of 120px */
 }
 
-/* Category Icon - Optimized for Width */
-.category-icon-large {
-  width: 4rem; /* Slightly smaller for better proportion */
-  height: 4rem;
+/* Research-Based Icon Size - 48px optimal */
+.category-icon-research {
+  width: 48px;
+  height: 48px;
   max-width: 80%;
   max-height: 80%;
 }
 
-/* Category Fallback - Optimized */
-.category-fallback-large {
-  width: 4rem;
-  height: 4rem;
-  font-size: 1.5rem;
+/* Research-Based Fallback */
+.category-fallback-research {
+  width: 48px;
+  height: 48px;
+  font-size: 1.25rem; /* 20px */
   font-weight: 600;
 }
 
-/* 10% Text Section - Minimal */
-.category-text-section {
-  flex: 0.1; /* 10% of space */
+/* 30% Text Area - Research-Based */
+.category-text-area {
+  flex: 0.3; /* 30% of space */
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 20px; /* Adjusted for shorter cards */
+  height: 36px; /* 30% of 120px */
 }
 
-/* Uniform Category Title - Less Bold & Compact */
-.category-title-uniform {
-  font-size: 0.8125rem; /* 13px - smaller for compact design */
+/* Research-Based Typography */
+.category-title-research {
+  font-size: 0.8125rem; /* 13px - optimal mobile size */
   line-height: 1.1;
   margin: 0;
-  font-weight: 500; /* Less bold */
+  font-weight: 500; /* Medium weight - research-based */
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  max-width: 100%;
 }
 
 /* Small Mobile (up to 480px) */
 @media (max-width: 480px) {
-  .category-card-uniform {
-    height: 115px; /* Shorter */
-    min-height: 115px;
-    max-height: 115px;
-    padding: 8px 12px;
-    border-radius: 16px;
+  .category-card-research {
+    height: 110px;
+    min-height: 110px;
+    max-height: 110px;
+    padding: 8px;
+    border-radius: 10px;
   }
   
-  .category-image-section {
-    min-height: 85px;
+  .category-image-area {
+    height: 77px; /* 70% of 110px */
   }
   
-  .category-icon-large {
-    width: 3.5rem;
-    height: 3.5rem;
+  .category-icon-research {
+    width: 42px;
+    height: 42px;
   }
   
-  .category-fallback-large {
-    width: 3.5rem;
-    height: 3.5rem;
-    font-size: 1.375rem;
+  .category-fallback-research {
+    width: 42px;
+    height: 42px;
+    font-size: 1.125rem; /* 18px */
   }
   
-  .category-title-uniform {
+  .category-text-area {
+    height: 33px; /* 30% of 110px */
+  }
+  
+  .category-title-research {
     font-size: 0.75rem; /* 12px */
   }
 }
 
 /* Large Mobile/Small Tablet (481px - 640px) */
 @media (min-width: 481px) and (max-width: 640px) {
-  .category-card-uniform {
-    height: 125px;
-    min-height: 125px;
-    max-height: 125px;
-    padding: 10px 14px;
+  .category-card-research {
+    height: 115px;
+    min-height: 115px;
+    max-height: 115px;
+    padding: 9px;
   }
   
-  .category-image-section {
-    min-height: 92px;
+  .category-image-area {
+    height: 80px; /* 70% of 115px */
   }
   
-  .category-icon-large {
-    width: 3.75rem;
-    height: 3.75rem;
+  .category-icon-research {
+    width: 45px;
+    height: 45px;
   }
   
-  .category-fallback-large {
-    width: 3.75rem;
-    height: 3.75rem;
-    font-size: 1.5rem;
+  .category-fallback-research {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1875rem; /* 19px */
   }
   
-  .category-title-uniform {
+  .category-text-area {
+    height: 35px; /* 30% of 115px */
+  }
+  
+  .category-title-research {
     font-size: 0.8125rem; /* 13px */
   }
 }
 
 /* Tablet (641px - 768px) */
 @media (min-width: 641px) and (max-width: 768px) {
-  .category-card-uniform {
-    height: 140px;
-    min-height: 140px;
-    max-height: 140px;
-    padding: 12px 16px;
-    border-radius: 18px;
+  .category-card-research {
+    height: 130px;
+    min-height: 130px;
+    max-height: 130px;
+    padding: 12px;
+    border-radius: 14px;
   }
   
-  .category-image-section {
-    min-height: 105px;
+  .category-image-area {
+    height: 91px; /* 70% of 130px */
   }
   
-  .category-icon-large {
-    width: 4.25rem;
-    height: 4.25rem;
+  .category-icon-research {
+    width: 52px;
+    height: 52px;
   }
   
-  .category-fallback-large {
-    width: 4.25rem;
-    height: 4.25rem;
-    font-size: 1.625rem;
+  .category-fallback-research {
+    width: 52px;
+    height: 52px;
+    font-size: 1.375rem; /* 22px */
   }
   
-  .category-title-uniform {
+  .category-text-area {
+    height: 39px; /* 30% of 130px */
+  }
+  
+  .category-title-research {
     font-size: 0.875rem; /* 14px */
   }
 }
 
 /* Desktop (769px and above) */
 @media (min-width: 769px) {
-  .category-card-uniform {
-    height: 160px;
-    min-height: 160px;
-    max-height: 160px;
-    padding: 14px 18px;
-    border-radius: 20px;
+  .category-card-research {
+    height: 140px;
+    min-height: 140px;
+    max-height: 140px;
+    padding: 14px;
+    border-radius: 16px;
   }
   
-  .category-image-section {
-    min-height: 125px;
+  .category-image-area {
+    height: 98px; /* 70% of 140px */
   }
   
-  .category-icon-large {
-    width: 5rem;
-    height: 5rem;
+  .category-icon-research {
+    width: 56px;
+    height: 56px;
   }
   
-  .category-fallback-large {
-    width: 5rem;
-    height: 5rem;
-    font-size: 1.875rem;
+  .category-fallback-research {
+    width: 56px;
+    height: 56px;
+    font-size: 1.5rem; /* 24px */
   }
   
-  .category-title-uniform {
-    font-size: 0.9375rem; /* 15px */
+  .category-text-area {
+    height: 42px; /* 30% of 140px */
+  }
+  
+  .category-title-research {
+    font-size: 0.875rem; /* 14px */
     font-weight: 500;
   }
 }
 
 /* Large Desktop (1280px and above) */
 @media (min-width: 1280px) {
-  .category-card-uniform {
-    height: 180px;
-    min-height: 180px;
-    max-height: 180px;
-    padding: 16px 20px;
+  .category-card-research {
+    height: 160px;
+    min-height: 160px;
+    max-height: 160px;
+    padding: 16px;
+    border-radius: 18px;
   }
   
-  .category-image-section {
-    min-height: 140px;
+  .category-image-area {
+    height: 112px; /* 70% of 160px */
   }
   
-  .category-icon-large {
-    width: 5.5rem;
-    height: 5.5rem;
+  .category-icon-research {
+    width: 64px;
+    height: 64px;
   }
   
-  .category-fallback-large {
-    width: 5.5rem;
-    height: 5.5rem;
-    font-size: 2rem;
+  .category-fallback-research {
+    width: 64px;
+    height: 64px;
+    font-size: 1.75rem; /* 28px */
   }
   
-  .category-title-uniform {
-    font-size: 1rem; /* 16px */
+  .category-text-area {
+    height: 48px; /* 30% of 160px */
+  }
+  
+  .category-title-research {
+    font-size: 0.9375rem; /* 15px */
   }
 }
 
-/* Light Orange Category Section Background */
-.category-section-bg {
-  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
-  border-radius: 24px;
-  padding: 2rem 1rem;
+/* Research-Based Section Background - Light Gray */
+.category-section-research {
+  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  border-radius: 20px;
+  padding: 1.5rem 1rem;
   margin: 1rem 0;
 }
 
 @media (min-width: 768px) {
-  .category-section-bg {
-    padding: 3rem 2rem;
-    margin: 2rem 0;
+  .category-section-research {
+    padding: 2rem 1.5rem;
+    margin: 1.5rem 0;
   }
 }
 
-/* Mobile Touch Ripple Effect */
-.mobile-touch-ripple {
+/* Touch Feedback */
+.category-touch-ripple {
   pointer-events: none;
   border-radius: inherit;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.2s ease;
 }
 
-/* Clean up old category card styles */
+/* Clean up old styles */
+.category-card-uniform,
 .category-card,
 .mobile-large-icon-container,
 .mobile-large-category-icon,
 .mobile-large-category-fallback,
 .mobile-category-text-section,
-.mobile-large-category-title {
+.mobile-large-category-title,
+.category-section-bg {
   display: none;
 }
 

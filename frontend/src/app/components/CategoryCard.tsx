@@ -15,15 +15,15 @@ interface CategoryCardProps {
 
 export default function CategoryCard({ category }: CategoryCardProps) {
   return (
-    <Link href={`/categories/${category.id}`} className="group cursor-pointer mobile-touch-category">
-      <div className="category-card-uniform mobile-category-card">
-        {/* 90% Image Container - Large and Prominent */}
-        <div className="category-image-section">
+    <Link href={`/categories/${category.id}`} className="group cursor-pointer category-touch-optimized">
+      <div className="category-card-research">
+        {/* 70% Image Section - Research-Based */}
+        <div className="category-image-area">
           {category.icon_url ? (
             <img 
               src={category.icon_url} 
               alt={category.name}
-              className="category-icon-large object-contain transition-transform duration-300 group-hover:scale-105"
+              className="category-icon-research object-contain transition-transform duration-300 group-hover:scale-110"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
@@ -33,15 +33,15 @@ export default function CategoryCard({ category }: CategoryCardProps) {
             />
           ) : null}
           
-          {/* Large Fallback Icon */}
+          {/* Research-Based Fallback */}
           <div 
             className={`
-              category-fallback-large
+              category-fallback-research
               bg-gradient-to-br from-student-blue to-student-green 
-              rounded-2xl flex items-center justify-center 
+              rounded-xl flex items-center justify-center 
               text-white font-semibold
-              transition-transform duration-300 group-hover:scale-105
-              shadow-md
+              transition-transform duration-300 group-hover:scale-110
+              shadow-sm
               ${category.icon_url ? 'hidden' : 'flex'}
             `}
             style={{ display: category.icon_url ? 'none' : 'flex' }}
@@ -50,15 +50,15 @@ export default function CategoryCard({ category }: CategoryCardProps) {
           </div>
         </div>
         
-        {/* 10% Text Section - Minimal and Clean */}
-        <div className="category-text-section">
-          <h4 className="category-title-uniform font-medium text-student-primary group-hover:text-student-blue transition-colors duration-200 text-center">
+        {/* 30% Text Section - Research-Based */}
+        <div className="category-text-area">
+          <h4 className="category-title-research font-medium text-student-primary group-hover:text-student-blue transition-colors duration-200 text-center">
             {category.name}
           </h4>
         </div>
 
-        {/* Mobile Touch Ripple Effect */}
-        <div className="mobile-touch-ripple absolute inset-0 bg-student-blue/5 rounded-2xl opacity-0 group-active:opacity-100 transition-opacity duration-150 md:hidden"></div>
+        {/* Mobile Touch Feedback */}
+        <div className="category-touch-ripple absolute inset-0 bg-student-blue/3 rounded-xl opacity-0 group-active:opacity-100 transition-opacity duration-200 md:hidden"></div>
       </div>
     </Link>
   );
