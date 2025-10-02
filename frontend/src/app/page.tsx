@@ -444,27 +444,29 @@ export default function HomePage() {
     ],
   };
 
-  // Ultra-Smooth Category Settings - 4 Cards on Mobile
+// BUTTERY SMOOTH - Alternative Category Settings
 const categorySettings = {
   dots: false,
   infinite: true,
-  speed: 200, // Ultra-fast transitions
+  speed: 150, // Lightning fast
   slidesToShow: 5,
   slidesToScroll: 1,
+  autoplay: false,
   prevArrow: <DesktopPrevArrow />,
   nextArrow: <DesktopNextArrow />,
   
-  // Ultra-smooth mobile settings
+  // Buttery smooth settings
   swipe: true,
   swipeToSlide: true,
   touchMove: true,
-  touchThreshold: 2, // Hyper-sensitive
+  touchThreshold: 1, // Maximum sensitivity
   draggable: true,
   accessibility: true,
-  cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Ultra-smooth easing
+  cssEase: 'ease-out',
   useCSS: true,
   useTransform: true,
-  waitForAnimate: false, // No animation blocking
+  waitForAnimate: false,
+  focusOnSelect: false,
   
   responsive: [
     {
@@ -473,46 +475,42 @@ const categorySettings = {
         slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 180,
-        touchThreshold: 2
+        speed: 120,
+        touchThreshold: 1
       },
     },
     {
       breakpoint: 1024,
       settings: { 
-        slidesToShow: 4, // 4 cards on tablet
+        slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 180,
-        touchThreshold: 2
+        speed: 120,
+        touchThreshold: 1
       },
     },
     {
       breakpoint: 768,
       settings: { 
-        slidesToShow: 4, // 4 cards on mobile tablet
+        slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 160,
-        touchThreshold: 1,
-        centerPadding: '5px'
+        speed: 100,
+        touchThreshold: 1
       },
     },
     {
       breakpoint: 480,
       settings: { 
-        slidesToShow: 4, // 4 cards on small mobile
+        slidesToShow: 4,
         slidesToScroll: 1,
         arrows: false,
-        speed: 160,
-        touchThreshold: 1,
-        centerPadding: '8px'
+        speed: 100,
+        touchThreshold: 1
       },
     },
   ],
 };
-
-
 
 
   // 🚀 NEW: Enhanced loading component
