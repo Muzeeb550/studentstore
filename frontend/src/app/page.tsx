@@ -248,7 +248,7 @@ export default function HomePage() {
     setRecentlyViewed(recentProducts);
   }, []);
 
-  // FIXED: Enhanced Desktop Arrow Components - More Responsive
+  // Enhanced Desktop Arrow Components
   const DesktopPrevArrow = ({ onClick }: any) => (
     <button 
       onClick={onClick} 
@@ -275,7 +275,7 @@ export default function HomePage() {
     </button>
   );
 
-  // FIXED: Ultra-Responsive Trending Arrow Components
+  // Trending Arrow Components
   const TrendingPrevArrow = ({ onClick }: any) => (
     <button 
       onClick={onClick} 
@@ -343,7 +343,6 @@ export default function HomePage() {
     ]
   };
 
-  // Single-row desktop category slider settings (≥769px ONLY)
   const categoryDesktopSettings = {
     dots: false,
     infinite: false,
@@ -362,15 +361,13 @@ export default function HomePage() {
     useCSS: true,
     useTransform: true,
     waitForAnimate: false,
-    // NO responsive breakpoints - this is desktop only
   };
 
-  // Two independent row sliders for mobile/tablet (<=768px)
   const categoryRowSettings = {
     dots: false,
     infinite: false,
     speed: 320,
-    slidesToShow: 3.2, // ~30% width each with partial next card
+    slidesToShow: 3.2,
     slidesToScroll: 1,
     arrows: false,
     swipe: true,
@@ -390,188 +387,186 @@ export default function HomePage() {
     ],
   };
 
-// OPTIMIZED: Recently Viewed Carousel Settings - Perfect 2 Cards + Half Peek
-const recentlyViewedSettings = {
-  dots: false,
-  infinite: false,
-  speed: 350,
-  slidesToShow: 4, // Desktop default
-  slidesToScroll: 1,
-  prevArrow: <DesktopPrevArrow />,
-  nextArrow: <DesktopNextArrow />,
-  swipeToSlide: true,
-  
-  // Enhanced mobile physics for smooth swiping
-  touchThreshold: 8, // Higher = easier to swipe
-  swipeThreshold: 15, // Threshold for swipe detection
-  cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-  useCSS: true,
-  useTransform: true,
-  waitForAnimate: false,
-  focusOnSelect: false,
-  accessibility: true,
-  draggable: true,
-  
-  responsive: [
-    { 
-      breakpoint: 1280, 
-      settings: { 
-        slidesToShow: 3.2, 
-        slidesToScroll: 1, 
-        arrows: true,
-        speed: 320,
-        touchThreshold: 8
-      } 
-    },
-    { 
-      breakpoint: 1024, 
-      settings: { 
-        slidesToShow: 2.8,
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 300,
-        touchThreshold: 8,
-        centerPadding: '0px'
-      } 
-    },
-    { 
-      breakpoint: 768, 
-      settings: { 
-        slidesToShow: 2.5, // Tablet: 2.5 cards
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 280,
-        touchThreshold: 8,
-        centerPadding: '0px'
-      } 
-    },
-    { 
-      breakpoint: 640, 
-      settings: { 
-        slidesToShow: 2.4, // ⭐ KEY: 2 full + 40% peek (perfect mobile)
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 250,
-        touchThreshold: 8,
-        swipeThreshold: 12,
-        centerPadding: '0px',
-        edgeFriction: 0.15
-      } 
-    },
-    { 
-      breakpoint: 480, 
-      settings: { 
-        slidesToShow: 2.3, // ⭐ Small mobile: 2 full + 30% peek
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 230,
-        touchThreshold: 10,
-        swipeThreshold: 15,
-        centerPadding: '0px',
-        edgeFriction: 0.2
-      } 
-    },
-  ],
-};
+  // PRODUCTION-READY: Recently Viewed Carousel Settings
+  const recentlyViewedSettings = {
+    dots: false,
+    infinite: false,
+    speed: 350,
+    slidesToShow: 4,
+    slidesToScroll: 1,
+    prevArrow: <DesktopPrevArrow />,
+    nextArrow: <DesktopNextArrow />,
+    swipeToSlide: true,
+    touchThreshold: 5,
+    swipeThreshold: 10,
+    cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    useCSS: true,
+    useTransform: true,
+    waitForAnimate: false,
+    draggable: true,
+    responsive: [
+      { 
+        breakpoint: 1536,
+        settings: { 
+          slidesToShow: 4,
+          slidesToScroll: 1,
+          arrows: true,
+          speed: 350
+        } 
+      },
+      { 
+        breakpoint: 1280,
+        settings: { 
+          slidesToShow: 3.5,
+          slidesToScroll: 1,
+          arrows: true,
+          speed: 320
+        } 
+      },
+      { 
+        breakpoint: 1024,
+        settings: { 
+          slidesToShow: 2.8,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 300
+        } 
+      },
+      { 
+        breakpoint: 768,
+        settings: { 
+          slidesToShow: 2.5,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 280
+        } 
+      },
+      { 
+        breakpoint: 640,
+        settings: { 
+          slidesToShow: 2.0,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 250,
+          touchThreshold: 5,
+          edgeFriction: 0.15
+        } 
+      },
+      { 
+        breakpoint: 480,
+        settings: { 
+          slidesToShow: 1.9,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 240,
+          touchThreshold: 5,
+          edgeFriction: 0.15
+        } 
+      },
+      { 
+        breakpoint: 375,
+        settings: { 
+          slidesToShow: 1.85,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 230,
+          touchThreshold: 6,
+          edgeFriction: 0.2
+        } 
+      },
+    ],
+  };
 
-// OPTIMIZED: Trending Carousel Settings - Perfect 2 Cards + Half Peek  
-const trendingSettings = {
-  dots: false,
-  infinite: false,
-  speed: 350,
-  slidesToShow: 4, // Desktop default
-  slidesToScroll: 1,
-  prevArrow: <TrendingPrevArrow />,
-  nextArrow: <TrendingNextArrow />,
-  swipeToSlide: true,
-  
-  // Enhanced mobile physics for smooth swiping
-  touchThreshold: 8,
-  swipeThreshold: 15,
-  cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-  useCSS: true,
-  useTransform: true,
-  waitForAnimate: false,
-  focusOnSelect: false,
-  accessibility: true,
-  draggable: true,
-  touchMove: true,
-  variableWidth: false,
-  centerMode: false,
-  
-  responsive: [
-    { 
-      breakpoint: 1536,
-      settings: { 
-        slidesToShow: 4, 
-        slidesToScroll: 1,
-        arrows: true,
-        speed: 350,
-        touchThreshold: 8
-      } 
-    },
-    { 
-      breakpoint: 1280, 
-      settings: { 
-        slidesToShow: 3.2, 
-        slidesToScroll: 1, 
-        arrows: true,
-        speed: 320,
-        touchThreshold: 8
-      } 
-    },
-    { 
-      breakpoint: 1024, 
-      settings: { 
-        slidesToShow: 2.8,
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 300,
-        touchThreshold: 8,
-        centerPadding: '0px'
-      } 
-    },
-    { 
-      breakpoint: 768, 
-      settings: { 
-        slidesToShow: 2.5, // Tablet: 2.5 cards
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 280,
-        touchThreshold: 8,
-        centerPadding: '0px'
-      } 
-    },
-    { 
-      breakpoint: 640, 
-      settings: { 
-        slidesToShow: 2.4, // ⭐ KEY: 2 full + 40% peek (perfect mobile)
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 250,
-        touchThreshold: 8,
-        swipeThreshold: 12,
-        centerPadding: '0px',
-        edgeFriction: 0.15
-      } 
-    },
-    { 
-      breakpoint: 480, 
-      settings: { 
-        slidesToShow: 2.3, // ⭐ Small mobile: 2 full + 30% peek
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 230,
-        touchThreshold: 10,
-        swipeThreshold: 15,
-        centerPadding: '0px',
-        edgeFriction: 0.2
-      } 
-    },
-  ],
-};
+  // PRODUCTION-READY: Trending Carousel Settings
+  const trendingSettings = {
+    dots: false,
+    infinite: false,
+    speed: 350,
+    slidesToShow: 4,
+    slidesToScroll: 1,
+    prevArrow: <TrendingPrevArrow />,
+    nextArrow: <TrendingNextArrow />,
+    swipeToSlide: true,
+    touchThreshold: 5,
+    swipeThreshold: 10,
+    cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    useCSS: true,
+    useTransform: true,
+    waitForAnimate: false,
+    draggable: true,
+    responsive: [
+      { 
+        breakpoint: 1536,
+        settings: { 
+          slidesToShow: 4,
+          slidesToScroll: 1,
+          arrows: true,
+          speed: 350
+        } 
+      },
+      { 
+        breakpoint: 1280,
+        settings: { 
+          slidesToShow: 3.5,
+          slidesToScroll: 1,
+          arrows: true,
+          speed: 320
+        } 
+      },
+      { 
+        breakpoint: 1024,
+        settings: { 
+          slidesToShow: 2.8,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 300
+        } 
+      },
+      { 
+        breakpoint: 768,
+        settings: { 
+          slidesToShow: 2.5,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 280
+        } 
+      },
+      { 
+        breakpoint: 640,
+        settings: { 
+          slidesToShow: 2.0,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 250,
+          touchThreshold: 5,
+          edgeFriction: 0.15
+        } 
+      },
+      { 
+        breakpoint: 480,
+        settings: { 
+          slidesToShow: 1.9,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 240,
+          touchThreshold: 5,
+          edgeFriction: 0.15
+        } 
+      },
+      { 
+        breakpoint: 375,
+        settings: { 
+          slidesToShow: 1.85,
+          slidesToScroll: 1,
+          arrows: false,
+          speed: 230,
+          touchThreshold: 6,
+          edgeFriction: 0.2
+        } 
+      },
+    ],
+  };
 
-  // FIXED: Enhanced Product Carousel Settings (for other sections)
   const productCarouselSettings = {
     dots: false,
     infinite: false,
@@ -581,15 +576,12 @@ const trendingSettings = {
     prevArrow: <DesktopPrevArrow />,
     nextArrow: <DesktopNextArrow />,
     swipeToSlide: true,
-    
-    // FIXED: Desktop optimization
     touchThreshold: 5,
     cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)',
     useCSS: true,
     useTransform: true,
     waitForAnimate: false,
     focusOnSelect: false,
-    
     responsive: [
       { 
         breakpoint: 1280, 
@@ -625,7 +617,6 @@ const trendingSettings = {
     ],
   };
 
-  // Split categories evenly into two arrays for mobile two rows
   const { topRowCategories, bottomRowCategories } = useMemo(() => {
     const mid = Math.ceil(categories.length / 2);
     return {
@@ -667,7 +658,7 @@ const trendingSettings = {
         </div>
       </div>
     );
-  };
+  }
 
   return (
     <div className="min-h-screen bg-student-page">
@@ -713,79 +704,79 @@ const trendingSettings = {
         </div>
       </section>
 
-      {/* Enhanced Recently Viewed Section */}
-{recentlyViewed.length > 0 && (
-  <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-    <div className="recently-viewed-section">
-      <div className="mb-6 lg:mb-8">
-        <div className="flex items-center mb-4">
-          <div className="w-1 h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-3"></div>
-          <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
-            🔄 Continue Your Shopping Journey
-          </h3>
-        </div>
-        <p className="text-student-secondary text-base lg:text-lg ml-7">
-          Don't lose track of these great finds - pick up exactly where you left off!
-        </p>
-        <div className="recently-viewed-progress ml-7 mt-3">
-          <div className="flex items-center text-sm text-student-blue">
-            <div className="w-2 h-2 bg-student-blue rounded-full mr-2 animate-pulse"></div>
-            <span className="font-medium">{recentlyViewed.length} items in your browsing session</span>
-          </div>
-        </div>
-      </div>
-      {/* ⭐ KEY: Simple wrapper without extra divs */}
-      <div className="recently-viewed-carousel">
-        <Slider {...recentlyViewedSettings}>
-          {recentlyViewed.map((item) => (
-            <div key={`recent-${item.product.id}-${item.viewedAt}`} className="px-2">
-              <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+      {/* ⭐ FIXED: Recently Viewed Section - NO px-2 padding */}
+      {recentlyViewed.length > 0 && (
+        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+          <div className="recently-viewed-section">
+            <div className="mb-6 lg:mb-8">
+              <div className="flex items-center mb-4">
+                <div className="w-1 h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-3"></div>
+                <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
+                  🔄 Continue Your Shopping Journey
+                </h3>
+              </div>
+              <p className="text-student-secondary text-base lg:text-lg ml-7">
+                Don't lose track of these great finds - pick up exactly where you left off!
+              </p>
+              <div className="recently-viewed-progress ml-7 mt-3">
+                <div className="flex items-center text-sm text-student-blue">
+                  <div className="w-2 h-2 bg-student-blue rounded-full mr-2 animate-pulse"></div>
+                  <span className="font-medium">{recentlyViewed.length} items in your browsing session</span>
+                </div>
+              </div>
             </div>
-          ))}
-        </Slider>
-      </div>
-    </div>
-  </section>
-)}
-
-
-      {/* Enhanced Trending Section */}
-{trendingProducts.length > 0 && (
-  <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-    <div className="trending-section">
-      <div className="mb-6 lg:mb-8">
-        <div className="flex items-center mb-4">
-          <div className="w-1 h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-3"></div>
-          <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
-            🔥 What's Trending Among Students
-          </h3>
-        </div>
-        <p className="text-student-secondary text-base lg:text-lg ml-7">
-          Join thousands of students discovering these hot products right now!
-        </p>
-        <div className="trending-live-indicator ml-7 mt-3">
-          <div className="flex items-center text-sm text-student-orange">
-            <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
-            <span className="font-medium">Live trending data • Updated every hour</span>
-          </div>
-        </div>
-      </div>
-      {/* ⭐ KEY: Clean wrapper without nested divs */}
-      <div className="trending-carousel-container">
-        <Slider {...trendingSettings}>
-          {trendingProducts.map((product, index) => (
-            <div key={`trending-${product.id}-${index}`} className="px-2">
-              <TrendingCard product={product} trendingRank={index + 1} />
+            <div className="recently-viewed-carousel">
+              <Slider key="recently-viewed-slider" {...recentlyViewedSettings}>
+                {recentlyViewed.map((item) => (
+                  <div key={`recent-${item.product.id}-${item.viewedAt}`}>
+                    <div className="carousel-slide-inner">
+                      <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+                    </div>
+                  </div>
+                ))}
+              </Slider>
             </div>
-          ))}
-        </Slider>
-      </div>
-    </div>
-  </section>
-)}
+          </div>
+        </section>
+      )}
 
+      {/* ⭐ FIXED: Trending Section - NO px-2 padding */}
+      {trendingProducts.length > 0 && (
+        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+          <div className="trending-section">
+            <div className="mb-6 lg:mb-8">
+              <div className="flex items-center mb-4">
+                <div className="w-1 h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-3"></div>
+                <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
+                  🔥 What's Trending Among Students
+                </h3>
+              </div>
+              <p className="text-student-secondary text-base lg:text-lg ml-7">
+                Join thousands of students discovering these hot products right now!
+              </p>
+              <div className="trending-live-indicator ml-7 mt-3">
+                <div className="flex items-center text-sm text-student-orange">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
+                  <span className="font-medium">Live trending data • Updated every hour</span>
+                </div>
+              </div>
+            </div>
+            <div className="trending-carousel-container">
+              <Slider key="trending-slider" {...trendingSettings}>
+                {trendingProducts.map((product, index) => (
+                  <div key={`trending-${product.id}-${index}`}>
+                    <div className="carousel-slide-inner">
+                      <TrendingCard product={product} trendingRank={index + 1} />
+                    </div>
+                  </div>
+                ))}
+              </Slider>
+            </div>
+          </div>
+        </section>
+      )}
 
-      {/* Category Cards - COMPLETELY FIXED Desktop/Mobile Logic */}
+      {/* Category Cards */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
         <div className="category-section-research">
           <div className="mb-6 lg:mb-8 text-center">
@@ -797,7 +788,6 @@ const trendingSettings = {
             <LoadingSection title="Categories" />
           ) : categories.length > 0 ? (
             <>
-              {/* Desktop: ONLY single row with arrows (≥1280px) */}
               <div className="desktop-category-container hidden xl:block">
                 <Slider {...categoryDesktopSettings}>
                   {categories.map((category) => (
@@ -808,7 +798,6 @@ const trendingSettings = {
                 </Slider>
               </div>
 
-              {/* Mobile/Tablet: ONLY two rows (≤1279px) */}
               <div className="mobile-category-container block xl:hidden">
                 <div className="category-row mb-3">
                   <Slider {...categoryRowSettings}>
@@ -853,7 +842,7 @@ const trendingSettings = {
         </div>
       </section>
 
-      {/* Featured Products - Mobile-Optimized Grid */}
+      {/* Featured Products */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
         <div className="text-center mb-8 lg:mb-12">
           <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-4">

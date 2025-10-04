@@ -2347,40 +2347,49 @@ select:focus {
 }
 
 /* ===========================================
-   MOBILE CAROUSEL ENHANCEMENTS - 2 CARD + PEEK LAYOUT FIX
+   PRODUCTION-READY: MOBILE CAROUSEL OPTIMIZATION
+   Built for StudentStore - Scalable & Maintainable
    =========================================== */
 
-/* Recently Viewed Carousel Container - Better Spacing */
-.recently-viewed-carousel {
-  position: relative;
-  margin: 0;
-  padding: 0 0.5rem; /* Small padding to prevent edge clipping */
-  overflow: visible;
-}
-
-/* Trending Carousel Container - Better Spacing */
+/* Universal Carousel Container Spacing */
+.recently-viewed-carousel,
 .trending-carousel-container {
   position: relative;
   margin: 0;
-  padding: 0 0.5rem; /* Small padding to prevent edge clipping */
   overflow: visible;
 }
 
-/* Mobile Optimization - Perfect Card Gap */
-@media (max-width: 640px) {
-  .recently-viewed-carousel .slick-list,
-  .trending-carousel-container .slick-list {
-    padding: 0 !important;
-    margin: 0 -0.25rem; /* Tighter spacing for mobile */
+/* Desktop: Add space for arrows */
+@media (min-width: 1280px) {
+  .recently-viewed-carousel,
+  .trending-carousel-container {
+    margin: 0 3.5rem;
+  }
+}
+
+/* Optimal Card Gap System - Mobile First */
+@media (max-width: 768px) {
+  /* Recently Viewed Cards */
+  .recently-viewed-carousel .slick-slide {
+    padding: 0 6px; /* 12px total gap between cards */
+  }
+  
+  .recently-viewed-carousel .slick-list {
+    margin: 0 -6px; /* Compensate for padding */
     overflow: visible;
   }
   
-  .recently-viewed-carousel .slick-slide,
+  /* Trending Cards */
   .trending-carousel-container .slick-slide {
-    padding: 0 0.25rem; /* Consistent gap between cards */
+    padding: 0 6px;
   }
   
-  /* Remove any extra margins */
+  .trending-carousel-container .slick-list {
+    margin: 0 -6px;
+    overflow: visible;
+  }
+  
+  /* Remove any extra track margins */
   .recently-viewed-carousel .slick-track,
   .trending-carousel-container .slick-track {
     margin: 0;
@@ -2389,14 +2398,13 @@ select:focus {
   }
 }
 
-/* Ultra-Smooth Touch Scrolling for Mobile */
+/* Ultra-Smooth Touch Scrolling Physics */
 @media (max-width: 768px) {
   .recently-viewed-carousel .slick-list,
   .trending-carousel-container .slick-list {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
     overflow-x: hidden;
-    overflow-y: visible;
   }
   
   .recently-viewed-carousel .slick-track,
@@ -2404,12 +2412,6 @@ select:focus {
     transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform;
     transform: translate3d(0, 0, 0);
-  }
-  
-  /* Better touch response */
-  .recently-viewed-carousel .slick-slide,
-  .trending-carousel-container .slick-slide {
-    transform: translateZ(0);
     backface-visibility: hidden;
   }
   
@@ -2419,9 +2421,23 @@ select:focus {
     cursor: grabbing;
     user-select: none;
   }
+  
+  /* Prevent pointer events during drag */
+  .recently-viewed-carousel .slick-list.dragging *,
+  .trending-carousel-container .slick-list.dragging * {
+    pointer-events: none;
+  }
 }
 
-/* Peek Indicator - Visual Cue for More Content */
+/* Hardware Acceleration for Silky Smooth Performance */
+.recently-viewed-carousel .slick-slide,
+.trending-carousel-container .slick-slide {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Subtle Peek Indicator - Shows More Content Available */
 @media (max-width: 640px) {
   .recently-viewed-carousel::after {
     content: '';
@@ -2433,7 +2449,7 @@ select:focus {
     background: linear-gradient(
       to bottom, 
       transparent 15%, 
-      rgba(79, 70, 229, 0.15) 50%, 
+      rgba(79, 70, 229, 0.12) 50%, 
       transparent 85%
     );
     pointer-events: none;
@@ -2450,7 +2466,7 @@ select:focus {
     background: linear-gradient(
       to bottom, 
       transparent 15%, 
-      rgba(249, 115, 22, 0.15) 50%, 
+      rgba(249, 115, 22, 0.12) 50%, 
       transparent 85%
     );
     pointer-events: none;
@@ -2458,48 +2474,33 @@ select:focus {
   }
 }
 
-/* Ensure Cards Don't Overflow on Small Screens */
-@media (max-width: 480px) {
-  .recently-viewed-card,
-  .trending-card {
-    max-width: 100%;
-    min-width: 0;
-  }
-  
-  .recently-viewed-carousel,
-  .trending-carousel-container {
-    padding: 0 0.25rem;
-  }
-}
-
-/* Fix Card Consistency Across Breakpoints */
+/* Tablet Optimization */
 @media (min-width: 641px) and (max-width: 768px) {
   .recently-viewed-carousel .slick-slide,
   .trending-carousel-container .slick-slide {
-    padding: 0 0.5rem;
+    padding: 0 8px; /* Slightly larger gap on tablets */
+  }
+  
+  .recently-viewed-carousel .slick-list,
+  .trending-carousel-container .slick-list {
+    margin: 0 -8px;
   }
 }
 
-/* Desktop Arrow Positioning Fix */
-@media (min-width: 1280px) {
-  .recently-viewed-carousel {
-    margin: 0 3.5rem;
-    padding: 0;
+/* Desktop: Ensure Proper Card Display */
+@media (min-width: 769px) {
+  .recently-viewed-carousel .slick-slide,
+  .trending-carousel-container .slick-slide {
+    padding: 0 8px;
   }
   
-  .trending-carousel-container {
-    margin: 0 3.5rem;
-    padding: 0;
-  }
-  
-  .desktop-carousel-arrow.enhanced-arrow,
-  .trending-carousel-arrow.ultra-smooth-arrow {
-    pointer-events: auto;
-    z-index: 50;
+  .recently-viewed-carousel .slick-list,
+  .trending-carousel-container .slick-list {
+    margin: 0 -8px;
   }
 }
 
-/* Prevent Card Stretching */
+/* Ensure Cards Maintain Structure */
 .recently-viewed-carousel .slick-slide > div,
 .trending-carousel-container .slick-slide > div {
   height: 100%;
@@ -2509,4 +2510,105 @@ select:focus {
 .recently-viewed-carousel .slick-slide > div > *,
 .trending-carousel-container .slick-slide > div > * {
   width: 100%;
+  flex-shrink: 0;
+}
+
+/* Fix Any Potential Overflows */
+.recently-viewed-card,
+.trending-card {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Prevent Layout Shift During Load */
+.recently-viewed-carousel .slick-track,
+.trending-carousel-container .slick-track {
+  min-height: 380px; /* Match card height */
+}
+
+@media (max-width: 640px) {
+  .recently-viewed-carousel .slick-track {
+    min-height: 320px;
+  }
+  
+  .trending-carousel-container .slick-track {
+    min-height: 340px;
+  }
+}
+
+/* Enhanced Arrow Interactivity - Desktop Only */
+@media (min-width: 1280px) {
+  .desktop-carousel-arrow,
+  .trending-carousel-arrow {
+    pointer-events: auto;
+    z-index: 50;
+    user-select: none;
+  }
+  
+  .desktop-carousel-arrow:focus,
+  .trending-carousel-arrow:focus {
+    outline: 3px solid var(--student-blue);
+    outline-offset: 2px;
+  }
+}
+
+/* ===========================================
+   CAROUSEL SLIDE INNER PADDING FIX
+   =========================================== */
+
+/* Carousel slide inner wrapper - handles gaps */
+.carousel-slide-inner {
+  padding: 0 6px; /* 12px total gap between cards */
+  height: 100%;
+}
+
+/* Compensate for padding in list */
+.recently-viewed-carousel .slick-list,
+.trending-carousel-container .slick-list {
+  margin: 0 -6px;
+  overflow: visible;
+}
+
+/* Ensure proper card display */
+.carousel-slide-inner > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Force correct slide widths on mobile - PRIORITY */
+@media (max-width: 768px) {
+  .recently-viewed-carousel .slick-slide,
+  .trending-carousel-container .slick-slide {
+    width: auto !important;
+    min-width: auto !important;
+    max-width: none !important;
+  }
+  
+  .recently-viewed-carousel .slick-track,
+  .trending-carousel-container .slick-track {
+    display: flex !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+}
+
+/* Ensure slick calculates width correctly */
+@media (max-width: 640px) {
+  .recently-viewed-carousel .slick-slider,
+  .trending-carousel-container .slick-slider {
+    width: 100% !important;
+  }
+  
+  .recently-viewed-carousel .slick-list,
+  .trending-carousel-container .slick-list {
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+}
+
+/* Remove any conflicting width constraints */
+.recently-viewed-carousel .slick-slide > div,
+.trending-carousel-container .slick-slide > div {
+  width: 100% !important;
+  display: flex !important;
 }
