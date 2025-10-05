@@ -44,10 +44,12 @@ const generalApiLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
     keyGenerator: (req) => {
+        // Always use user ID for authenticated requests
         if (req.user?.id) {
             return `user:${req.user.id}`;
         }
-        return req.ip; // Simple IP fallback
+        // For unauthenticated, use 'anonymous' key (no IP tracking)
+        return 'anonymous';
     },
     message: {
         status: 'error',
@@ -55,8 +57,11 @@ const generalApiLimit = rateLimit({
         code: 'API_RATE_LIMIT_EXCEEDED'
     },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    // Skip rate limiting in development
+    skip: (req) => process.env.NODE_ENV === 'development'
 });
+
 
 // Cache configurations
 const dashboardStatsCache = createCacheMiddleware(
@@ -493,3 +498,5 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
 });
 
 module.exports = router;
+
+
