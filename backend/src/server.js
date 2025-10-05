@@ -26,38 +26,33 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS Configuration
 // Needs to be (for multiple domains)
-// CORS Configuration - Updated for Render deployment
+// CORS Configuration - FIXED for production
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://studentstore-zeta.vercel.app'
+];
+
+const allowedOriginPatterns = [
+    /^https:\/\/studentstore-git-.+\.muzeebs-projects\.vercel\.app$/,
+    /^https:\/\/studentstore-.+\.muzeebs-projects\.vercel\.app$/,
+    /^https:\/\/.+\.onrender\.com$/
+];
+
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, Postman, curl)
-        if (!origin) return callback(null, true);
-        
-        // Local development
-        if (origin === 'http://localhost:3000') {
+        // Allow requests with no origin (mobile apps, Postman, curl)
+        if (!origin) {
             return callback(null, true);
         }
         
-        // Production Vercel domain
-        if (origin === 'https://studentstore-zeta.vercel.app') {
+        // Check exact matches
+        if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
         
-        // Git-based deployments (staging, feature branches)
-        if (origin.includes('studentstore-git-') && 
-            origin.includes('muzeebs-projects.vercel.app') && 
-            origin.startsWith('https://')) {
-            return callback(null, true);
-        }
-        
-        // Random hash deployments (Vercel auto-generated)
-        if (origin.includes('muzeebs-projects.vercel.app') && 
-            origin.startsWith('https://studentstore-') &&
-            !origin.includes('git-')) {
-            return callback(null, true);
-        }
-        
-        // ✅ NEW: Allow Render backend itself (for health checks)
-        if (origin.includes('.onrender.com') && origin.startsWith('https://')) {
+        // Check pattern matches
+        const isAllowed = allowedOriginPatterns.some(pattern => pattern.test(origin));
+        if (isAllowed) {
             return callback(null, true);
         }
         
@@ -65,9 +60,17 @@ app.use(cors({
         callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control', 'Pragma'],
+    exposedHeaders: ['Content-Length', 'Content-Type'],
+    maxAge: 86400, // 24 hours - cache preflight requests
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
+
+// Explicitly handle ALL OPTIONS requests
+app.options('*', cors());
+
 
 
 // Session Configuration
