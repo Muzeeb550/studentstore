@@ -68,10 +68,6 @@ app.use(cors({
     optionsSuccessStatus: 204
 }));
 
-// Explicitly handle ALL OPTIONS requests
-app.options('*', cors());
-
-
 
 // Session Configuration
 app.use(session({
