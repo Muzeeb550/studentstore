@@ -1,17 +1,16 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { ipKeyGenerator } = require('express-rate-limit');
-const { getPool, sql } = require('../config/database');
+const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/adminAuth');
 const imagekit = require('../config/imagekit');
-const { createCacheMiddleware } = require('../middleware/cache'); // ADD CACHE MIDDLEWARE
+const { createCacheMiddleware } = require('../middleware/cache');
 const router = express.Router();
 
 // Profile upload rate limiting - ONLY for profile pictures (5 per hour)
 const profileUploadLimit = rateLimit({
-    windowMs: 60 * 60 * 1000,        // 1 hour window
-    max: 5,                          // Maximum 5 profile uploads per hour per user
-    keyGenerator: (req) => req.user.id,
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    keyGenerator: (req) => `user:${req.user.id}`,
     message: {
         status: 'error',
         message: 'Profile picture upload limit reached. You can upload up to 5 pictures per hour. Please try again later.',
@@ -27,9 +26,9 @@ const profileUploadLimit = rateLimit({
 
 // Review image upload rate limiting - MORE generous (30 per hour)
 const reviewImageUploadLimit = rateLimit({
-    windowMs: 60 * 60 * 1000,        // 1 hour window
-    max: 30,                         // Maximum 30 review image uploads per hour per user
-    keyGenerator: (req) => req.user.id,
+    windowMs: 60 * 60 * 1000,
+    max: 30,
+    keyGenerator: (req) => `user:${req.user.id}`,
     message: {
         status: 'error',
         message: 'Review image upload limit reached. You can upload up to 30 images per hour. Please try again later.',
@@ -48,33 +47,32 @@ const generalApiLimit = rateLimit({
         if (req.user?.id) {
             return `user:${req.user.id}`;
         }
-        return ipKeyGenerator(req);  // Use proper IPv6-compatible key generator
+        return req.ip; // Simple IP fallback
     },
     message: {
         status: 'error',
         message: 'Too many requests. Please try again later.',
         code: 'API_RATE_LIMIT_EXCEEDED'
-    }
+    },
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
-// ================== CACHE CONFIGURATIONS ==================
-// Dashboard stats caching - per user, 10 minutes (MOST IMPORTANT)
+// Cache configurations
 const dashboardStatsCache = createCacheMiddleware(
     (req) => `dashboard:user:${req.user.id}`,
-    600, // 10 minutes - balance between performance and data freshness
-    (req) => !req.user // Skip if no authenticated user
+    600,
+    (req) => !req.user
 );
 
-// User profile caching - per user, 10 minutes  
 const userProfileCache = createCacheMiddleware(
     (req) => `profile:user:${req.user.id}`,
-    600 // 10 minutes
+    600
 );
 
-// User stats caching - per user, 5 minutes (more dynamic data)
 const userStatsCache = createCacheMiddleware(
     (req) => `stats:user:${req.user.id}`,
-    300 // 5 minutes
+    300
 );
 
 // Get all users (admin only)
@@ -93,32 +91,27 @@ router.get('/', generalApiLimit, async (req, res) => {
     }
 });
 
-// ImageKit authentication endpoint - DIFFERENT LIMITS based on usage
+// ImageKit authentication endpoint
 router.get('/imagekit-auth', authenticateToken, async (req, res) => {
     try {
         console.log(`🔑 ImageKit auth request from user ${req.user.id}`);
         
-        // Check the usage type from query parameter or header
-        const usage = req.query.usage || req.headers['x-upload-type'] || 'review'; // Default to review
+        const usage = req.query.usage || req.headers['x-upload-type'] || 'review';
         
-        // Apply different rate limits based on usage
         if (usage === 'profile') {
-            // Apply profile upload limit
             profileUploadLimit(req, res, (err) => {
-                if (err) return; // Rate limit exceeded, response already sent
+                if (err) return;
                 proceedWithAuth();
             });
         } else {
-            // Apply review image upload limit
             reviewImageUploadLimit(req, res, (err) => {
-                if (err) return; // Rate limit exceeded, response already sent
+                if (err) return;
                 proceedWithAuth();
             });
         }
         
         function proceedWithAuth() {
             try {
-                // Get clean ImageKit authentication parameters
                 const authenticationParameters = imagekit.getAuthenticationParameters();
                 
                 console.log('🔐 ImageKit auth params generated for:', usage, {
@@ -128,7 +121,6 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
                 });
                 
                 res.json(authenticationParameters);
-                
             } catch (error) {
                 console.error('ImageKit auth error:', error);
                 res.status(500).json({
@@ -138,7 +130,6 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
                 });
             }
         }
-        
     } catch (error) {
         console.error('ImageKit auth error:', error);
         res.status(500).json({
@@ -152,33 +143,27 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
 // Get user profile (protected route) - WITH CACHING
 router.get('/profile', authenticateToken, userProfileCache, generalApiLimit, async (req, res) => {
     try {
-        const pool = await getPool();
         const userId = req.user.id;
         
-        const result = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query(`
-                SELECT id, google_id, name, display_name, email, 
-                       profile_picture, role, is_active, created_at
-                FROM Users 
-                WHERE id = @userId AND is_active = 1
-            `);
+        const result = await pool.query(`
+            SELECT id, google_id, name, display_name, email, 
+                   profile_picture, role, is_active, created_at
+            FROM Users 
+            WHERE id = $1 AND is_active = true
+        `, [userId]);
         
-        if (result.recordset.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(404).json({
                 status: 'error',
                 message: 'User not found or account deactivated'
             });
         }
         
-        const user = result.recordset[0];
-        
         res.json({
             status: 'success',
             message: 'User profile retrieved successfully',
-            data: user
+            data: result.rows[0]
         });
-        
     } catch (error) {
         console.error('Get user profile error:', error);
         res.status(500).json({
@@ -189,16 +174,14 @@ router.get('/profile', authenticateToken, userProfileCache, generalApiLimit, asy
     }
 });
 
-// Update user profile picture - ONLY this should have strict profile limits
+// Update user profile picture
 router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req, res) => {
     try {
-        const pool = await getPool();
         const userId = req.user.id;
         const { profile_picture } = req.body;
         
         console.log(`📸 Profile picture update request from user ${userId}`);
         
-        // Enhanced input validation
         if (!profile_picture) {
             return res.status(400).json({
                 status: 'error',
@@ -215,7 +198,6 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Server-side MIME type validation
         const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
         const urlLower = profile_picture.toLowerCase();
         const isValidImageExtension = allowedExtensions.some(ext => urlLower.includes(ext));
@@ -230,7 +212,6 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Validate ImageKit domain
         if (!profile_picture.includes('ik.imagekit.io')) {
             console.log(`❌ Invalid image source attempt from user ${userId}: ${profile_picture}`);
             return res.status(400).json({
@@ -240,7 +221,6 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Check URL length
         if (profile_picture.length > 2048) {
             return res.status(400).json({
                 status: 'error',
@@ -249,36 +229,32 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        // Verify user exists and is active
-        const userCheck = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query('SELECT id, is_active FROM Users WHERE id = @userId');
+        const userCheck = await pool.query(
+            'SELECT id, is_active FROM Users WHERE id = $1',
+            [userId]
+        );
             
-        if (userCheck.recordset.length === 0) {
+        if (userCheck.rows.length === 0) {
             return res.status(404).json({
                 status: 'error',
                 message: 'User account not found'
             });
         }
         
-        if (!userCheck.recordset[0].is_active) {
+        if (!userCheck.rows[0].is_active) {
             return res.status(403).json({
                 status: 'error',
                 message: 'Account is deactivated'
             });
         }
         
-        // Update user profile picture
-        const result = await pool.request()
-            .input('userId', sql.Int, userId)
-            .input('profilePicture', sql.VarChar(2048), profile_picture)
-            .query(`
-                UPDATE Users 
-                SET profile_picture = @profilePicture, updated_at = GETDATE()
-                WHERE id = @userId AND is_active = 1
-            `);
+        const result = await pool.query(`
+            UPDATE Users 
+            SET profile_picture = $1, updated_at = NOW()
+            WHERE id = $2 AND is_active = true
+        `, [profile_picture, userId]);
         
-        if (result.rowsAffected[0] === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({
                 status: 'error',
                 message: 'User not found or account deactivated'
@@ -287,7 +263,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         
         console.log(`✅ Profile picture updated successfully for user ${userId}`);
         
-        // IMPORTANT: Clear user's cached data when profile is updated
+        // Clear user's cached data
         const { deleteCache } = require('../config/redis');
         await deleteCache(`profile:user:${userId}`);
         await deleteCache(`dashboard:user:${userId}`);
@@ -301,7 +277,6 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
                 updated_at: new Date().toISOString()
             }
         });
-        
     } catch (error) {
         console.error('Update profile picture error:', error);
         res.status(500).json({
@@ -316,39 +291,37 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
 // Get user stats for dashboard - WITH CACHING
 router.get('/stats', authenticateToken, userStatsCache, generalApiLimit, async (req, res) => {
     try {
-        const pool = await getPool();
         const userId = req.user.id;
         
-        // Get wishlist count
-        const wishlistResult = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query('SELECT COUNT(*) as count FROM Wishlists WHERE user_id = @userId');
+        const wishlistResult = await pool.query(
+            'SELECT COUNT(*) as count FROM Wishlists WHERE user_id = $1',
+            [userId]
+        );
         
-        // Get user creation date
-        const userResult = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query('SELECT created_at FROM Users WHERE id = @userId AND is_active = 1');
+        const userResult = await pool.query(
+            'SELECT created_at FROM Users WHERE id = $1 AND is_active = true',
+            [userId]
+        );
         
-        if (userResult.recordset.length === 0) {
+        if (userResult.rows.length === 0) {
             return res.status(404).json({
                 status: 'error',
                 message: 'User not found or account deactivated'
             });
         }
         
-        const memberSince = userResult.recordset[0]?.created_at || new Date();
+        const memberSince = userResult.rows[0]?.created_at || new Date();
         
         res.json({
             status: 'success',
             message: 'User stats retrieved successfully',
             data: {
-                wishlist_count: wishlistResult.recordset[0].count,
+                wishlist_count: parseInt(wishlistResult.rows[0].count),
                 products_viewed: 0,
                 member_since: memberSince.toISOString().split('T')[0],
                 account_status: 'active'
             }
         });
-        
     } catch (error) {
         console.error('Get user stats error:', error);
         res.status(500).json({
@@ -362,74 +335,61 @@ router.get('/stats', authenticateToken, userStatsCache, generalApiLimit, async (
 // Get enhanced user stats for dashboard (protected route) - WITH CACHING  
 router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalApiLimit, async (req, res) => {
     try {
-        const pool = await getPool();
         const userId = req.user.id;
         
         console.log(`🔍 DEBUG - Dashboard stats for user ${userId}`);
         
-        // Get basic user info and creation date
-        const userResult = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query(`
-                SELECT id, name, display_name, email, profile_picture, 
-                       role, created_at, is_active
-                FROM Users 
-                WHERE id = @userId AND is_active = 1
-            `);
+        const userResult = await pool.query(`
+            SELECT id, name, display_name, email, profile_picture, 
+                   role, created_at, is_active
+            FROM Users 
+            WHERE id = $1 AND is_active = true
+        `, [userId]);
         
-        if (userResult.recordset.length === 0) {
+        if (userResult.rows.length === 0) {
             return res.status(404).json({
                 status: 'error',
                 message: 'User not found or account deactivated'
             });
         }
         
-        const user = userResult.recordset[0];
+        const user = userResult.rows[0];
         
-        // Get wishlist count
-        const wishlistResult = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query('SELECT COUNT(*) as count FROM Wishlists WHERE user_id = @userId');
+        const wishlistResult = await pool.query(
+            'SELECT COUNT(*) as count FROM Wishlists WHERE user_id = $1',
+            [userId]
+        );
         
-        // Get review statistics
-        const reviewStatsResult = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query(`
-                SELECT 
-                    COUNT(*) as total_reviews,
-                    AVG(CAST(rating AS DECIMAL(3,2))) as average_rating_given,
-                    MIN(created_at) as first_review_date,
-                    MAX(created_at) as latest_review_date
-                FROM Reviews 
-                WHERE user_id = @userId
-            `);
+        const reviewStatsResult = await pool.query(`
+            SELECT 
+                COUNT(*) as total_reviews,
+                AVG(rating::DECIMAL(3,2)) as average_rating_given,
+                MIN(created_at) as first_review_date,
+                MAX(created_at) as latest_review_date
+            FROM Reviews 
+            WHERE user_id = $1
+        `, [userId]);
         
-        // Get recent reviews (last 5) with product info
-        const recentReviewsResult = await pool.request()
-            .input('userId', sql.Int, userId)
-            .query(`
-                SELECT TOP 5
-                    r.id, r.rating, r.review_text, r.review_images,
-                    r.created_at, r.updated_at,
-                    p.id as product_id, p.name as product_name, 
-                    p.image_urls as product_images
-                FROM Reviews r
-                INNER JOIN Products p ON r.product_id = p.id
-                WHERE r.user_id = @userId
-                ORDER BY r.created_at DESC
-            `);
+        const recentReviewsResult = await pool.query(`
+            SELECT 
+                r.id, r.rating, r.review_text, r.review_images,
+                r.created_at, r.updated_at,
+                p.id as product_id, p.name as product_name, 
+                p.image_urls as product_images
+            FROM Reviews r
+            JOIN Products p ON r.product_id = p.id
+            WHERE r.user_id = $1
+            ORDER BY r.created_at DESC
+            LIMIT 5
+        `, [userId]);
         
-        // Calculate member since date
         const memberSince = user.created_at;
-        const memberSinceFormatted = memberSince.toISOString().split('T')[0]; // YYYY-MM-DD format
-        
-        // Calculate days since joining
+        const memberSinceFormatted = memberSince.toISOString().split('T')[0];
         const daysSinceJoining = Math.floor((new Date().getTime() - memberSince.getTime()) / (1000 * 60 * 60 * 24));
         
-        // Get review statistics
-        const reviewStats = reviewStatsResult.recordset[0];
-        const totalReviews = reviewStats.total_reviews || 0;
-        const avgRatingGiven = reviewStats.average_rating_given || 0;
+        const reviewStats = reviewStatsResult.rows[0];
+        const totalReviews = parseInt(reviewStats.total_reviews) || 0;
+        const avgRatingGiven = parseFloat(reviewStats.average_rating_given) || 0;
         
         // Calculate achievement badges
         const badges = [];
@@ -474,18 +434,16 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
             });
         }
         
-        // Check for high-quality reviewer (average rating given > 4.0)
         if (totalReviews >= 3 && avgRatingGiven >= 4.0) {
             badges.push({
                 id: 'positive_reviewer',
-                name: 'positive Reviewer',
+                name: 'Positive Reviewer',
                 description: 'Consistently gives helpful feedback',
                 icon: '😊',
                 earned_date: null
             });
         }
         
-        // Check for loyal member (30+ days)
         if (daysSinceJoining >= 30) {
             badges.push({
                 id: 'loyal_member',
@@ -509,8 +467,8 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
                     role: user.role
                 },
                 stats: {
-                    wishlist_count: wishlistResult.recordset[0].count,
-                    products_viewed: 0, // Will be dynamic later when we add view tracking
+                    wishlist_count: parseInt(wishlistResult.rows[0].count),
+                    products_viewed: 0,
                     member_since: memberSinceFormatted,
                     member_since_raw: memberSince.toISOString(),
                     days_since_joining: daysSinceJoining,
@@ -519,12 +477,11 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
                     first_review_date: reviewStats.first_review_date,
                     latest_review_date: reviewStats.latest_review_date
                 },
-                recent_reviews: recentReviewsResult.recordset,
+                recent_reviews: recentReviewsResult.rows,
                 achievement_badges: badges,
                 account_status: 'active'
             }
         });
-        
     } catch (error) {
         console.error('Get dashboard stats error:', error);
         res.status(500).json({

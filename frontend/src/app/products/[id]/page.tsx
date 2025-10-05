@@ -27,7 +27,7 @@ interface Product {
   buy_button_3_name?: string;
   buy_button_3_url?: string;
   views_count: number;
-  rating_average: number | null;
+  rating_average: number | string | null;  // ← ADD string support
   review_count: number;
   created_at: string;
   updated_at: string;
@@ -41,9 +41,10 @@ interface RelatedProduct {
   category_name: string;
   buy_button_1_name: string;
   buy_button_1_url: string;
-  rating_average: number | null;
+  rating_average: number | string | null;  // ← ADD string support
   review_count: number;
 }
+
 
 interface ProductPageData {
   product: Product;
@@ -347,14 +348,19 @@ export default function ProductPage() {
     }
   };
 
-  // Helper functions for safe rating display
-  const getSafeRating = (rating: number | null): number => {
-    return rating ?? 0;
-  };
+// Helper functions for safe rating display - PostgreSQL returns DECIMAL as string
+const getSafeRating = (rating: number | string | null): number => {
+  if (!rating) return 0;
+  const numRating = typeof rating === 'string' ? parseFloat(rating) : rating;
+  return isNaN(numRating) ? 0 : numRating;
+};
 
-  const getSafeRatingDisplay = (rating: number | null): string => {
-    return rating ? rating.toFixed(1) : '0.0';
-  };
+const getSafeRatingDisplay = (rating: number | string | null): string => {
+  if (!rating) return '0.0';
+  const numRating = typeof rating === 'string' ? parseFloat(rating) : rating;
+  return isNaN(numRating) ? '0.0' : numRating.toFixed(1);
+};
+
 
   // 🚀 NEW: Enhanced loading component with skeleton
   const ProductSkeleton = () => (

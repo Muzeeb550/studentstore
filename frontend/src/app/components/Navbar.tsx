@@ -57,51 +57,55 @@ export default function Navbar() {
   }, []);
 
   const fetchUserProfile = async () => {
-    try {
-      const token = localStorage.getItem('studentstore_token');
-      if (!token) return;
+  try {
+    const token = localStorage.getItem('studentstore_token');
+    if (!token) return;
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/users/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const response = await fetch(`${apiUrl}/api/users/profile`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          const userData = result.data;
-          
-          // Update user state with fresh data
-          setUser(prev => ({
-            ...prev!,
-            name: userData.name,
-            display_name: userData.display_name,
-            profile_picture: userData.profile_picture
-          }));
-          
-          // Update profile picture state
-          if (userData.profile_picture) {
-            setProfilePicture(userData.profile_picture);
-          } else {
-            setProfilePicture('');
-          }
-          
-          // Update localStorage
-          const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
-          const updatedUser = { ...currentUser, ...userData };
-          localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
-          
-          // Less verbose logging
-          console.log('🔄 Profile updated');
+    if (response.ok) {
+      const result = await response.json();
+      if (result.status === 'success') {
+        const userData = result.data;
+        
+        // Update user state with fresh data
+        setUser(prev => ({
+          ...prev!,
+          name: userData.name,
+          display_name: userData.display_name,
+          profile_picture: userData.profile_picture
+        }));
+        
+        // BETTER: Only set profile picture if it's a valid URL
+        if (userData.profile_picture && 
+            typeof userData.profile_picture === 'string' && 
+            userData.profile_picture.trim() !== '' &&
+            (userData.profile_picture.startsWith('http://') || 
+             userData.profile_picture.startsWith('https://'))) {
+          setProfilePicture(userData.profile_picture);
+        } else {
+          setProfilePicture(''); // Explicitly use initials
         }
+        
+        // Update localStorage
+        const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
+        const updatedUser = { ...currentUser, ...userData };
+        localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
+        
+        console.log('🔄 Profile updated');
       }
-    } catch (error) {
-      console.error('Error fetching user profile in navbar:', error);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching user profile in navbar:', error);
+  }
+};
+
 
   const fetchWishlistCount = async () => {
     try {
@@ -206,39 +210,42 @@ export default function Navbar() {
     </a>
   );
 
-  // Profile picture component with StudentStore colors
-  const ProfileAvatar = ({ 
-    size = 'w-12 h-12', 
-    textSize = 'text-base',
-    mobile = false 
-  }: { 
-    size?: string; 
-    textSize?: string;
-    mobile?: boolean;
-  }) => {
-    const sizeClass = mobile ? 'w-10 h-10' : size;
-    const textClass = mobile ? 'text-sm' : textSize;
+  // Profile picture component with StudentStore colors - FIXED VERSION
+const ProfileAvatar = ({ 
+  size = 'w-12 h-12', 
+  textSize = 'text-base',
+  mobile = false 
+}: { 
+  size?: string; 
+  textSize?: string;
+  mobile?: boolean;
+}) => {
+  const sizeClass = mobile ? 'w-10 h-10' : size;
+  const textClass = mobile ? 'text-sm' : textSize;
 
-    if (profilePicture) {
-      return (
-        <img
-          src={profilePicture}
-          alt="Profile"
-          className={`${sizeClass} rounded-full object-cover ring-2 ring-student-blue/30 shadow-sm transition-all duration-200 hover:ring-student-blue/60 hover:shadow-md`}
-          onError={(e) => {
-            console.error('Profile picture failed to load in navbar');
-            setProfilePicture(''); // Reset to initials on error
-          }}
-        />
-      );
-    }
-
+  // Only show image if profilePicture exists and is valid
+  if (profilePicture && profilePicture.trim() !== '') {
     return (
-      <div className={`${sizeClass} bg-gradient-to-br from-student-blue via-student-green to-student-orange rounded-full flex items-center justify-center text-white ${textClass} font-bold shadow-lg ring-2 ring-white/20 transition-all duration-200 hover:shadow-xl hover:scale-105`}>
-        {user ? getInitials(user.email) : 'ST'}
-      </div>
+      <img
+        src={profilePicture}
+        alt={getDisplayName()}
+        className={`${sizeClass} rounded-full object-cover ring-2 ring-student-blue/30 shadow-sm transition-all duration-200 hover:ring-student-blue/60 hover:shadow-md`}
+        onError={(e) => {
+          // Silently reset to initials on error without logging
+          e.currentTarget.onerror = null; // Prevent infinite loop
+          setProfilePicture(''); // This will trigger re-render with initials
+        }}
+      />
     );
-  };
+  }
+
+  // Fallback to initials avatar
+  return (
+    <div className={`${sizeClass} bg-gradient-to-br from-student-blue via-student-green to-student-orange rounded-full flex items-center justify-center text-white ${textClass} font-bold shadow-lg ring-2 ring-white/20 transition-all duration-200 hover:shadow-xl hover:scale-105`}>
+      {user ? getInitials(user.email) : 'ST'}
+    </div>
+  );
+};
 
   return (
     <nav className="bg-white/95 backdrop-blur-md shadow-lg border-b border-border-light sticky top-0 z-50">

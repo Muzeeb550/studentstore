@@ -1,145 +1,116 @@
 const express = require('express');
-const { getPool, sql } = require('../config/database');
+const { pool } = require('../config/database');
 const router = express.Router();
 
-// Create all tables
+// Create all tables including Wishlists
 router.post('/create-tables', async (req, res) => {
+    const createTableQueries = [
+        `CREATE TABLE IF NOT EXISTS Users (
+            id SERIAL PRIMARY KEY,
+            google_id VARCHAR(100) UNIQUE NOT NULL,
+            name VARCHAR(100) NOT NULL,
+            display_name VARCHAR(120) UNIQUE,
+            email VARCHAR(255) NOT NULL,
+            profile_picture VARCHAR(500),
+            role VARCHAR(20) DEFAULT 'student',
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS Categories (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            description VARCHAR(500),
+            icon_url VARCHAR(500),
+            sort_order INT DEFAULT 0,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS Products (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(200) NOT NULL,
+            description TEXT NOT NULL,
+            category_id INT NOT NULL REFERENCES Categories(id) ON DELETE RESTRICT,
+            image_urls TEXT,
+            buy_button_1_name VARCHAR(100) NOT NULL,
+            buy_button_1_url VARCHAR(1000) NOT NULL,
+            buy_button_2_name VARCHAR(100),
+            buy_button_2_url VARCHAR(1000),
+            buy_button_3_name VARCHAR(100),
+            buy_button_3_url VARCHAR(1000),
+            views_count INT DEFAULT 0,
+            rating_average DECIMAL(3,2) DEFAULT 0.0,
+            review_count INT DEFAULT 0,
+            admin_id INT NOT NULL REFERENCES Users(id) ON DELETE RESTRICT,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS Courses (
+            id SERIAL PRIMARY KEY,
+            title VARCHAR(200) NOT NULL,
+            description TEXT NOT NULL,
+            instructor_name VARCHAR(100),
+            thumbnail_url VARCHAR(500),
+            course_type VARCHAR(50) NOT NULL,
+            course_url VARCHAR(1000) NOT NULL,
+            affiliate_site_name VARCHAR(100),
+            duration_minutes INT,
+            difficulty_level VARCHAR(20),
+            category_id INT NOT NULL REFERENCES Categories(id),
+            rating_average DECIMAL(3,2) DEFAULT 0.0,
+            review_count INT DEFAULT 0,
+            views_count INT DEFAULT 0,
+            admin_id INT NOT NULL REFERENCES Users(id),
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS Cart (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL REFERENCES Users(id),
+            product_id INT NOT NULL REFERENCES Products(id),
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, product_id)
+        )`,
+        `CREATE TABLE IF NOT EXISTS Wishlists (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
+            product_id INT NOT NULL REFERENCES Products(id) ON DELETE CASCADE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, product_id)
+        )`,
+        `CREATE TABLE IF NOT EXISTS Reviews (
+            id SERIAL PRIMARY KEY,
+            user_id INT NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
+            product_id INT REFERENCES Products(id) ON DELETE CASCADE,
+            course_id INT REFERENCES Courses(id) ON DELETE CASCADE,
+            rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+            review_text TEXT,
+            review_images TEXT,
+            is_verified_purchase BOOLEAN DEFAULT false,
+            helpfulness_score INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS Banners (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            media_url TEXT NOT NULL,
+            link_url VARCHAR(2048) NOT NULL,
+            display_order INT NOT NULL DEFAULT 0,
+            is_active BOOLEAN DEFAULT true,
+            admin_id INT NOT NULL REFERENCES Users(id) ON DELETE RESTRICT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`
+    ];
+
     try {
-        const pool = await getPool();
-        
-        // Create Tables SQL
-        const createTablesSQL = [
-            // Users Table
-            `CREATE TABLE Users (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                google_id NVARCHAR(100) UNIQUE NOT NULL,
-                name NVARCHAR(100) NOT NULL,
-                display_name NVARCHAR(120) UNIQUE,
-                email NVARCHAR(255) NOT NULL,
-                profile_picture NVARCHAR(500),
-                role NVARCHAR(20) DEFAULT 'student',
-                is_active BIT DEFAULT 1,
-                created_at DATETIME2 DEFAULT GETDATE(),
-                updated_at DATETIME2 DEFAULT GETDATE()
-            )`,
-            
-            // Categories Table
-            `CREATE TABLE Categories (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                name NVARCHAR(100) NOT NULL,
-                description NVARCHAR(500),
-                icon_url NVARCHAR(500),
-                sort_order INT DEFAULT 0,
-                is_active BIT DEFAULT 1,
-                created_at DATETIME2 DEFAULT GETDATE()
-            )`,
-            
-            // Products Table (Affiliate-focused)
-            `CREATE TABLE Products (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                name NVARCHAR(200) NOT NULL,
-                description NVARCHAR(MAX) NOT NULL,
-                category_id INT NOT NULL,
-                image_urls NVARCHAR(MAX),
-                buy_button_1_name NVARCHAR(100) NOT NULL,
-                buy_button_1_url NVARCHAR(1000) NOT NULL,
-                buy_button_2_name NVARCHAR(100),
-                buy_button_2_url NVARCHAR(1000),
-                buy_button_3_name NVARCHAR(100),
-                buy_button_3_url NVARCHAR(1000),
-                views_count INT DEFAULT 0,
-                rating_average DECIMAL(3,2) DEFAULT 0.0,
-                review_count INT DEFAULT 0,
-                admin_id INT NOT NULL,
-                is_active BIT DEFAULT 1,
-                created_at DATETIME2 DEFAULT GETDATE(),
-                updated_at DATETIME2 DEFAULT GETDATE(),
-                FOREIGN KEY (category_id) REFERENCES Categories(id),
-                FOREIGN KEY (admin_id) REFERENCES Users(id)
-            )`,
-            
-            // Courses Table (YouTube + Affiliate)
-            `CREATE TABLE Courses (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                title NVARCHAR(200) NOT NULL,
-                description NVARCHAR(MAX) NOT NULL,
-                instructor_name NVARCHAR(100),
-                thumbnail_url NVARCHAR(500),
-                course_type NVARCHAR(50) NOT NULL,
-                course_url NVARCHAR(1000) NOT NULL,
-                affiliate_site_name NVARCHAR(100),
-                duration_minutes INT,
-                difficulty_level NVARCHAR(20),
-                category_id INT NOT NULL,
-                rating_average DECIMAL(3,2) DEFAULT 0.0,
-                review_count INT DEFAULT 0,
-                views_count INT DEFAULT 0,
-                admin_id INT NOT NULL,
-                is_active BIT DEFAULT 1,
-                created_at DATETIME2 DEFAULT GETDATE(),
-                FOREIGN KEY (category_id) REFERENCES Categories(id),
-                FOREIGN KEY (admin_id) REFERENCES Users(id)
-            )`,
-            
-            // Cart Table (Wishlist)
-            `CREATE TABLE Cart (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                user_id INT NOT NULL,
-                product_id INT NOT NULL,
-                added_at DATETIME2 DEFAULT GETDATE(),
-                UNIQUE(user_id, product_id),
-                FOREIGN KEY (user_id) REFERENCES Users(id),
-                FOREIGN KEY (product_id) REFERENCES Products(id)
-            )`,
-            
-            // Reviews Table (Student Trust Building)
-            `CREATE TABLE Reviews (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                user_id INT NOT NULL,
-                product_id INT NULL,
-                course_id INT NULL,
-                rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
-                review_text NVARCHAR(MAX),
-                review_images NVARCHAR(MAX),
-                is_verified_purchase BIT DEFAULT 0,
-                helpfulness_score INT DEFAULT 0,
-                created_at DATETIME2 DEFAULT GETDATE(),
-                updated_at DATETIME2 DEFAULT GETDATE(),
-                FOREIGN KEY (user_id) REFERENCES Users(id),
-                FOREIGN KEY (product_id) REFERENCES Products(id),
-                FOREIGN KEY (course_id) REFERENCES Courses(id)
-            )`,
-            
-            // Banners Table (NEW TABLE FOR HOMEPAGE BANNERS)
-            `CREATE TABLE Banners (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                name NVARCHAR(255) NOT NULL,
-                media_url NVARCHAR(MAX) NOT NULL,
-                link_url NVARCHAR(2048) NOT NULL,
-                display_order INT NOT NULL DEFAULT 0,
-                is_active BIT DEFAULT 1,
-                admin_id INT NOT NULL,
-                created_at DATETIME2 DEFAULT GETDATE(),
-                updated_at DATETIME2 DEFAULT GETDATE(),
-                FOREIGN KEY (admin_id) REFERENCES Users(id)
-            )`
-        ];
-        
-        // Execute each table creation
         const results = [];
-        for (let i = 0; i < createTablesSQL.length; i++) {
-            try {
-                await pool.request().query(createTablesSQL[i]);
-                const tableName = createTablesSQL[i].match(/CREATE TABLE (\w+)/)[1];
-                results.push(`✅ Table '${tableName}' created successfully`);
-            } catch (error) {
-                if (error.message.includes('already an object named')) {
-                    const tableName = createTablesSQL[i].match(/CREATE TABLE (\w+)/)[1];
-                    results.push(`⚠️ Table '${tableName}' already exists`);
-                } else {
-                    throw error;
-                }
-            }
+        for (const sql of createTableQueries) {
+            await pool.query(sql);
+            const tableName = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/)[1];
+            results.push(`✅ Table '${tableName}' created or already exists`);
         }
         
         res.json({
@@ -148,7 +119,6 @@ router.post('/create-tables', async (req, res) => {
             results: results,
             timestamp: new Date().toISOString()
         });
-        
     } catch (error) {
         console.error('Database schema creation error:', error);
         res.status(500).json({
@@ -159,35 +129,31 @@ router.post('/create-tables', async (req, res) => {
     }
 });
 
-// Create indexes for performance
+// Create indexes including for Wishlists
 router.post('/create-indexes', async (req, res) => {
+    const indexQueries = [
+        `CREATE INDEX IF NOT EXISTS idx_products_category ON Products(category_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_products_rating ON Products(rating_average DESC, created_at DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_products_name ON Products(name)`,
+        `CREATE INDEX IF NOT EXISTS idx_reviews_product ON Reviews(product_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_reviews_course ON Reviews(course_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_reviews_user ON Reviews(user_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_reviews_rating ON Reviews(rating)`,
+        `CREATE INDEX IF NOT EXISTS idx_users_googleid ON Users(google_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_users_email ON Users(email)`,
+        `CREATE INDEX IF NOT EXISTS idx_cart_user ON Cart(user_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_banners_order ON Banners(display_order ASC, is_active DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_categories_sort_order ON Categories(sort_order)`,
+        `CREATE INDEX IF NOT EXISTS idx_wishlists_user ON Wishlists(user_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_wishlists_product ON Wishlists(product_id)`
+    ];
+
     try {
-        const pool = await getPool();
-        
-        const indexSQL = [
-            `CREATE INDEX IX_Products_Category ON Products(category_id, is_active)`,
-            `CREATE INDEX IX_Products_Rating ON Products(rating_average DESC, created_at DESC)`,
-            `CREATE INDEX IX_Reviews_Product ON Reviews(product_id, created_at DESC)`,
-            `CREATE INDEX IX_Reviews_Course ON Reviews(course_id, created_at DESC)`,
-            `CREATE INDEX IX_Users_GoogleId ON Users(google_id)`,
-            `CREATE INDEX IX_Cart_User ON Cart(user_id)`,
-            `CREATE INDEX IX_Banners_Order ON Banners(display_order ASC, is_active DESC)`
-        ];
-        
         const results = [];
-        for (const indexQuery of indexSQL) {
-            try {
-                await pool.request().query(indexQuery);
-                const indexName = indexQuery.match(/CREATE INDEX (\w+)/)[1];
-                results.push(`✅ Index '${indexName}' created successfully`);
-            } catch (error) {
-                if (error.message.includes('already exists')) {
-                    const indexName = indexQuery.match(/CREATE INDEX (\w+)/)[1];
-                    results.push(`⚠️ Index '${indexName}' already exists`);
-                } else {
-                    throw error;
-                }
-            }
+        for (const sql of indexQueries) {
+            await pool.query(sql);
+            const indexName = sql.match(/CREATE INDEX IF NOT EXISTS (\w+)/)[1];
+            results.push(`✅ Index '${indexName}' created or already exists`);
         }
         
         res.json({
@@ -195,7 +161,6 @@ router.post('/create-indexes', async (req, res) => {
             message: '🚀 Performance indexes created successfully!',
             results: results
         });
-        
     } catch (error) {
         console.error('Index creation error:', error);
         res.status(500).json({
@@ -206,44 +171,38 @@ router.post('/create-indexes', async (req, res) => {
     }
 });
 
-// Insert seed data
+// Seed Categories - safe insertion to avoid duplicates
 router.post('/seed-data', async (req, res) => {
+    const seedData = [
+        ['📚 Textbooks', 'New and used textbooks for all subjects', null, 1, true],
+        ['💻 Electronics', 'Laptops, tablets, and accessories', null, 2, true],
+        ['✏️ Stationery', 'Notebooks, pens, supplies', null, 3, true],
+        ['🎒 Campus Gear', 'Backpacks, clothing, essentials', null, 4, true],
+        ['📖 Online Courses', 'Educational courses', null, 5, true],
+        ['🍕 Campus Life', 'Food and services', null, 6, true]
+    ];
+
     try {
-        const pool = await getPool();
-        
-        // Seed Categories
-        const seedCategories = [
-            "('📚 Textbooks', 'New and used textbooks for all subjects', NULL, 1, 1)",
-            "('💻 Electronics', 'Laptops, tablets, and tech accessories', NULL, 2, 1)",
-            "('✏️ Stationery', 'Notebooks, pens, and writing supplies', NULL, 3, 1)",
-            "('🎒 Campus Gear', 'Backpacks, clothing, and dorm essentials', NULL, 4, 1)",
-            "('📖 Online Courses', 'Skill development and certification courses', NULL, 5, 1)",
-            "('🍕 Campus Life', 'Food, services, and campus essentials', NULL, 6, 1)"
-        ];
-        
         const results = [];
-        
-        // Insert categories
-        for (const category of seedCategories) {
+        for (const [name, description, icon, order, active] of seedData) {
             try {
-                await pool.request().query(`
-                    INSERT INTO Categories (name, description, icon_url, sort_order, is_active)
-                    VALUES ${category}
-                `);
-                results.push('✅ Category inserted');
-            } catch (error) {
-                if (!error.message.includes('duplicate key')) {
-                    throw error;
-                }
+                await pool.query(
+                    `INSERT INTO Categories (name, description, icon_url, sort_order, is_active)
+                     VALUES ($1, $2, $3, $4, $5)
+                     ON CONFLICT (name) DO NOTHING`,
+                    [name, description, icon, order, active]
+                );
+                results.push(`✅ Category '${name}' inserted or already exists`);
+            } catch (err) {
+                console.error(`Error inserting category ${name}:`, err);
             }
         }
-        
+
         res.json({
             status: 'success',
             message: '🌱 Seed data inserted successfully!',
             results: results
         });
-        
     } catch (error) {
         console.error('Seed data error:', error);
         res.status(500).json({
@@ -254,25 +213,22 @@ router.post('/seed-data', async (req, res) => {
     }
 });
 
-// Check tables exist
+// Check tables
 router.get('/check-tables', async (req, res) => {
     try {
-        const pool = await getPool();
-        
-        const result = await pool.request().query(`
-            SELECT TABLE_NAME, TABLE_TYPE 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_TYPE = 'BASE TABLE'
-            ORDER BY TABLE_NAME
+        const result = await pool.query(`
+            SELECT table_name, table_type
+            FROM information_schema.tables
+            WHERE table_schema='public'
+            ORDER BY table_name
         `);
         
         res.json({
             status: 'success',
             message: '📋 Database tables retrieved successfully',
-            tables: result.recordset,
-            count: result.recordset.length
+            tables: result.rows,
+            count: result.rowCount
         });
-        
     } catch (error) {
         console.error('Check tables error:', error);
         res.status(500).json({
@@ -283,12 +239,10 @@ router.get('/check-tables', async (req, res) => {
     }
 });
 
-// Get all users (for testing)
+// List users
 router.get('/users', async (req, res) => {
     try {
-        const pool = await getPool();
-        
-        const result = await pool.request().query(`
+        const result = await pool.query(`
             SELECT id, name, display_name, email, role, is_active, created_at
             FROM Users
             ORDER BY created_at DESC
@@ -297,10 +251,9 @@ router.get('/users', async (req, res) => {
         res.json({
             status: 'success',
             message: '👥 Users retrieved successfully',
-            users: result.recordset,
-            count: result.recordset.length
+            users: result.rows,
+            count: result.rowCount
         });
-        
     } catch (error) {
         console.error('Get users error:', error);
         res.status(500).json({
@@ -312,22 +265,3 @@ router.get('/users', async (req, res) => {
 });
 
 module.exports = router;
-
-
-
-
-// i run this  SQL query manually in Azure SQL database to create the Wishlists table
-// -- SQL to create Wishlists table (run this in your Azure SQL database)
-// CREATE TABLE Wishlists (
-//     id INT IDENTITY(1,1) PRIMARY KEY,
-//     user_id INT NOT NULL,
-//     product_id INT NOT NULL,
-//     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
-//     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
-//     FOREIGN KEY (product_id) REFERENCES Products(id) ON DELETE CASCADE,
-//     UNIQUE(user_id, product_id) -- Prevent duplicate entries
-// );
-
-// -- Create index for better performance
-// CREATE INDEX IX_Wishlists_UserId ON Wishlists(user_id);
-// CREATE INDEX IX_Wishlists_ProductId ON Wishlists(product_id);

@@ -70,50 +70,58 @@ export default function ProfilePage() {
     setLoading(false);
   }, [router]);
 
-  const fetchUserProfile = async () => {
-    try {
-      const token = localStorage.getItem('studentstore_token');
-      if (!token) return;
+ const fetchUserProfile = async () => {
+  try {
+    const token = localStorage.getItem('studentstore_token');
+    if (!token) return;
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/users/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const response = await fetch(`${apiUrl}/api/users/profile`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          const userData = result.data;
-          console.log('📋 Fetched user data:', userData);
-          
-          if (user) {
-            setUser({
-              ...user,
-              name: userData.name,
-              display_name: userData.display_name,
-              profile_picture: userData.profile_picture
-            });
-          }
-          
-          if (userData.profile_picture) {
-            setProfilePicture(userData.profile_picture);
-          }
-          
-          // Update localStorage with complete user data
-          const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
-          const updatedUser = { ...currentUser, ...userData };
-          localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
+    if (response.ok) {
+      const result = await response.json();
+      if (result.status === 'success') {
+        const userData = result.data;
+        console.log('📋 Fetched user data:', userData);
+        
+        if (user) {
+          setUser({
+            ...user,
+            name: userData.name,
+            display_name: userData.display_name,
+            profile_picture: userData.profile_picture
+          });
         }
-      } else {
-        console.error('Failed to fetch user profile:', response.status);
+        
+        // BETTER: Only set profile picture if it's a valid URL
+        if (userData.profile_picture && 
+            typeof userData.profile_picture === 'string' && 
+            userData.profile_picture.trim() !== '' &&
+            (userData.profile_picture.startsWith('http://') || 
+             userData.profile_picture.startsWith('https://'))) {
+          setProfilePicture(userData.profile_picture);
+        } else {
+          setProfilePicture(''); // Explicitly use initials
+        }
+        
+        // Update localStorage with complete user data
+        const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
+        const updatedUser = { ...currentUser, ...userData };
+        localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
       }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
+    } else {
+      console.error('Failed to fetch user profile:', response.status);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+  }
+};
+
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -448,34 +456,35 @@ export default function ProfilePage() {
           <div className="lg:col-span-1">
             <div className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light">
               {/* Profile Picture */}
-              <div className="text-center mb-6">
-                {profilePicture ? (
-                  <img
-                    src={profilePicture}
-                    alt="Profile"
-                    className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-student-blue/20 shadow-lg"
-                    onError={(e) => {
-                      console.error('Profile picture failed to load');
-                      setProfilePicture(''); // Reset to initials on error
-                    }}
-                  />
-                ) : (
-                  <div className="w-24 h-24 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-lg">
-                    {getInitials(user.email)}
+                <div className="text-center mb-6">
+                  {profilePicture && profilePicture.trim() !== '' ? (
+                    <img
+                      src={profilePicture}
+                      alt={getDisplayName()}
+                      className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-student-blue/20 shadow-lg"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null; // Prevent infinite loop
+                        setProfilePicture(''); // Reset to initials on error
+                      }}
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-lg">
+                      {getInitials(user.email)}
+                    </div>
+                  )}
+                  <h3 className="font-semibold text-student-primary">{getDisplayName()}</h3>
+                  <p className="text-sm text-student-secondary">{user.email}</p>
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      user.role === 'admin' 
+                        ? 'bg-student-orange/20 text-student-orange' 
+                        : 'bg-student-blue/20 text-student-blue'
+                      }`}>
+                      {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
+                    </span>
                   </div>
-                )}
-                <h3 className="font-semibold text-student-primary">{getDisplayName()}</h3>
-                <p className="text-sm text-student-secondary">{user.email}</p>
-                <div className="mt-2">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    user.role === 'admin' 
-                      ? 'bg-student-orange/20 text-student-orange' 
-                      : 'bg-student-blue/20 text-student-blue'
-                    }`}>
-                    {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                  </span>
                 </div>
-              </div>
+
 
               {/* Navigation Tabs */}
               <nav className="space-y-2">
@@ -576,13 +585,13 @@ export default function ProfilePage() {
                     <div className="flex items-center space-x-6">
                       {/* Current Picture */}
                       <div className="flex-shrink-0">
-                        {profilePicture ? (
+                        {profilePicture && profilePicture.trim() !== '' ? (
                           <img
                             src={profilePicture}
-                            alt="Current profile"
+                            alt={getDisplayName()}
                             className="w-20 h-20 rounded-full object-cover border-4 border-student-blue/20 shadow-lg"
                             onError={(e) => {
-                              console.error('Profile picture failed to load');
+                              e.currentTarget.onerror = null; // Prevent infinite loop
                               setProfilePicture(''); // Reset to initials on error
                             }}
                           />
