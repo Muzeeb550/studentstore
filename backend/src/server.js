@@ -26,14 +26,18 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS Configuration
 // Needs to be (for multiple domains)
+// CORS Configuration - Updated for Render deployment
 app.use(cors({
     origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, Postman, curl)
         if (!origin) return callback(null, true);
         
+        // Local development
         if (origin === 'http://localhost:3000') {
             return callback(null, true);
         }
         
+        // Production Vercel domain
         if (origin === 'https://studentstore-zeta.vercel.app') {
             return callback(null, true);
         }
@@ -52,12 +56,18 @@ app.use(cors({
             return callback(null, true);
         }
         
+        // ✅ NEW: Allow Render backend itself (for health checks)
+        if (origin.includes('.onrender.com') && origin.startsWith('https://')) {
+            return callback(null, true);
+        }
+        
         console.log(`🚨 CORS blocked: ${origin}`);
         callback(new Error('Not allowed by CORS'));
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 
 
 // Session Configuration
