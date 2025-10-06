@@ -302,7 +302,7 @@ const ProfileAvatar = ({
             ) : user ? (
               <div className="flex items-center space-x-4">
                 {/* Desktop User Profile Dropdown */}
-                <div className="relative" ref={dropdownRef}>
+                <div className="relative z-[100]" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="flex items-center space-x-4 bg-student-card hover:bg-student-light rounded-full py-3 px-5 border border-border-light transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-student-blue/30"
@@ -331,8 +331,7 @@ const ProfileAvatar = ({
 
                   {/* Desktop Dropdown Menu */}
                   {dropdownOpen && (
-                    <div className="absolute right-0 mt-3 w-64 bg-student-card rounded-2xl shadow-2xl border border-border-light overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
-                      {/* User Info Header */}
+                    <div className="absolute right-0 mt-3 w-64 bg-student-card rounded-2xl shadow-2xl border border-border-light overflow-hidden z-[9999] pointer-events-auto animate-in slide-in-from-top-2 duration-200">                      {/* User Info Header */}
                       <div className="px-6 py-5 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
                         <div className="flex items-center space-x-4">
                           <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
@@ -483,7 +482,7 @@ const ProfileAvatar = ({
               {loading ? (
                 <div className="loading-shimmer w-10 h-10 rounded-full"></div>
               ) : user ? (
-                <div className="relative" ref={dropdownRef}>
+                <div className="relative z-[100]" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="p-1 rounded-full hover:bg-student-light active:bg-student-light transition-all duration-200"
@@ -493,8 +492,7 @@ const ProfileAvatar = ({
 
                   {/* Mobile Dropdown Menu */}
                   {dropdownOpen && (
-                    <div className="absolute right-0 mt-3 w-56 bg-student-card rounded-2xl shadow-2xl border border-border-light overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
-                      {/* Mobile User Info Header */}
+                    <div className="absolute right-0 mt-3 w-56 bg-student-card rounded-2xl shadow-2xl border border-border-light overflow-hidden z-[9999] pointer-events-auto animate-in slide-in-from-top-2 duration-200">                      {/* Mobile User Info Header */}
                       <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
                         <div className="flex items-center space-x-3">
                           <ProfileAvatar size="w-12 h-12" textSize="text-base" />
