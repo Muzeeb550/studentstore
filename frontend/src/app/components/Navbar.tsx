@@ -29,13 +29,12 @@ export default function Navbar() {
         const parsedUser = JSON.parse(storedUser) as User;
         setUser(parsedUser);
         
-        // Set profile picture if available
         if (parsedUser.profile_picture) {
           setProfilePicture(parsedUser.profile_picture);
         }
         
         fetchWishlistCount();
-        fetchUserProfile(); // Fetch fresh user data including profile picture
+        fetchUserProfile();
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
@@ -43,7 +42,6 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
-  // Listen for profile updates from profile page
   useEffect(() => {
     const handleProfileUpdate = () => {
       console.log('📸 Profile updated event received in navbar');
@@ -57,55 +55,51 @@ export default function Navbar() {
   }, []);
 
   const fetchUserProfile = async () => {
-  try {
-    const token = localStorage.getItem('studentstore_token');
-    if (!token) return;
+    try {
+      const token = localStorage.getItem('studentstore_token');
+      if (!token) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const response = await fetch(`${apiUrl}/api/users/profile`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (response.ok) {
-      const result = await response.json();
-      if (result.status === 'success') {
-        const userData = result.data;
-        
-        // Update user state with fresh data
-        setUser(prev => ({
-          ...prev!,
-          name: userData.name,
-          display_name: userData.display_name,
-          profile_picture: userData.profile_picture
-        }));
-        
-        // BETTER: Only set profile picture if it's a valid URL
-        if (userData.profile_picture && 
-            typeof userData.profile_picture === 'string' && 
-            userData.profile_picture.trim() !== '' &&
-            (userData.profile_picture.startsWith('http://') || 
-             userData.profile_picture.startsWith('https://'))) {
-          setProfilePicture(userData.profile_picture);
-        } else {
-          setProfilePicture(''); // Explicitly use initials
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          const userData = result.data;
+          
+          setUser(prev => ({
+            ...prev!,
+            name: userData.name,
+            display_name: userData.display_name,
+            profile_picture: userData.profile_picture
+          }));
+          
+          if (userData.profile_picture && 
+              typeof userData.profile_picture === 'string' && 
+              userData.profile_picture.trim() !== '' &&
+              (userData.profile_picture.startsWith('http://') || 
+               userData.profile_picture.startsWith('https://'))) {
+            setProfilePicture(userData.profile_picture);
+          } else {
+            setProfilePicture('');
+          }
+          
+          const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
+          const updatedUser = { ...currentUser, ...userData };
+          localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
+          
+          console.log('🔄 Profile updated');
         }
-        
-        // Update localStorage
-        const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
-        const updatedUser = { ...currentUser, ...userData };
-        localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
-        
-        console.log('🔄 Profile updated');
       }
+    } catch (error) {
+      console.error('Error fetching user profile in navbar:', error);
     }
-  } catch (error) {
-    console.error('Error fetching user profile in navbar:', error);
-  }
-};
-
+  };
 
   const fetchWishlistCount = async () => {
     try {
@@ -128,7 +122,6 @@ export default function Navbar() {
     }
   };
 
-  // Listen for wishlist changes from other components
   useEffect(() => {
     const handleWishlistChange = () => {
       if (user) {
@@ -142,7 +135,6 @@ export default function Navbar() {
     };
   }, [user]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -178,7 +170,7 @@ export default function Navbar() {
     return user?.name || user?.display_name || user?.email.split('@')[0] || 'Student';
   };
 
-  // Enhanced StudentStore Logo Component with WORKING gradient hover/touch
+  // StudentStore Logo Component - UPDATED with CSS class
   const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => (
     <a 
       href="/"
@@ -190,15 +182,7 @@ export default function Navbar() {
           alt="StudentStore Logo" 
           className={`${mobile ? 'w-12 h-12' : 'w-12 h-12'} object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105`}
         />
-        <span 
-          className={`font-black ${mobile ? 'text-2xl' : 'text-2xl'} transition-all duration-300`}
-          style={{
-            background: 'linear-gradient(135deg, #f97316, #2563eb)',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent'
-          }}
-        >
+        <span className={`logo-gradient ${mobile ? 'text-2xl' : 'text-2xl'}`}>
           StudentStore
         </span>
       </div>
@@ -210,42 +194,39 @@ export default function Navbar() {
     </a>
   );
 
-  // Profile picture component with StudentStore colors - FIXED VERSION
-const ProfileAvatar = ({ 
-  size = 'w-12 h-12', 
-  textSize = 'text-base',
-  mobile = false 
-}: { 
-  size?: string; 
-  textSize?: string;
-  mobile?: boolean;
-}) => {
-  const sizeClass = mobile ? 'w-10 h-10' : size;
-  const textClass = mobile ? 'text-sm' : textSize;
+  // Profile Avatar Component - UPDATED with CSS classes
+  const ProfileAvatar = ({ 
+    size = 'w-12 h-12', 
+    textSize = 'text-base',
+    mobile = false 
+  }: { 
+    size?: string; 
+    textSize?: string;
+    mobile?: boolean;
+  }) => {
+    const sizeClass = mobile ? 'w-10 h-10' : size;
+    const textClass = mobile ? 'text-sm' : textSize;
 
-  // Only show image if profilePicture exists and is valid
-  if (profilePicture && profilePicture.trim() !== '') {
+    if (profilePicture && profilePicture.trim() !== '') {
+      return (
+        <img
+          src={profilePicture}
+          alt={getDisplayName()}
+          className={`profile-avatar ${sizeClass}`}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            setProfilePicture('');
+          }}
+        />
+      );
+    }
+
     return (
-      <img
-        src={profilePicture}
-        alt={getDisplayName()}
-        className={`${sizeClass} rounded-full object-cover ring-2 ring-student-blue/30 shadow-sm transition-all duration-200 hover:ring-student-blue/60 hover:shadow-md`}
-        onError={(e) => {
-          // Silently reset to initials on error without logging
-          e.currentTarget.onerror = null; // Prevent infinite loop
-          setProfilePicture(''); // This will trigger re-render with initials
-        }}
-      />
+      <div className={`profile-avatar-fallback ${sizeClass} ${textClass}`}>
+        {user ? getInitials(user.email) : 'ST'}
+      </div>
     );
-  }
-
-  // Fallback to initials avatar
-  return (
-    <div className={`${sizeClass} bg-gradient-to-br from-student-blue via-student-green to-student-orange rounded-full flex items-center justify-center text-white ${textClass} font-bold shadow-lg ring-2 ring-white/20 transition-all duration-200 hover:shadow-xl hover:scale-105`}>
-      {user ? getInitials(user.email) : 'ST'}
-    </div>
-  );
-};
+  };
 
   return (
     <nav className="bg-white/95 backdrop-blur-md shadow-lg border-b border-border-light sticky top-0 z-50">
@@ -288,9 +269,9 @@ const ProfileAvatar = ({
                   />
                 </svg>
                 
-                {/* Count Badge */}
+                {/* Count Badge - UPDATED */}
                 {wishlistCount > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-gradient-to-r from-student-orange to-warning text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center min-w-[24px] px-1 shadow-lg">
+                  <div className="wishlist-badge">
                     {wishlistCount > 99 ? '99+' : wishlistCount}
                   </div>
                 )}
@@ -301,8 +282,8 @@ const ProfileAvatar = ({
               <div className="loading-shimmer w-12 h-12 rounded-full"></div>
             ) : user ? (
               <div className="flex items-center space-x-4">
-                {/* Desktop User Profile Dropdown */}
-                <div className="relative z-[100]" ref={dropdownRef}>
+                {/* Desktop User Profile Dropdown - UPDATED */}
+                <div className="navbar-dropdown-container" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="flex items-center space-x-4 bg-student-card hover:bg-student-light rounded-full py-3 px-5 border border-border-light transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-student-blue/30"
@@ -318,7 +299,6 @@ const ProfileAvatar = ({
                       </p>
                     </div>
                     
-                    {/* Dropdown Arrow */}
                     <svg 
                       className={`w-5 h-5 text-student-secondary transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
                       fill="none" 
@@ -329,9 +309,10 @@ const ProfileAvatar = ({
                     </svg>
                   </button>
 
-                  {/* Desktop Dropdown Menu */}
+                  {/* Desktop Dropdown Menu - UPDATED */}
                   {dropdownOpen && (
-                    <div className="absolute right-0 mt-3 w-64 bg-student-card rounded-2xl shadow-2xl border border-border-light overflow-hidden z-[9999] pointer-events-auto animate-in slide-in-from-top-2 duration-200">                      {/* User Info Header */}
+                    <div className="navbar-dropdown-menu" style={{ width: '16rem' }}>
+                      {/* User Info Header */}
                       <div className="px-6 py-5 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
                         <div className="flex items-center space-x-4">
                           <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
@@ -347,15 +328,13 @@ const ProfileAvatar = ({
 
                       {/* Menu Items */}
                       <div className="py-3">
-                        {/* My Dashboard */}
                         <button
                           onClick={() => handleNavigation('/dashboard')}
-                          className="flex items-center w-full px-6 py-3 text-student-primary hover:bg-student-blue/10 hover:text-student-blue transition-all duration-200 group"
+                          className="navbar-dropdown-item"
                         >
                           <div className="w-11 h-11 bg-student-light group-hover:bg-student-blue/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
                             <svg className="w-5 h-5 text-student-secondary group-hover:text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z" />
                             </svg>
                           </div>
                           <div className="text-left">
@@ -364,10 +343,9 @@ const ProfileAvatar = ({
                           </div>
                         </button>
 
-                        {/* My Profile */}
                         <button
                           onClick={() => handleNavigation('/profile')}
-                          className="flex items-center w-full px-6 py-3 text-student-primary hover:bg-student-green/10 hover:text-student-green transition-all duration-200 group"
+                          className="navbar-dropdown-item"
                         >
                           <div className="w-11 h-11 bg-student-light group-hover:bg-student-green/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
                             <svg className="w-5 h-5 text-student-secondary group-hover:text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,16 +358,14 @@ const ProfileAvatar = ({
                           </div>
                         </button>
 
-                        {/* Admin Panel */}
                         {user.role === 'admin' && (
                           <button
                             onClick={() => handleNavigation('/admin')}
-                            className="flex items-center w-full px-6 py-3 text-student-primary hover:bg-student-orange/10 hover:text-student-orange transition-all duration-200 group"
+                            className="navbar-dropdown-item"
                           >
                             <div className="w-11 h-11 bg-student-light group-hover:bg-student-orange/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
                               <svg className="w-5 h-5 text-student-secondary group-hover:text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               </svg>
                             </div>
                             <div className="text-left">
@@ -399,10 +375,9 @@ const ProfileAvatar = ({
                           </button>
                         )}
 
-                        {/* Sign Out */}
                         <button
                           onClick={handleLogout}
-                          className="flex items-center w-full px-6 py-3 text-student-primary hover:bg-red-50 hover:text-red-600 transition-all duration-200 group"
+                          className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
                         >
                           <div className="w-11 h-11 bg-student-light group-hover:bg-red-100 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
                             <svg className="w-5 h-5 text-student-secondary group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -441,12 +416,9 @@ const ProfileAvatar = ({
 
         {/* Mobile Navigation */}
         <div className="md:hidden">
-          {/* Mobile Row 1 - Logo with centered tagline below, Wishlist, Profile */}
           <div className="flex justify-between items-start h-auto py-4">
-            {/* Mobile Logo with centered tagline below */}
             <StudentStoreLogo mobile={true} />
 
-            {/* Mobile Right Section */}
             <div className="flex items-center space-x-4 mt-1">
               {/* Mobile Wishlist */}
               {user && (
@@ -469,9 +441,9 @@ const ProfileAvatar = ({
                     />
                   </svg>
                   
-                  {/* Mobile Count Badge */}
+                  {/* Mobile Count Badge - UPDATED */}
                   {wishlistCount > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-student-orange to-warning text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px] px-1 shadow-lg">
+                    <div className="wishlist-badge" style={{ width: '1.25rem', height: '1.25rem', fontSize: '0.625rem' }}>
                       {wishlistCount > 9 ? '9+' : wishlistCount}
                     </div>
                   )}
@@ -482,7 +454,7 @@ const ProfileAvatar = ({
               {loading ? (
                 <div className="loading-shimmer w-10 h-10 rounded-full"></div>
               ) : user ? (
-                <div className="relative z-[100]" ref={dropdownRef}>
+                <div className="navbar-dropdown-container" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="p-1 rounded-full hover:bg-student-light active:bg-student-light transition-all duration-200"
@@ -490,70 +462,94 @@ const ProfileAvatar = ({
                     <ProfileAvatar mobile={true} />
                   </button>
 
-                  {/* Mobile Dropdown Menu */}
-                  {dropdownOpen && (
-                    <div className="absolute right-0 mt-3 w-56 bg-student-card rounded-2xl shadow-2xl border border-border-light overflow-hidden z-[9999] pointer-events-auto animate-in slide-in-from-top-2 duration-200">                      {/* Mobile User Info Header */}
-                      <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
-                        <div className="flex items-center space-x-3">
-                          <ProfileAvatar size="w-12 h-12" textSize="text-base" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
-                            <p className="text-xs text-student-secondary truncate">{user.email}</p>
-                            <p className="text-xs text-student-blue font-medium capitalize mt-1">
-                              {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Mobile Menu Items */}
-                      <div className="py-2">
-                        <button
-                          onClick={() => handleNavigation('/profile')}
-                          className="flex items-center w-full px-4 py-3 text-student-primary hover:bg-student-green/10 active:bg-student-green/20 transition-all duration-200"
-                        >
-                          <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className="font-medium">My Profile</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleNavigation('/dashboard')}
-                          className="flex items-center w-full px-4 py-3 text-student-primary hover:bg-student-blue/10 active:bg-student-blue/20 transition-all duration-200"
-                        >
-                          <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                          </svg>
-                          <span className="font-medium">Dashboard</span>
-                        </button>
-
-                        {user.role === 'admin' && (
-                          <button
-                            onClick={() => handleNavigation('/admin')}
-                            className="flex items-center w-full px-4 py-3 text-student-primary hover:bg-student-orange/10 active:bg-student-orange/20 transition-all duration-200"
-                          >
-                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            </svg>
-                            <span className="font-medium">Admin Panel</span>
-                          </button>
-                        )}
-
-                        <div className="border-t border-border-light mt-2 pt-2">
-                          <button
-                            onClick={handleLogout}
-                            className="flex items-center w-full px-4 py-3 text-student-primary hover:bg-red-50 hover:text-red-600 active:bg-red-100 transition-all duration-200"
-                          >
-                            <svg className="w-5 h-5 text-student-secondary hover:text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            <span className="font-medium">Sign Out</span>
-                          </button>
+                {/* Mobile Dropdown Menu - UPDATED */}
+                {dropdownOpen && (
+                  <div 
+                    className="navbar-dropdown-menu" 
+                    style={{ width: '14rem' }}
+                    onClick={(e) => e.stopPropagation()} // ✅ Prevent close on click inside
+                  >
+                    <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
+                      <div className="flex items-center space-x-3">
+                        <ProfileAvatar size="w-12 h-12" textSize="text-base" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
+                          <p className="text-xs text-student-secondary truncate">{user.email}</p>
+                          <p className="text-xs text-student-blue font-medium capitalize mt-1">
+                            {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  )}
+
+                    <div className="py-2">
+                      <button
+                        onClick={() => handleNavigation('/profile')}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleNavigation('/profile');
+                        }}
+                        className="navbar-dropdown-item"
+                      >
+                        <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span className="font-medium">My Profile</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavigation('/dashboard')}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleNavigation('/dashboard');
+                        }}
+                        className="navbar-dropdown-item"
+                      >
+                        <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                        </svg>
+                        <span className="font-medium">Dashboard</span>
+                      </button>
+
+                      {user.role === 'admin' && (
+                        <button
+                          onClick={() => handleNavigation('/admin')}
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleNavigation('/admin');
+                          }}
+                          className="navbar-dropdown-item"
+                        >
+                          <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            </svg>
+                          <span className="font-medium">Admin Panel</span>
+                        </button>
+                      )}
+
+                      <div className="border-t border-border-light mt-2 pt-2">
+                        <button
+                          onClick={handleLogout}
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleLogout();
+                          }}
+                          className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
+                        >
+                          <svg className="w-5 h-5 text-student-secondary hover:text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          <span className="font-medium">Sign Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 </div>
               ) : (
                 <button 

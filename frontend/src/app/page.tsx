@@ -248,11 +248,11 @@ export default function HomePage() {
     setRecentlyViewed(recentProducts);
   }, []);
 
-  // Enhanced Desktop Arrow Components
+  // UPDATED: Desktop Arrow Components
   const DesktopPrevArrow = ({ onClick }: any) => (
     <button 
       onClick={onClick} 
-      className="desktop-carousel-arrow prev enhanced-arrow" 
+      className="carousel-arrow prev" 
       aria-label="Previous slide"
       type="button"
     >
@@ -265,7 +265,7 @@ export default function HomePage() {
   const DesktopNextArrow = ({ onClick }: any) => (
     <button 
       onClick={onClick} 
-      className="desktop-carousel-arrow next enhanced-arrow" 
+      className="carousel-arrow next" 
       aria-label="Next slide"
       type="button"
     >
@@ -275,11 +275,11 @@ export default function HomePage() {
     </button>
   );
 
-  // Trending Arrow Components
+  // UPDATED: Trending Arrow Components
   const TrendingPrevArrow = ({ onClick }: any) => (
     <button 
       onClick={onClick} 
-      className="trending-carousel-arrow prev ultra-smooth-arrow" 
+      className="carousel-arrow-trending prev" 
       aria-label="Previous trending products"
       type="button"
     >
@@ -292,7 +292,7 @@ export default function HomePage() {
   const TrendingNextArrow = ({ onClick }: any) => (
     <button 
       onClick={onClick} 
-      className="trending-carousel-arrow next ultra-smooth-arrow" 
+      className="carousel-arrow-trending next" 
       aria-label="Next trending products"
       type="button"
     >
@@ -326,7 +326,7 @@ export default function HomePage() {
     useTransform: true,
     waitForAnimate: false,
     focusOnSelect: false,
-    dotsClass: "slick-dots mobile-banner-dots",
+    dotsClass: "slick-dots carousel-dots",
     responsive: [
       {
         breakpoint: 1023,
@@ -387,7 +387,6 @@ export default function HomePage() {
     ],
   };
 
-  // PRODUCTION-READY: Recently Viewed Carousel Settings
   const recentlyViewedSettings = {
     dots: false,
     infinite: false,
@@ -477,7 +476,6 @@ export default function HomePage() {
     ],
   };
 
-  // PRODUCTION-READY: Trending Carousel Settings
   const trendingSettings = {
     dots: false,
     infinite: false,
@@ -666,45 +664,49 @@ export default function HomePage() {
       {process.env.NODE_ENV === 'development' && <CacheStatusIndicator />}
 
       {/* Banner */}
-      <section className="banner-container relative max-w-7xl mx-auto">
-        <div className="rounded-xl lg:rounded-2xl overflow-hidden shadow-lg lg:shadow-2xl relative">
-          {loadingStates.banners ? (
-            <div className="banner-loading"></div>
-          ) : banners.length > 0 ? (
-            <Slider {...bannerSettings}>
-              {banners.map((banner) => (
-                <div key={banner.id} className="relative">
-                  <a href={banner.link_url} target="_blank" rel="noopener noreferrer" className="block relative touch-optimized">
-                    {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
-                      <video src={banner.media_url} autoPlay muted loop playsInline className="banner-image touch-optimized" />
-                    ) : (
-                      <img src={banner.media_url} alt={banner.name} className="banner-image touch-optimized" loading="eager" />
-                    )}
-                    <div className="banner-overlay">
-                      <h2 className="banner-title">{banner.name}</h2>
-                      <button className="banner-btn">
-                        Shop Now
-                        <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                      </button>
-                    </div>
-                  </a>
+<section className="banner-container relative max-w-7xl mx-auto">
+  <div className="relative" style={{ paddingBottom: '40px' }}>
+    <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
+      {loadingStates.banners ? (
+        <div className="banner-loading"></div>
+      ) : banners.length > 0 ? (
+        <Slider {...bannerSettings}>
+          {banners.map((banner) => (
+            <div key={banner.id} className="relative">
+              <a href={banner.link_url} target="_blank" rel="noopener noreferrer" className="block relative touch-optimized">
+                {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
+                  <video src={banner.media_url} autoPlay muted loop playsInline className="banner-image touch-optimized" />
+                ) : (
+                  <img src={banner.media_url} alt={banner.name} className="banner-image touch-optimized" loading="eager" />
+                )}
+                <div className="banner-overlay">
+                  <h2 className="banner-title">{banner.name}</h2>
+                  <button className="banner-btn">
+                    Shop Now
+                    <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </button>
                 </div>
-              ))}
-            </Slider>
-          ) : (
-            <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
-              <div className="text-center text-white px-4">
-                <h2 className="banner-title">Welcome to StudentStore</h2>
-                <p className="text-sm sm:text-base lg:text-lg opacity-90">Your personal shopping companion for student life</p>
-              </div>
+              </a>
             </div>
-          )}
+          ))}
+        </Slider>
+      ) : (
+        <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
+          <div className="text-center text-white px-4">
+            <h2 className="banner-title">Welcome to StudentStore</h2>
+            <p className="text-sm sm:text-base lg:text-lg opacity-90">Your personal shopping companion for student life</p>
+          </div>
         </div>
-      </section>
+      )}
+    </div>
+  </div>
+</section>
 
-      {/* ⭐ FIXED: Recently Viewed Section - NO px-2 padding */}
+
+
+      {/* Recently Viewed Section */}
       {recentlyViewed.length > 0 && (
         <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
           <div className="recently-viewed-section">
@@ -725,7 +727,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="recently-viewed-carousel">
+            <div className="carousel-container recently-viewed-carousel">
               <Slider key="recently-viewed-slider" {...recentlyViewedSettings}>
                 {recentlyViewed.map((item) => (
                   <div key={`recent-${item.product.id}-${item.viewedAt}`}>
@@ -740,7 +742,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ⭐ FIXED: Trending Section - NO px-2 padding */}
+      {/* Trending Section */}
       {trendingProducts.length > 0 && (
         <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
           <div className="trending-section">
@@ -761,7 +763,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="trending-carousel-container">
+            <div className="carousel-container trending-carousel-container">
               <Slider key="trending-slider" {...trendingSettings}>
                 {trendingProducts.map((product, index) => (
                   <div key={`trending-${product.id}-${index}`}>
@@ -778,7 +780,7 @@ export default function HomePage() {
 
       {/* Category Cards */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-        <div className="category-section-research">
+        <div className="category-section">
           <div className="mb-6 lg:mb-8 text-center">
             <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2">Shop by Category</h3>
             <p className="text-red-50 text-base lg:text-lg opacity-90">Find exactly what you need for your student life</p>
@@ -828,12 +830,12 @@ export default function HomePage() {
                 { icon: '🎒', name: 'Campus Gear' },
                 { icon: '📖', name: 'Courses' },
               ].map((category, index) => (
-                <div key={index} className="category-card-research">
+                <div key={index} className="category-card">
                   <div className="category-image-area">
                     <div className="text-4xl">{category.icon}</div>
                   </div>
                   <div className="category-text-area">
-                    <h4 className="category-title-research font-medium text-student-primary">{category.name}</h4>
+                    <h4 className="category-title font-medium text-student-primary">{category.name}</h4>
                   </div>
                 </div>
               ))}
@@ -856,7 +858,7 @@ export default function HomePage() {
         {loadingStates.products ? (
           <LoadingSection title="Featured Products" />
         ) : products.length > 0 ? (
-          <div className="product-grid-mobile">
+          <div className="product-grid">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

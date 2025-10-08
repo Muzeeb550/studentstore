@@ -27,10 +27,9 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
     }
   };
 
-  // Generate realistic trending data
   const getTrendingData = (rank: number) => {
-    const baseGrowth = Math.floor(Math.random() * 40) + 20; // 20-60%
-    const adjustedGrowth = Math.max(5, baseGrowth - (rank * 8)); // Higher rank = higher growth
+    const baseGrowth = Math.floor(Math.random() * 40) + 20;
+    const adjustedGrowth = Math.max(5, baseGrowth - (rank * 8));
     const soldToday = Math.floor(Math.random() * 200) + 50 + (10 - rank) * 15;
     
     return {
@@ -52,9 +51,9 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
   };
 
   return (
-    <Link href={`/products/${product.id}`} className="group cursor-pointer product-card-touch-optimized" onClick={handleProductClick}>
+    <Link href={`/products/${product.id}`} className="group cursor-pointer touch-optimized" onClick={handleProductClick}>
       <div className="trending-card">
-        {/* Enhanced Image Container with Trending Theme */}
+        {/* Image Container */}
         <div className="trending-image-container">
           <img 
             src={getProductImage(product.image_urls)} 
@@ -63,19 +62,19 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
             loading="lazy"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC1IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
+              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
             }}
           />
           
-          {/* Trending Rank Badge */}
-          <div className="trending-rank-badge">
+          {/* Rank Badge */}
+          <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
             <span className="bg-gradient-to-r from-student-orange to-red-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg">
               #{trendingRank}
             </span>
           </div>
 
-          {/* Growth Indicator */}
-          <div className="trending-growth-badge">
+          {/* Growth Badge */}
+          <div style={{ position: 'absolute', top: '10px', right: '60px', zIndex: 10 }}>
             <span className={`${trendData.isRising ? 'bg-green-500' : 'bg-student-orange'} text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg flex items-center`}>
               +{trendData.growth}% 
               <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
@@ -84,17 +83,17 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
             </span>
           </div>
 
-          {/* Hot Badge */}
-          <div className="trending-hot-badge">
+          {/* Hot Badge (bottom left) */}
+          <div style={{ position: 'absolute', bottom: '10px', left: '10px', zIndex: 10 }}>
             <span className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg animate-pulse">
               🔥 Hot
             </span>
           </div>
           
-          {/* Enhanced Wishlist Button */}
+          {/* Wishlist Button */}
           <div 
             onClick={handleWishlistClick}
-            className="trending-wishlist"
+            style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}
           >
             <WishlistButton 
               productId={product.id}
@@ -102,12 +101,9 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
               className="shadow-xl hover:shadow-2xl transition-shadow duration-200"
             />
           </div>
-
-          {/* Trending Pulse Overlay */}
-          <div className="trending-pulse-overlay"></div>
         </div>
 
-        {/* Enhanced Product Info */}
+        {/* Product Info */}
         <div className="trending-info">
           <h4 className="trending-title">
             {product.name}
@@ -118,7 +114,7 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
           </p>
 
           {/* Social Proof */}
-          <div className="trending-social-proof">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem' }}>
             <div className="flex items-center text-student-orange">
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
@@ -131,7 +127,7 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
             </div>
           </div>
 
-          {/* FOMO CTA */}
+          {/* CTA */}
           <button className="trending-cta">
             <span className="flex items-center justify-center">
               Join the Trend

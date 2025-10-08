@@ -50,9 +50,9 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
   };
 
   return (
-    <Link href={`/products/${product.id}`} className="group cursor-pointer product-card-touch-optimized" onClick={handleProductClick}>
+    <Link href={`/products/${product.id}`} className="group cursor-pointer touch-optimized" onClick={handleProductClick}>
       <div className="recently-viewed-card">
-        {/* Enhanced Image Container with Continuation Theme */}
+        {/* Image Container */}
         <div className="recently-viewed-image-container">
           <img 
             src={getProductImage(product.image_urls)} 
@@ -61,28 +61,28 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
             loading="lazy"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC1IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
+              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
             }}
           />
           
-          {/* Time-Based Badge */}
-          <div className="recently-viewed-time-badge">
+          {/* Time Badge */}
+          <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
             <span className="bg-student-blue/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
               🕒 {getTimeAgo(viewedAt)}
             </span>
           </div>
 
-          {/* Continuation Badge */}
-          <div className="recently-viewed-continue-badge">
+          {/* Continue Badge */}
+          <div style={{ position: 'absolute', top: '10px', right: '60px', zIndex: 10 }}>
             <span className="bg-gradient-to-r from-cyan-500 to-student-blue text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
               Continue
             </span>
           </div>
           
-          {/* Enhanced Wishlist Button */}
+          {/* Wishlist Button */}
           <div 
             onClick={handleWishlistClick}
-            className="recently-viewed-wishlist"
+            style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}
           >
             <WishlistButton 
               productId={product.id}
@@ -90,12 +90,9 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
               className="shadow-xl hover:shadow-2xl transition-shadow duration-200"
             />
           </div>
-
-          {/* Continuation Overlay */}
-          <div className="recently-viewed-overlay"></div>
         </div>
 
-        {/* Enhanced Product Info */}
+        {/* Product Info */}
         <div className="recently-viewed-info">
           <h4 className="recently-viewed-title">
             {product.name}
@@ -105,8 +102,8 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
             {product.description}
           </p>
 
-          {/* Browsing Context */}
-          <div className="recently-viewed-context">
+          {/* Context */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem' }}>
             <div className="flex items-center text-student-blue">
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -119,7 +116,7 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
             </div>
           </div>
 
-          {/* Continuation CTA */}
+          {/* CTA */}
           <button className="recently-viewed-cta">
             <span className="flex items-center justify-center">
               Continue Shopping
