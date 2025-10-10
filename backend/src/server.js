@@ -28,31 +28,40 @@ app.use(express.urlencoded({ extended: true }));
 // Needs to be (for multiple domains)
 // CORS Configuration - FIXED for production
 // CORS Configuration - Industry Standard (Environment-Based)
+// CORS Configuration - FIXED for trailing slashes
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
 const isPreview = process.env.VERCEL_ENV === 'preview' || process.env.RENDER_PREVIEW === 'true';
 
 // Exact production domains (most secure)
 const allowedOrigins = [
-    'https://studentstore-zeta.vercel.app', // Production
+    'https://studentstore-zeta.vercel.app',
+    'https://studentstore-zeta.vercel.app/', // ✅ WITH trailing slash
 ];
 
 // Development-only origins
 if (isDevelopment) {
     allowedOrigins.push('http://localhost:3000');
-    allowedOrigins.push('http://localhost:5173'); // Vite dev server
+    allowedOrigins.push('http://localhost:3000/'); // ✅ WITH trailing slash
+    allowedOrigins.push('http://localhost:5173');
+    allowedOrigins.push('http://localhost:5173/'); // ✅ WITH trailing slash
 }
 
 // Preview environments (dev/staging/preview builds)
 const allowedOriginPatterns = (isProduction && !isPreview)
-    ? [] // ✅ No wildcards in true production!
+    ? []
     : [
-        // ✅ Vercel preview branches (dev/staging only)
-        /^https:\/\/studentstore-git-[a-zA-Z0-9-]+-muzeebs-projects\.vercel\.app$/,
-        /^https:\/\/studentstore-[a-zA-Z0-9-]+-muzeebs-projects\.vercel\.app$/,
+        // ✅ Vercel preview branches - ALLOWS TRAILING SLASH
+        /^https:\/\/studentstore-git-[a-zA-Z0-9-]+-muzeebs-projects\.vercel\.app\/?$/,
+        //                                                                        ↑ \/?
         
-        // ✅ Render preview URLs (dev/staging only)
-        /^https:\/\/.+\.onrender\.com$/,
+        // ✅ Vercel preview deployments - ALLOWS TRAILING SLASH
+        /^https:\/\/studentstore-[a-zA-Z0-9-]+-muzeebs-projects\.vercel\.app\/?$/,
+        //                                                                    ↑ \/?
+        
+        // ✅ Render preview URLs - ALLOWS TRAILING SLASH
+        /^https:\/\/.+\.onrender\.com\/?$/,
+        //                               ↑ \/?
       ];
 
 app.use(cors({
@@ -62,8 +71,12 @@ app.use(cors({
             return callback(null, true);
         }
         
+        // ✅ REMOVE trailing slash for exact match checking
+        const normalizedOrigin = origin.replace(/\/$/, '');
+        const normalizedAllowedOrigins = allowedOrigins.map(o => o.replace(/\/$/, ''));
+        
         // Check exact matches first (fastest)
-        if (allowedOrigins.includes(origin)) {
+        if (normalizedAllowedOrigins.includes(normalizedOrigin)) {
             console.log(`✅ CORS allowed (exact): ${origin}`);
             return callback(null, true);
         }
