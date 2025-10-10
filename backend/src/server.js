@@ -27,46 +27,67 @@ app.use(express.urlencoded({ extended: true }));
 // CORS Configuration
 // Needs to be (for multiple domains)
 // CORS Configuration - FIXED for production
+// CORS Configuration - Industry Standard (Environment-Based)
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
+const isPreview = process.env.VERCEL_ENV === 'preview' || process.env.RENDER_PREVIEW === 'true';
+
+// Exact production domains (most secure)
 const allowedOrigins = [
-    'http://localhost:3000',
-    'https://studentstore-zeta.vercel.app'
+    'https://studentstore-zeta.vercel.app', // Production
 ];
 
-const allowedOriginPatterns = [
-    /^https:\/\/studentstore-git-.+\.muzeebs-projects\.vercel\.app$/,
-    /^https:\/\/studentstore-.+\.muzeebs-projects\.vercel\.app$/,
-    /^https:\/\/.+\.onrender\.com$/
-];
+// Development-only origins
+if (isDevelopment) {
+    allowedOrigins.push('http://localhost:3000');
+    allowedOrigins.push('http://localhost:5173'); // Vite dev server
+}
+
+// Preview environments (dev/staging/preview builds)
+const allowedOriginPatterns = (isProduction && !isPreview)
+    ? [] // ✅ No wildcards in true production!
+    : [
+        // ✅ Vercel preview branches (dev/staging only)
+        /^https:\/\/studentstore-git-[a-zA-Z0-9-]+-muzeebs-projects\.vercel\.app$/,
+        /^https:\/\/studentstore-[a-zA-Z0-9-]+-muzeebs-projects\.vercel\.app$/,
+        
+        // ✅ Render preview URLs (dev/staging only)
+        /^https:\/\/.+\.onrender\.com$/,
+      ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, Postman, curl)
+        // Allow requests with no origin (mobile apps, curl, Postman)
         if (!origin) {
             return callback(null, true);
         }
         
-        // Check exact matches
+        // Check exact matches first (fastest)
         if (allowedOrigins.includes(origin)) {
+            console.log(`✅ CORS allowed (exact): ${origin}`);
             return callback(null, true);
         }
         
-        // Check pattern matches
-        const isAllowed = allowedOriginPatterns.some(pattern => pattern.test(origin));
-        if (isAllowed) {
-            return callback(null, true);
+        // Check pattern matches (only in dev/staging/preview)
+        if (allowedOriginPatterns.length > 0) {
+            const isAllowed = allowedOriginPatterns.some(pattern => pattern.test(origin));
+            if (isAllowed) {
+                console.log(`✅ CORS allowed (preview): ${origin}`);
+                return callback(null, true);
+            }
         }
         
-        console.log(`🚨 CORS blocked: ${origin}`);
+        console.log(`🚨 CORS blocked: ${origin} [isDev: ${isDevelopment}, isProd: ${isProduction}, isPreview: ${isPreview}]`);
         callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control', 'Pragma'],
     exposedHeaders: ['Content-Length', 'Content-Type'],
-    maxAge: 86400, // 24 hours - cache preflight requests
-    preflightContinue: false,
+    maxAge: 86400,
     optionsSuccessStatus: 204
 }));
+
 
 
 // Session Configuration
