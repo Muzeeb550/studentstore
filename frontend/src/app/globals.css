@@ -669,6 +669,107 @@ textarea:focus {
   }
 }
 
+/* ===== FORCE CAROUSEL HORIZONTAL LAYOUT ===== */
+.recently-viewed-carousel .slick-slider,
+.trending-carousel-container .slick-slider {
+  display: block !important;
+}
+
+.recently-viewed-carousel .slick-list,
+.trending-carousel-container .slick-list {
+  overflow: hidden !important;
+  display: block !important;
+}
+
+.recently-viewed-carousel .slick-track,
+.trending-carousel-container .slick-track {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  width: auto !important;
+}
+
+.recently-viewed-carousel .slick-slide,
+.trending-carousel-container .slick-slide {
+  float: none !important;
+  display: flex !important;
+  flex-shrink: 0 !important;
+  height: auto !important;
+}
+
+.recently-viewed-carousel .slick-slide > div,
+.trending-carousel-container .slick-slide > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Prevent card wrapping on mobile */
+@media (max-width: 640px) {
+  .recently-viewed-carousel .slick-track,
+  .trending-carousel-container .slick-track {
+    flex-wrap: nowrap !important;
+  }
+}
+
+
+/* Force Consistent Card Width on Mobile */
+@media (max-width: 640px) {
+  .recently-viewed-carousel .slick-slide {
+    width: 170px !important; /* ✅ Force 2+ cards visible */
+  }
+  
+  .trending-carousel-container .slick-slide {
+    width: 170px !important; /* ✅ Force 2+ cards visible */
+  }
+}
+
+@media (max-width: 480px) {
+  .recently-viewed-carousel .slick-slide {
+    width: 175px !important; /* ✅ Slightly larger for small phones */
+  }
+  
+  .trending-carousel-container .slick-slide {
+    width: 175px !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .recently-viewed-carousel .slick-slide {
+    width: 180px !important; /* ✅ Even larger for tiny phones */
+  }
+  
+  .trending-carousel-container .slick-slide {
+    width: 180px !important;
+  }
+}
+
+/* Smooth Carousel Scrolling on Mobile */
+@media (max-width: 640px) {
+  .recently-viewed-carousel .slick-list,
+  .trending-carousel-container .slick-list {
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
+  }
+  
+  .recently-viewed-carousel .slick-track,
+  .trending-carousel-container .slick-track {
+    transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+  }
+  
+  /* Remove delay on touch */
+  .recently-viewed-carousel .slick-slide,
+  .trending-carousel-container .slick-slide {
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+  }
+}
+
+
+
 /* -------------------------------------------
    4.4 TRENDING CARDS
    Used by: TrendingCard.tsx, page.tsx
@@ -1233,7 +1334,9 @@ textarea:focus {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
   will-change: transform, background-color, box-shadow;
   user-select: none;
+  pointer-events: auto; /* ✅ ADD THIS - Force clickability */
 }
+
 
 .carousel-arrow:hover {
   background: var(--student-blue);
@@ -1520,6 +1623,22 @@ textarea:focus {
 .slick-next {
   display: none;
 }
+
+/* Desktop Carousel Smooth Scrolling */
+@media (min-width: 1280px) {
+  .carousel-container .slick-track {
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    will-change: transform !important;
+  }
+  
+  /* Ensure arrows are always on top and clickable */
+  .carousel-arrow,
+  .carousel-arrow-trending {
+    pointer-events: auto !important;
+    z-index: 100 !important;
+  }
+}
+
 
 /* -------------------------------------------
    6.3 IMAGE COMPONENTS

@@ -387,183 +387,244 @@ export default function HomePage() {
     ],
   };
 
-  const recentlyViewedSettings = {
-    dots: false,
-    infinite: false,
-    speed: 350,
-    slidesToShow: 4,
-    slidesToScroll: 1,
-    prevArrow: <DesktopPrevArrow />,
-    nextArrow: <DesktopNextArrow />,
-    swipeToSlide: true,
-    touchThreshold: 5,
-    swipeThreshold: 10,
-    cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-    useCSS: true,
-    useTransform: true,
-    waitForAnimate: false,
-    draggable: true,
-    responsive: [
-      { 
-        breakpoint: 1536,
+const recentlyViewedSettings = {
+  dots: false,
+  infinite: false,
+  speed: 280, // ✅ Faster (was 350)
+  slidesToShow: 4,
+  slidesToScroll: 2, // ✅ Scroll 2 cards (was 1)
+  initialSlide: 0, 
+  lazyLoad: 'progressive' as const,
+  rows: 1,
+  slidesPerRow: 1,
+  adaptiveHeight: false,
+  vertical: false,
+  verticalSwiping: false,
+  prevArrow: <DesktopPrevArrow />,
+  nextArrow: <DesktopNextArrow />,
+  swipeToSlide: true,
+  touchThreshold: 5,
+  swipeThreshold: 5, // ✅ Lower (was 10)
+  cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)', // ✅ Snappier
+  useCSS: true,
+  useTransform: true,
+  waitForAnimate: false,
+  draggable: true,
+  responsive: [
+    { 
+      breakpoint: 1536, 
+      settings: { 
+        slidesToShow: 4, 
+        slidesToScroll: 2, // ✅ Scroll 2 cards
+        arrows: true, 
+        speed: 280,
+        swipeToSlide: true,
+        touchThreshold: 5,
+      } 
+    },
+    { 
+      breakpoint: 1280, 
         settings: { 
-          slidesToShow: 4,
-          slidesToScroll: 1,
-          arrows: true,
-          speed: 350
-        } 
-      },
-      { 
-        breakpoint: 1280,
-        settings: { 
-          slidesToShow: 3.5,
-          slidesToScroll: 1,
-          arrows: true,
-          speed: 320
-        } 
-      },
-      { 
-        breakpoint: 1024,
-        settings: { 
-          slidesToShow: 2.8,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 300
-        } 
-      },
-      { 
-        breakpoint: 768,
-        settings: { 
-          slidesToShow: 2.5,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 280
-        } 
-      },
-      { 
-        breakpoint: 640,
-        settings: { 
-          slidesToShow: 2.0,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 250,
-          touchThreshold: 5,
-          edgeFriction: 0.15
-        } 
-      },
-      { 
-        breakpoint: 480,
-        settings: { 
-          slidesToShow: 1.9,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 240,
-          touchThreshold: 5,
-          edgeFriction: 0.15
-        } 
-      },
-      { 
-        breakpoint: 375,
-        settings: { 
-          slidesToShow: 1.85,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 230,
-          touchThreshold: 6,
-          edgeFriction: 0.2
-        } 
-      },
-    ],
-  };
+        slidesToShow: 3.5, 
+        slidesToScroll: 2, // ✅ Scroll 2 cards
+        arrows: true, 
+        speed: 260, // ✅ Even faster
+        swipeToSlide: true,
+        touchThreshold: 5,
+      } 
+    },
+    { 
+      breakpoint: 1024, 
+      settings: { 
+        slidesToShow: 2.8, 
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 300 
+      } 
+    },
+    { 
+      breakpoint: 768, 
+      settings: { 
+        slidesToShow: 2.5, 
+        slidesToScroll: 1, 
+        arrows: false, 
+        speed: 280 
+      } 
+    },
+    { 
+      breakpoint: 640,
+      settings: { 
+        slidesToShow: 2.3,
+        slidesToScroll: 1,
+        arrows: false,
+        speed: 300,
+        touchThreshold: 3,
+        edgeFriction: 0.10,
+        variableWidth: false,
+        swipe: true,
+        swipeToSlide: true,
+        touchMove: true,
+        draggable: true,
+        useCSS: true,
+        useTransform: true,
+        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      } 
+    },
+    { 
+      breakpoint: 480,
+      settings: { 
+        slidesToShow: 2.15,
+        slidesToScroll: 1,
+        arrows: false,
+        speed: 280,
+        touchThreshold: 2,
+        edgeFriction: 0.08,
+        variableWidth: false,
+        swipe: true,
+        swipeToSlide: true,
+        touchMove: true,
+        draggable: true,
+        useCSS: true,
+        useTransform: true,
+        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      } 
+    },
+    { 
+      breakpoint: 375,
+      settings: { 
+        slidesToShow: 2.05,
+        slidesToScroll: 1,
+        arrows: false,
+        speed: 260,
+        touchThreshold: 2,
+        edgeFriction: 0.05,
+        variableWidth: false,
+        swipe: true,
+        swipeToSlide: true,
+        touchMove: true,
+        draggable: true,
+        useCSS: true,
+        useTransform: true,
+        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      } 
+    },
+  ],
+};
 
-  const trendingSettings = {
-    dots: false,
-    infinite: false,
-    speed: 350,
-    slidesToShow: 4,
-    slidesToScroll: 1,
-    prevArrow: <TrendingPrevArrow />,
-    nextArrow: <TrendingNextArrow />,
-    swipeToSlide: true,
-    touchThreshold: 5,
-    swipeThreshold: 10,
-    cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-    useCSS: true,
-    useTransform: true,
-    waitForAnimate: false,
-    draggable: true,
-    responsive: [
-      { 
-        breakpoint: 1536,
-        settings: { 
-          slidesToShow: 4,
-          slidesToScroll: 1,
-          arrows: true,
-          speed: 350
-        } 
-      },
-      { 
-        breakpoint: 1280,
-        settings: { 
-          slidesToShow: 3.5,
-          slidesToScroll: 1,
-          arrows: true,
-          speed: 320
-        } 
-      },
-      { 
-        breakpoint: 1024,
-        settings: { 
-          slidesToShow: 2.8,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 300
-        } 
-      },
-      { 
-        breakpoint: 768,
-        settings: { 
-          slidesToShow: 2.5,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 280
-        } 
-      },
-      { 
-        breakpoint: 640,
-        settings: { 
-          slidesToShow: 2.0,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 250,
-          touchThreshold: 5,
-          edgeFriction: 0.15
-        } 
-      },
-      { 
-        breakpoint: 480,
-        settings: { 
-          slidesToShow: 1.9,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 240,
-          touchThreshold: 5,
-          edgeFriction: 0.15
-        } 
-      },
-      { 
-        breakpoint: 375,
-        settings: { 
-          slidesToShow: 1.85,
-          slidesToScroll: 1,
-          arrows: false,
-          speed: 230,
-          touchThreshold: 6,
-          edgeFriction: 0.2
-        } 
-      },
-    ],
-  };
+const trendingSettings = {
+  dots: false,
+  infinite: false,
+  speed: 280, // ✅ Faster (was 350)
+  slidesToShow: 4,
+  slidesToScroll: 2, // ✅ Scroll 2 cards (was 1)
+  prevArrow: <TrendingPrevArrow />,
+  nextArrow: <TrendingNextArrow />,
+  swipeToSlide: true,
+  touchThreshold: 5,
+  swipeThreshold: 5, // ✅ Lower (was 10)
+  cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)', // ✅ Snappier
+  useCSS: true,
+  useTransform: true,
+  waitForAnimate: false,
+  draggable: true,
+  responsive: [
+    { 
+      breakpoint: 1536,
+      settings: { 
+        slidesToShow: 4,
+        slidesToScroll: 2, // ✅ Scroll 2 cards
+        arrows: true,
+        speed: 280,
+        swipeToSlide: true,
+        touchThreshold: 5,
+      } 
+    },
+    { 
+      breakpoint: 1280,
+      settings: { 
+        slidesToShow: 3.5,
+        slidesToScroll: 2, // ✅ Scroll 2 cards
+        arrows: true,
+        speed: 260, // ✅ Even faster
+        swipeToSlide: true,
+        touchThreshold: 5,
+      } 
+    },
+    { 
+      breakpoint: 1024,
+      settings: { 
+        slidesToShow: 2.8,
+        slidesToScroll: 1,
+        arrows: false,
+        speed: 300
+      } 
+    },
+    { 
+      breakpoint: 768,
+      settings: { 
+        slidesToShow: 2.5,
+        slidesToScroll: 1,
+        arrows: false,
+        speed: 280
+      } 
+    },
+    { 
+      breakpoint: 640,
+      settings: { 
+        slidesToShow: 2.3,
+        slidesToScroll: 1,
+        arrows: false,
+        speed: 300,
+        touchThreshold: 3,
+        edgeFriction: 0.10,
+        swipe: true,
+        swipeToSlide: true,
+        touchMove: true,
+        draggable: true,
+        useCSS: true,
+        useTransform: true,
+        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      } 
+    },
+    { 
+      breakpoint: 480,
+      settings: { 
+        slidesToShow: 2.15,
+        slidesToScroll: 1,
+        arrows: false,
+        speed: 280,
+        touchThreshold: 2,
+        edgeFriction: 0.08,
+        swipe: true,
+        swipeToSlide: true,
+        touchMove: true,
+        draggable: true,
+        useCSS: true,
+        useTransform: true,
+        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      } 
+    },
+    { 
+      breakpoint: 375,
+      settings: { 
+        slidesToShow: 2.05,
+        slidesToScroll: 1,
+        arrows: false,
+        speed: 260,
+        touchThreshold: 2,
+        edgeFriction: 0.05,
+        swipe: true,
+        swipeToSlide: true,
+        touchMove: true,
+        draggable: true,
+        useCSS: true,
+        useTransform: true,
+        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      } 
+    },
+  ],
+};
+
 
   const productCarouselSettings = {
     dots: false,
@@ -703,8 +764,6 @@ export default function HomePage() {
     </div>
   </div>
 </section>
-
-
 
       {/* Recently Viewed Section */}
       {recentlyViewed.length > 0 && (
