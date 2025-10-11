@@ -1314,107 +1314,22 @@ textarea:focus {
    6.2 CAROUSEL COMPONENTS
    ------------------------------------------- */
 
-/* Desktop Carousel Arrows - Enhanced */
-.carousel-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 30;
-  width: 4rem;
-  height: 4rem;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
-  will-change: transform, background-color, box-shadow;
-  user-select: none;
-  pointer-events: auto; /* ✅ ADD THIS - Force clickability */
+/* Section setup - simple and clean */
+.recently-viewed-section,
+.trending-section {
+  position: relative;
+  padding: 2rem 1.5rem;
 }
 
-
-.carousel-arrow:hover {
-  background: var(--student-blue);
-  transform: translateY(-50%) scale(1.08);
-  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3), 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: var(--student-blue);
+/* Desktop row wrapper */
+.row-desktop {
+  position: relative;
 }
 
-.carousel-arrow:active {
-  transform: translateY(-50%) scale(1.02);
-  transition: all 0.1s ease;
-}
-
-.carousel-arrow.prev {
-  left: 0.5rem; /* ✅ FIX: Inside the padded area */
-}
-
-.carousel-arrow.next {
-  right: 0.5rem; /* ✅ FIX: Inside the padded area */
-}
-
-
-/* Trending Carousel Arrows - Orange Theme */
-.carousel-arrow-trending {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 50;
-  width: 4.5rem;
-  height: 4.5rem;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  border: 2px solid rgba(249, 115, 22, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease-out;
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
-  will-change: transform, background-color;
-  user-select: none;
-  pointer-events: auto;
-}
-
-.carousel-arrow-trending:hover {
-  background: var(--student-orange);
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 8px 30px rgba(249, 115, 22, 0.4), 0 4px 15px rgba(0, 0, 0, 0.15);
-  border-color: var(--student-orange);
-}
-
-.carousel-arrow-trending:active {
-  transform: translateY(-50%) scale(1.05);
-  transition: all 0.1s ease;
-}
-
-.carousel-arrow-trending.prev {
-  left: 0.5rem; /* ✅ FIX: Inside the padded area */
-}
-
-.carousel-arrow-trending.next {
-  right: 0.5rem; /* ✅ FIX: Inside the padded area */
-}
-
-
-/* Hide Arrows on Mobile/Tablet */
-@media (max-width: 1279px) {
-  .carousel-arrow,
-  .carousel-arrow-trending {
-    display: none;
-  }
-}
-
-/* Mobile Carousel Dots - FINAL */
+/* Rest of carousel styles... */
 .carousel-dots {
   position: absolute;
-  bottom: -36px; /* ✅ Below the banner */
+  bottom: -36px;
   left: 0;
   right: 0;
   text-align: center;
@@ -1433,212 +1348,36 @@ textarea:focus {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(79, 70, 229, 0.3); /* ✅ Blue student theme */
+  background: rgba(79, 70, 229, 0.3);
   border: 2px solid rgba(79, 70, 229, 0.5);
   padding: 0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   font-size: 0;
-  line-height: 0;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.carousel-dots li button:hover {
-  background: rgba(79, 70, 229, 0.5);
-  transform: scale(1.1);
 }
 
 .carousel-dots li.slick-active button {
-  background: var(--student-blue); /* ✅ Solid blue when active */
-  border-color: var(--student-blue);
+  background: var(--student-blue);
   transform: scale(1.4);
-  box-shadow: 0 0 12px rgba(79, 70, 229, 0.6);
 }
 
 @media (min-width: 640px) {
-  .carousel-dots {
-    bottom: -40px;
-  }
-  
-  .carousel-dots li {
-    margin: 0 5px;
-  }
-  
-  .carousel-dots li button {
-    width: 10px;
-    height: 10px;
-  }
+  .carousel-dots { bottom: -40px; }
+  .carousel-dots li button { width: 10px; height: 10px; }
 }
 
-@media (min-width: 1024px) {
-  .carousel-dots {
-    bottom: -44px;
-  }
-  
-  .carousel-dots li {
-    margin: 0 6px;
-  }
-  
-  .carousel-dots li button {
-    width: 12px;
-    height: 12px;
-  }
-}
-
-
-
-/* Carousel Container Spacing */
+/* Carousel Container */
 .carousel-container {
   position: relative;
   margin: 0;
-  overflow: hidden; /* ✅ FIX: Prevent cards from flowing outside */
+  overflow: hidden;
 }
 
 @media (min-width: 1280px) {
   .carousel-container {
-    margin: 0;
-    padding: 0 4rem; /* ✅ FIX: Padding instead of margin keeps cards inside */
+    padding: 0 4rem;
   }
 }
-
-
-/* Carousel Slide Inner Wrapper - Handles Gaps */
-.carousel-slide-inner {
-  padding: 0 8px; /* ✅ FIX: 16px gap, contained within carousel */
-  height: 100%;
-}
-
-.carousel-slide-inner > * {
-  width: 100%;
-  height: 100%;
-}
-
-/* Carousel List - Compensate for Padding */
-.carousel-container .slick-list {
-  margin: 0 -8px;
-  overflow: hidden; /* ✅ FIX: Hide overflow */
-}
-
-
-/* Mobile Touch Scrolling Physics */
-@media (max-width: 768px) {
-  .carousel-container .slick-list {
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    overflow-x: hidden;
-  }
-  
-  .carousel-container .slick-track {
-    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    will-change: transform;
-    transform: translate3d(0, 0, 0);
-    backface-visibility: hidden;
-  }
-  
-  .carousel-container .slick-list.dragging {
-    cursor: grabbing;
-    user-select: none;
-  }
-  
-  .carousel-container .slick-list.dragging * {
-    pointer-events: none;
-  }
-}
-
-/* Hardware Acceleration for Smooth Performance */
-.carousel-container .slick-slide {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: transform;
-}
-
-/* Peek Indicator - Shows More Content Available */
-@media (max-width: 640px) {
-  .carousel-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 2px;
-    height: 100%;
-    background: linear-gradient(
-      to bottom, 
-      transparent 15%, 
-      rgba(79, 70, 229, 0.12) 50%, 
-      transparent 85%
-    );
-    pointer-events: none;
-    z-index: 5;
-  }
-  
-  .trending-carousel-container::after {
-    background: linear-gradient(
-      to bottom, 
-      transparent 15%, 
-      rgba(249, 115, 22, 0.12) 50%, 
-      transparent 85%
-    );
-  }
-}
-
-/* Tablet Optimization */
-@media (min-width: 641px) and (max-width: 768px) {
-  .carousel-slide-inner {
-    padding: 0 8px; /* Slightly larger gap */
-  }
-  
-  .carousel-container .slick-list {
-    margin: 0 -8px;
-  }
-}
-
-/* Desktop Optimization */
-@media (min-width: 769px) {
-  .carousel-slide-inner {
-    padding: 0 8px;
-  }
-  
-  .carousel-container .slick-list {
-    margin: 0 -8px;
-  }
-}
-
-/* Prevent Layout Shift During Load */
-.carousel-container .slick-track {
-  min-height: 380px; /* Match card height */
-}
-
-@media (max-width: 640px) {
-  .recently-viewed-carousel .slick-track {
-    min-height: 320px;
-  }
-  
-  .trending-carousel-container .slick-track {
-    min-height: 340px;
-  }
-}
-
-/* Hide Default Slick Arrows - We Use Custom */
-.slick-prev,
-.slick-next {
-  display: none;
-}
-
-/* Desktop Carousel Smooth Scrolling */
-@media (min-width: 1280px) {
-  .carousel-container .slick-track {
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    will-change: transform !important;
-  }
-  
-  /* Ensure arrows are always on top and clickable */
-  .carousel-arrow,
-  .carousel-arrow-trending {
-    pointer-events: auto !important;
-    z-index: 100 !important;
-  }
-}
-
 
 /* -------------------------------------------
    6.3 IMAGE COMPONENTS
@@ -1710,6 +1449,33 @@ textarea:focus {
   .category-card:active .touch-ripple {
     opacity: 1;
   }
+}
+
+/* Horizontal snap row for mobile carousels */
+.snap-row {
+  display: flex;
+  gap: 12px;
+  scroll-snap-type: x mandatory;   /* snap-x snap-mandatory */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;   /* prevent scroll chaining */
+}
+
+/* Each snap item aligns to start */
+.snap-item {
+  scroll-snap-align: start;         /* snap-start */
+}
+
+/* Stable media ratio for card media */
+.card-media {
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  overflow: hidden;
+}
+.card-media > img,
+.card-media > video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ===========================================
@@ -1988,12 +1754,6 @@ textarea:focus {
    ------------------------------------------- */
 
 @media (min-width: 1280px) {
-  /* Show carousel arrows */
-  .carousel-arrow,
-  .carousel-arrow-trending {
-    display: flex;
-  }
-  
   /* Add carousel container margins */
   .carousel-container {
     margin: 0 3.5rem;
@@ -2111,8 +1871,6 @@ textarea:focus {
   /* Hide navigation and interactive elements */
   nav,
   .navbar-dropdown-menu,
-  .carousel-arrow,
-  .carousel-arrow-trending,
   .carousel-dots,
   .wishlist-badge,
   .product-wishlist,

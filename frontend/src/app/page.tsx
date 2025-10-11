@@ -72,8 +72,14 @@ export default function HomePage() {
   const [lastRefresh, setLastRefresh] = useState<number>(0);
 
   const categorySliderRef = useRef<any>(null);
-  const recentlyViewedSliderRef = useRef<any>(null);
-  const trendingSliderRef = useRef<any>(null);
+
+  // Refs for horizontal rows (typed as HTMLDivElement)
+  const recentRowMobileRef = useRef<HTMLDivElement>(null);
+  const recentRowTabletRef = useRef<HTMLDivElement>(null);
+  const recentRowDesktopRef = useRef<HTMLDivElement>(null);
+  const trendingRowMobileRef = useRef<HTMLDivElement>(null);
+  const trendingRowTabletRef = useRef<HTMLDivElement>(null);
+  const trendingRowDesktopRef = useRef<HTMLDivElement>(null);
 
   const CACHE_CONFIG = {
     banners: 5 * 60 * 1000,
@@ -248,62 +254,24 @@ export default function HomePage() {
     setRecentlyViewed(recentProducts);
   }, []);
 
-  // UPDATED: Desktop Arrow Components
-  const DesktopPrevArrow = ({ onClick }: any) => (
-    <button 
-      onClick={onClick} 
-      className="carousel-arrow prev" 
-      aria-label="Previous slide"
-      type="button"
-    >
-      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-      </svg>
-    </button>
-  );
+  // Smooth scroll by one card width (kept for future accessibility/keyboard support)
+  const scrollByCard = (
+    ref: React.RefObject<HTMLDivElement | null>,
+    direction: 1 | -1
+  ) => {
+    const row = ref.current;
+    if (!row) return;
+    const card = row.querySelector<HTMLElement>('[data-snap-card]');
+    const style = window.getComputedStyle(row);
+    const gapPx = parseFloat(style.columnGap || style.gap || '16');
+    const delta = (card?.offsetWidth || 300) + gapPx;
+    row.scrollBy({ left: direction * delta, behavior: 'smooth' });
+  };
 
-  const DesktopNextArrow = ({ onClick }: any) => (
-    <button 
-      onClick={onClick} 
-      className="carousel-arrow next" 
-      aria-label="Next slide"
-      type="button"
-    >
-      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
-  );
-
-  // UPDATED: Trending Arrow Components
-  const TrendingPrevArrow = ({ onClick }: any) => (
-    <button 
-      onClick={onClick} 
-      className="carousel-arrow-trending prev" 
-      aria-label="Previous trending products"
-      type="button"
-    >
-      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-      </svg>
-    </button>
-  );
-
-  const TrendingNextArrow = ({ onClick }: any) => (
-    <button 
-      onClick={onClick} 
-      className="carousel-arrow-trending next" 
-      aria-label="Next trending products"
-      type="button"
-    >
-      <svg className="w-6 h-6 text-gray-700 group-hover:text-white transition-colors duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
-  );
-
+  // No custom arrows anywhere; disable arrows to avoid unknown prop warnings
   const bannerSettings = {
     dots: true,
+    arrows: false,
     infinite: banners.length > 1,
     speed: 500,
     slidesToShow: 1,
@@ -311,8 +279,6 @@ export default function HomePage() {
     autoplay: banners.length > 1,
     autoplaySpeed: 4500,
     fade: false,
-    prevArrow: <DesktopPrevArrow />,
-    nextArrow: <DesktopNextArrow />,
     pauseOnHover: true,
     pauseOnFocus: true,
     pauseOnDotsHover: true,
@@ -345,12 +311,11 @@ export default function HomePage() {
 
   const categoryDesktopSettings = {
     dots: false,
+    arrows: false,
     infinite: false,
     speed: 350,
     slidesToShow: 5,
     slidesToScroll: 1,
-    prevArrow: <DesktopPrevArrow />,
-    nextArrow: <DesktopNextArrow />,
     swipe: true,
     swipeToSlide: true,
     touchMove: true,
@@ -365,11 +330,11 @@ export default function HomePage() {
 
   const categoryRowSettings = {
     dots: false,
+    arrows: false,
     infinite: false,
     speed: 320,
     slidesToShow: 3.2,
     slidesToScroll: 1,
-    arrows: false,
     swipe: true,
     swipeToSlide: true,
     touchMove: true,
@@ -384,295 +349,6 @@ export default function HomePage() {
       { breakpoint: 768, settings: { slidesToShow: 3.2, centerPadding: '10px' } },
       { breakpoint: 640, settings: { slidesToShow: 3.2, centerPadding: '10px' } },
       { breakpoint: 480, settings: { slidesToShow: 3.0, centerPadding: '8px' } },
-    ],
-  };
-
-const recentlyViewedSettings = {
-  dots: false,
-  infinite: false,
-  speed: 280, // ✅ Faster (was 350)
-  slidesToShow: 4,
-  slidesToScroll: 2, // ✅ Scroll 2 cards (was 1)
-  initialSlide: 0, 
-  lazyLoad: 'progressive' as const,
-  rows: 1,
-  slidesPerRow: 1,
-  adaptiveHeight: false,
-  vertical: false,
-  verticalSwiping: false,
-  prevArrow: <DesktopPrevArrow />,
-  nextArrow: <DesktopNextArrow />,
-  swipeToSlide: true,
-  touchThreshold: 5,
-  swipeThreshold: 5, // ✅ Lower (was 10)
-  cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)', // ✅ Snappier
-  useCSS: true,
-  useTransform: true,
-  waitForAnimate: false,
-  draggable: true,
-  responsive: [
-    { 
-      breakpoint: 1536, 
-      settings: { 
-        slidesToShow: 4, 
-        slidesToScroll: 2, // ✅ Scroll 2 cards
-        arrows: true, 
-        speed: 280,
-        swipeToSlide: true,
-        touchThreshold: 5,
-      } 
-    },
-    { 
-      breakpoint: 1280, 
-        settings: { 
-        slidesToShow: 3.5, 
-        slidesToScroll: 2, // ✅ Scroll 2 cards
-        arrows: true, 
-        speed: 260, // ✅ Even faster
-        swipeToSlide: true,
-        touchThreshold: 5,
-      } 
-    },
-    { 
-      breakpoint: 1024, 
-      settings: { 
-        slidesToShow: 2.8, 
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 300 
-      } 
-    },
-    { 
-      breakpoint: 768, 
-      settings: { 
-        slidesToShow: 2.5, 
-        slidesToScroll: 1, 
-        arrows: false, 
-        speed: 280 
-      } 
-    },
-    { 
-      breakpoint: 640,
-      settings: { 
-        slidesToShow: 2.3,
-        slidesToScroll: 1,
-        arrows: false,
-        speed: 300,
-        touchThreshold: 3,
-        edgeFriction: 0.10,
-        variableWidth: false,
-        swipe: true,
-        swipeToSlide: true,
-        touchMove: true,
-        draggable: true,
-        useCSS: true,
-        useTransform: true,
-        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-      } 
-    },
-    { 
-      breakpoint: 480,
-      settings: { 
-        slidesToShow: 2.15,
-        slidesToScroll: 1,
-        arrows: false,
-        speed: 280,
-        touchThreshold: 2,
-        edgeFriction: 0.08,
-        variableWidth: false,
-        swipe: true,
-        swipeToSlide: true,
-        touchMove: true,
-        draggable: true,
-        useCSS: true,
-        useTransform: true,
-        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-      } 
-    },
-    { 
-      breakpoint: 375,
-      settings: { 
-        slidesToShow: 2.05,
-        slidesToScroll: 1,
-        arrows: false,
-        speed: 260,
-        touchThreshold: 2,
-        edgeFriction: 0.05,
-        variableWidth: false,
-        swipe: true,
-        swipeToSlide: true,
-        touchMove: true,
-        draggable: true,
-        useCSS: true,
-        useTransform: true,
-        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-      } 
-    },
-  ],
-};
-
-const trendingSettings = {
-  dots: false,
-  infinite: false,
-  speed: 280, // ✅ Faster (was 350)
-  slidesToShow: 4,
-  slidesToScroll: 2, // ✅ Scroll 2 cards (was 1)
-  prevArrow: <TrendingPrevArrow />,
-  nextArrow: <TrendingNextArrow />,
-  swipeToSlide: true,
-  touchThreshold: 5,
-  swipeThreshold: 5, // ✅ Lower (was 10)
-  cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)', // ✅ Snappier
-  useCSS: true,
-  useTransform: true,
-  waitForAnimate: false,
-  draggable: true,
-  responsive: [
-    { 
-      breakpoint: 1536,
-      settings: { 
-        slidesToShow: 4,
-        slidesToScroll: 2, // ✅ Scroll 2 cards
-        arrows: true,
-        speed: 280,
-        swipeToSlide: true,
-        touchThreshold: 5,
-      } 
-    },
-    { 
-      breakpoint: 1280,
-      settings: { 
-        slidesToShow: 3.5,
-        slidesToScroll: 2, // ✅ Scroll 2 cards
-        arrows: true,
-        speed: 260, // ✅ Even faster
-        swipeToSlide: true,
-        touchThreshold: 5,
-      } 
-    },
-    { 
-      breakpoint: 1024,
-      settings: { 
-        slidesToShow: 2.8,
-        slidesToScroll: 1,
-        arrows: false,
-        speed: 300
-      } 
-    },
-    { 
-      breakpoint: 768,
-      settings: { 
-        slidesToShow: 2.5,
-        slidesToScroll: 1,
-        arrows: false,
-        speed: 280
-      } 
-    },
-    { 
-      breakpoint: 640,
-      settings: { 
-        slidesToShow: 2.3,
-        slidesToScroll: 1,
-        arrows: false,
-        speed: 300,
-        touchThreshold: 3,
-        edgeFriction: 0.10,
-        swipe: true,
-        swipeToSlide: true,
-        touchMove: true,
-        draggable: true,
-        useCSS: true,
-        useTransform: true,
-        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-      } 
-    },
-    { 
-      breakpoint: 480,
-      settings: { 
-        slidesToShow: 2.15,
-        slidesToScroll: 1,
-        arrows: false,
-        speed: 280,
-        touchThreshold: 2,
-        edgeFriction: 0.08,
-        swipe: true,
-        swipeToSlide: true,
-        touchMove: true,
-        draggable: true,
-        useCSS: true,
-        useTransform: true,
-        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-      } 
-    },
-    { 
-      breakpoint: 375,
-      settings: { 
-        slidesToShow: 2.05,
-        slidesToScroll: 1,
-        arrows: false,
-        speed: 260,
-        touchThreshold: 2,
-        edgeFriction: 0.05,
-        swipe: true,
-        swipeToSlide: true,
-        touchMove: true,
-        draggable: true,
-        useCSS: true,
-        useTransform: true,
-        cssEase: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-      } 
-    },
-  ],
-};
-
-
-  const productCarouselSettings = {
-    dots: false,
-    infinite: false,
-    speed: 400,
-    slidesToShow: 4,
-    slidesToScroll: 1,
-    prevArrow: <DesktopPrevArrow />,
-    nextArrow: <DesktopNextArrow />,
-    swipeToSlide: true,
-    touchThreshold: 5,
-    cssEase: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    useCSS: true,
-    useTransform: true,
-    waitForAnimate: false,
-    focusOnSelect: false,
-    responsive: [
-      { 
-        breakpoint: 1280, 
-        settings: { 
-          slidesToShow: 3, 
-          slidesToScroll: 1, 
-          arrows: true,
-          speed: 350,
-          touchThreshold: 4
-        } 
-      },
-      { 
-        breakpoint: 1024, 
-        settings: { 
-          slidesToShow: 2, 
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 300,
-          touchThreshold: 4
-        } 
-      },
-      { 
-        breakpoint: 640, 
-        settings: { 
-          slidesToShow: 1.8, 
-          slidesToScroll: 1, 
-          arrows: false, 
-          speed: 280,
-          touchThreshold: 3,
-          centerPadding: '10px'
-        } 
-      },
     ],
   };
 
@@ -725,77 +401,117 @@ const trendingSettings = {
       {process.env.NODE_ENV === 'development' && <CacheStatusIndicator />}
 
       {/* Banner */}
-<section className="banner-container relative max-w-7xl mx-auto">
-  <div className="relative" style={{ paddingBottom: '40px' }}>
-    <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
-      {loadingStates.banners ? (
-        <div className="banner-loading"></div>
-      ) : banners.length > 0 ? (
-        <Slider {...bannerSettings}>
-          {banners.map((banner) => (
-            <div key={banner.id} className="relative">
-              <a href={banner.link_url} target="_blank" rel="noopener noreferrer" className="block relative touch-optimized">
-                {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
-                  <video src={banner.media_url} autoPlay muted loop playsInline className="banner-image touch-optimized" />
-                ) : (
-                  <img src={banner.media_url} alt={banner.name} className="banner-image touch-optimized" loading="eager" />
-                )}
-                <div className="banner-overlay">
-                  <h2 className="banner-title">{banner.name}</h2>
-                  <button className="banner-btn">
-                    Shop Now
-                    <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </button>
+      <section className="banner-container relative max-w-7xl mx-auto">
+        <div className="relative" style={{ paddingBottom: '40px' }}>
+          <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
+            {loadingStates.banners ? (
+              <div className="banner-loading"></div>
+            ) : banners.length > 0 ? (
+              <Slider {...bannerSettings}>
+                {banners.map((banner) => (
+                  <div key={banner.id} className="relative">
+                    <a href={banner.link_url} target="_blank" rel="noopener noreferrer" className="block relative touch-optimized">
+                      {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
+                        <video src={banner.media_url} autoPlay muted loop playsInline className="banner-image touch-optimized" />
+                      ) : (
+                        <img src={banner.media_url} alt={banner.name} className="banner-image touch-optimized" loading="eager" />
+                      )}
+                      <div className="banner-overlay">
+                        <h2 className="banner-title">{banner.name}</h2>
+                        <button className="banner-btn">
+                          Shop Now
+                          <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </button>
+                      </div>
+                    </a>
+                  </div>
+                ))}
+              </Slider>
+            ) : (
+              <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
+                <div className="text-center text-white px-4">
+                  <h2 className="banner-title">Welcome to StudentStore</h2>
+                  <p className="text-sm sm:text-base lg:text-lg opacity-90">Your personal shopping companion for student life</p>
                 </div>
-              </a>
-            </div>
-          ))}
-        </Slider>
-      ) : (
-        <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
-          <div className="text-center text-white px-4">
-            <h2 className="banner-title">Welcome to StudentStore</h2>
-            <p className="text-sm sm:text-base lg:text-lg opacity-90">Your personal shopping companion for student life</p>
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </div>
-  </div>
-</section>
+      </section>
 
       {/* Recently Viewed Section */}
       {recentlyViewed.length > 0 && (
         <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
           <div className="recently-viewed-section">
             <div className="mb-6 lg:mb-8">
-              <div className="flex items-center mb-4">
-                <div className="w-1 h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-3"></div>
-                <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <div className="w-1 h-7 sm:h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-2.5 sm:mr-3"></div>
+                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
                   🔄 Continue Your Shopping Journey
                 </h3>
               </div>
-              <p className="text-student-secondary text-base lg:text-lg ml-7">
-                Don't lose track of these great finds - pick up exactly where you left off!
-              </p>
-              <div className="recently-viewed-progress ml-7 mt-3">
-                <div className="flex items-center text-sm text-student-blue">
+              <div className="recently-viewed-progress ml-7 mt-2 sm:mt-3">
+                <div className="flex items-center text-xs sm:text-sm text-student-blue">
                   <div className="w-2 h-2 bg-student-blue rounded-full mr-2 animate-pulse"></div>
                   <span className="font-medium">{recentlyViewed.length} items in your browsing session</span>
                 </div>
               </div>
             </div>
-            <div className="carousel-container recently-viewed-carousel">
-              <Slider key="recently-viewed-slider" {...recentlyViewedSettings}>
+
+            {/* Mobile (<=640px): 3 + 0.5 card */}
+            <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
+              <div ref={recentRowMobileRef} className="flex gap-3">
                 {recentlyViewed.map((item) => (
-                  <div key={`recent-${item.product.id}-${item.viewedAt}`}>
-                    <div className="carousel-slide-inner">
-                      <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
-                    </div>
+                  <div
+                    key={`recent-m-${item.product.id}-${item.viewedAt}`}
+                    data-snap-card
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (2 * 12px)) / 3.5)' }}
+                  >
+                    <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
                   </div>
                 ))}
-              </Slider>
+              </div>
+            </div>
+
+            {/* Tablets (641px–1024px): 4 + 0.5 card */}
+            <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
+              <div ref={recentRowTabletRef} className="flex gap-3">
+                {recentlyViewed.map((item) => (
+                  <div
+                    key={`recent-t-${item.product.id}-${item.viewedAt}`}
+                    data-snap-card
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
+                  >
+                    <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Laptops/desktops (>=1025px): smooth scroll with 6-up sizing, no arrows */}
+            <div className="relative hidden lg:block row-desktop">
+              <div className="overflow-x-auto scroll-smooth overscroll-x-contain">
+                <div
+                  ref={recentRowDesktopRef}
+                  className="flex gap-4 snap-x snap-mandatory"
+                  style={{ scrollPaddingLeft: '16px' }}
+                >
+                  {recentlyViewed.map((item) => (
+                    <div
+                      key={`recent-d-${item.product.id}-${item.viewedAt}`}
+                      data-snap-card
+                      className="snap-start shrink-0"
+                      style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
+                    >
+                      <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -806,32 +522,72 @@ const trendingSettings = {
         <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
           <div className="trending-section">
             <div className="mb-6 lg:mb-8">
-              <div className="flex items-center mb-4">
-                <div className="w-1 h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-3"></div>
-                <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <div className="w-1 h-7 sm:h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-2.5 sm:mr-3"></div>
+                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
                   🔥 What's Trending Among Students
                 </h3>
               </div>
-              <p className="text-student-secondary text-base lg:text-lg ml-7">
-                Join thousands of students discovering these hot products right now!
-              </p>
-              <div className="trending-live-indicator ml-7 mt-3">
-                <div className="flex items-center text-sm text-student-orange">
+              <div className="trending-live-indicator ml-7 mt-2 sm:mt-3">
+                <div className="flex items-center text-xs sm:text-sm text-student-orange">
                   <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
                   <span className="font-medium">Live trending data • Updated every hour</span>
                 </div>
               </div>
             </div>
-            <div className="carousel-container trending-carousel-container">
-              <Slider key="trending-slider" {...trendingSettings}>
+
+            {/* Mobile (<=640px): 3 + 0.5 card */}
+            <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
+              <div ref={trendingRowMobileRef} className="flex gap-3">
                 {trendingProducts.map((product, index) => (
-                  <div key={`trending-${product.id}-${index}`}>
-                    <div className="carousel-slide-inner">
-                      <TrendingCard product={product} trendingRank={index + 1} />
-                    </div>
+                  <div
+                    key={`trending-m-${product.id}-${index}`}
+                    data-snap-card
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (2 * 12px)) / 3.5)' }}
+                  >
+                    <TrendingCard product={product} trendingRank={index + 1} />
                   </div>
                 ))}
-              </Slider>
+              </div>
+            </div>
+
+            {/* Tablets (641px–1024px): 4 + 0.5 card */}
+            <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
+              <div ref={trendingRowTabletRef} className="flex gap-3">
+                {trendingProducts.map((product, index) => (
+                  <div
+                    key={`trending-t-${product.id}-${index}`}
+                    data-snap-card
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
+                  >
+                    <TrendingCard product={product} trendingRank={index + 1} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Laptops/desktops (>=1025px): smooth scroll with 6-up sizing, no arrows */}
+            <div className="relative hidden lg:block row-desktop">
+              <div className="overflow-x-auto scroll-smooth overscroll-x-contain">
+                <div
+                  ref={trendingRowDesktopRef}
+                  className="flex gap-4 snap-x snap-mandatory"
+                  style={{ scrollPaddingLeft: '16px' }}
+                >
+                  {trendingProducts.map((product, index) => (
+                    <div
+                      key={`trending-d-${product.id}-${index}`}
+                      data-snap-card
+                      className="snap-start shrink-0"
+                      style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
+                    >
+                      <TrendingCard product={product} trendingRank={index + 1} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -850,7 +606,7 @@ const trendingSettings = {
           ) : categories.length > 0 ? (
             <>
               <div className="desktop-category-container hidden xl:block">
-                <Slider {...categoryDesktopSettings}>
+                <Slider {...categoryDesktopSettings} ref={categorySliderRef}>
                   {categories.map((category) => (
                     <div key={category.id} className="px-1">
                       <CategoryCard category={category} />
@@ -913,7 +669,7 @@ const trendingSettings = {
             Handpicked products that students love, with the best deals and reviews
           </p>
         </div>
-        
+
         {loadingStates.products ? (
           <LoadingSection title="Featured Products" />
         ) : products.length > 0 ? (
