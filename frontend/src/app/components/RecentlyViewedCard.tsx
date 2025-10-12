@@ -73,11 +73,11 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
           </div>
 
           {/* Continue Badge */}
-          <div style={{ position: 'absolute', top: '10px', right: '60px', zIndex: 10 }}>
+          {/* <div style={{ position: 'absolute', top: '10px', right: '60px', zIndex: 10 }}>
             <span className="bg-gradient-to-r from-cyan-500 to-student-blue text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
               Continue
             </span>
-          </div>
+          </div> */}
           
           {/* Wishlist Button */}
           <div 
@@ -103,7 +103,7 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
           </p>
 
           {/* Context */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem' }}>
+          {/* <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem' }}>
             <div className="flex items-center text-student-blue">
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -114,12 +114,12 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
             <div className="text-student-secondary text-xs">
               Don't lose this!
             </div>
-          </div>
+          </div> */}
 
           {/* CTA */}
           <button className="recently-viewed-cta">
             <span className="flex items-center justify-center">
-              Continue Shopping
+              Continue
               <svg className="ml-2 w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>

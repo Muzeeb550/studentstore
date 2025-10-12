@@ -74,21 +74,21 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
           </div>
 
           {/* Growth Badge */}
-          <div style={{ position: 'absolute', top: '10px', right: '60px', zIndex: 10 }}>
+          {/* <div style={{ position: 'absolute', top: '10px', right: '60px', zIndex: 10 }}>
             <span className={`${trendData.isRising ? 'bg-green-500' : 'bg-student-orange'} text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg flex items-center`}>
               +{trendData.growth}% 
               <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
             </span>
-          </div>
+          </div> */}
 
           {/* Hot Badge (bottom left) */}
-          <div style={{ position: 'absolute', bottom: '10px', left: '10px', zIndex: 10 }}>
+          {/* <div style={{ position: 'absolute', bottom: '10px', left: '10px', zIndex: 10 }}>
             <span className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg animate-pulse">
               🔥 Hot
             </span>
-          </div>
+          </div> */}
           
           {/* Wishlist Button */}
           <div 
@@ -114,7 +114,7 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
           </p>
 
           {/* Social Proof */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem' }}>
+          {/* <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem' }}>
             <div className="flex items-center text-student-orange">
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
@@ -125,7 +125,7 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
             <div className="text-red-600 text-xs font-medium">
               Rising fast! ⚡
             </div>
-          </div>
+          </div> */}
 
           {/* CTA */}
           <button className="trending-cta">
