@@ -376,12 +376,12 @@ textarea:focus {
   align-items: center;
   position: relative;
   overflow: hidden;
-  
+
   /* Base dimensions */
   width: 100%;
   height: 120px;
   padding: 10px;
-  
+
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transform: translateZ(0);
@@ -407,15 +407,15 @@ textarea:focus {
   justify-content: center;
   width: 100%;
   margin-bottom: 4px;
-  height: 84px;
+  height: 92px;                 /* was 84px: slight bump for proportion */
 }
 
 .category-icon {
-  width: 48px;
-  height: 48px;
+  width: 56px;                  /* was 48px */
+  height: 56px;                 /* was 48px */
   max-width: 80%;
   max-height: 80%;
-  object-fit: contain;  /* ✅ FIXED */
+  object-fit: contain;          /* ✅ maintain brand logo shape */
   transition: transform 0.3s ease;
 }
 
@@ -423,11 +423,10 @@ textarea:focus {
   transform: scale(1.1);
 }
 
-
 /* Category Fallback (Initial Letter) */
 .category-fallback {
-  width: 48px;
-  height: 48px;
+  width: 56px;                  /* was 48px */
+  height: 56px;                 /* was 48px */
   background: linear-gradient(135deg, var(--student-blue) 0%, var(--student-green) 100%);
   border-radius: 12px;
   display: flex;
@@ -482,8 +481,8 @@ textarea:focus {
 /* Responsive Category Cards */
 @media (max-width: 480px) {
   .category-card { height: 110px; padding: 8px; border-radius: 10px; }
-  .category-image-area { height: 77px; }
-  .category-icon, .category-fallback { width: 42px; height: 42px; }
+  .category-image-area { height: 77px; }              /* unchanged for compact look */
+  .category-icon, .category-fallback { width: 42px; height: 42px; } /* keep compact */
   .category-fallback { font-size: 1.125rem; }
   .category-text-area { height: 33px; }
   .category-title { font-size: 0.75rem; }
@@ -491,8 +490,8 @@ textarea:focus {
 
 @media (min-width: 769px) {
   .category-card { height: 140px; padding: 14px; border-radius: 16px; }
-  .category-image-area { height: 98px; }
-  .category-icon, .category-fallback { width: 56px; height: 56px; }
+  .category-image-area { height: 106px; }             /* was 98px */
+  .category-icon, .category-fallback { width: 64px; height: 64px; } /* was 56px */
   .category-fallback { font-size: 1.5rem; }
   .category-text-area { height: 42px; }
   .category-title { font-size: 0.875rem; }
@@ -500,8 +499,8 @@ textarea:focus {
 
 @media (min-width: 1280px) {
   .category-card { height: 160px; padding: 16px; border-radius: 18px; }
-  .category-image-area { height: 112px; }
-  .category-icon, .category-fallback { width: 64px; height: 64px; }
+  .category-image-area { height: 120px; }             /* was 112px */
+  .category-icon, .category-fallback { width: 72px; height: 72px; } /* was 64px */
   .category-fallback { font-size: 1.75rem; }
   .category-text-area { height: 48px; }
   .category-title { font-size: 0.9375rem; }

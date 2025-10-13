@@ -27,22 +27,25 @@ export default function CategoryCard({ category }: CategoryCardProps) {
     >
       <div className="category-card">
         <div className="category-image-area">
-          {showImage && (
+          {showImage ? (
             <img
               src={category.icon_url}
-              alt=""                // decorative if fallback text exists
-              aria-hidden="true"   // hide from SR; name announced via link label
+              alt=""               // decorative; accessible name comes from aria-label
+              aria-hidden="true"
               className="category-icon"
+              loading="lazy"
+              decoding="async"
               onError={() => setImgError(true)}
             />
-          )}
-          {!showImage && (
+          ) : (
             <div className="category-fallback flex">
               {initial}
             </div>
           )}
         </div>
 
+        {/* Keep or hide the text label based on design needs.
+            To hide: add style={{ display: 'none' }} or a utility class. */}
         <div className="category-text-area">
           <h4 className="category-title">{category.name}</h4>
         </div>
