@@ -295,22 +295,45 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
   }
 });
 
-// Get featured products
+// Get all products with pagination (UPDATED for /products page)
 router.get('/products', featuredProductsCache, async (req, res) => {
   try {
     const startTime = Date.now();
-    const limit = parseInt(req.query.limit || '8', 10);
+    const limit = parseInt(req.query.limit || '50', 10);
+    const page = parseInt(req.query.page || '1', 10);
+    const offset = (page - 1) * limit;
     const sortBy = req.query.sort || 'newest';
+    const categoryFilter = req.query.category ? parseInt(req.query.category, 10) : null;
 
+    // Build WHERE clause for category filter
+    let whereClause = '';
+    const params = [];
+    let paramIndex = 1;
+
+    if (categoryFilter) {
+      whereClause = `WHERE p.category_id = $${paramIndex}`;
+      params.push(categoryFilter);
+      paramIndex++;
+    }
+
+    // Build sort order
     let orderBy;
     switch (sortBy) {
       case 'newest': orderBy = 'ORDER BY p.created_at DESC'; break;
+      case 'oldest': orderBy = 'ORDER BY p.created_at ASC'; break;
       case 'popular': orderBy = 'ORDER BY p.views_count DESC, COALESCE(p.rating_average, 0) DESC'; break;
       case 'rating': orderBy = 'ORDER BY COALESCE(p.rating_average, 0) DESC, p.review_count DESC'; break;
+      case 'reviews': orderBy = 'ORDER BY p.review_count DESC, COALESCE(p.rating_average, 0) DESC'; break;
       case 'trending': orderBy = `ORDER BY (p.views_count * 0.3 + COALESCE(p.rating_average, 0) * p.review_count * 0.7) DESC, p.created_at DESC`; break;
       default: orderBy = 'ORDER BY p.created_at DESC';
     }
 
+    // Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM Products p ${whereClause}`;
+    const countResult = await pool.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].total, 10);
+
+    // Get products with pagination
     const productsQuery = `
       SELECT p.id, p.name, p.description, p.image_urls,
              p.buy_button_1_name, p.buy_button_1_url,
@@ -319,36 +342,48 @@ router.get('/products', featuredProductsCache, async (req, res) => {
              c.name AS category_name, c.id AS category_id
       FROM Products p
       JOIN Categories c ON p.category_id = c.id
+      ${whereClause}
       ${orderBy}
-      LIMIT $1
+      OFFSET $${paramIndex} LIMIT $${paramIndex + 1}
     `;
-    const productsResult = await pool.query(productsQuery, [limit]);
+    params.push(offset, limit);
+    const productsResult = await pool.query(productsQuery, params);
 
+    const totalPages = Math.ceil(total / limit);
     const duration = Date.now() - startTime;
 
     res.json({
       status: 'success',
-      message: 'Featured products retrieved successfully',
+      message: 'Products retrieved successfully',
       data: {
         products: productsResult.rows,
-        total: productsResult.rows.length
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1
+        }
       },
       meta: {
         count: productsResult.rows.length,
         sort: sortBy,
+        category: categoryFilter,
         query_time: `${duration}ms`,
         cached: false
       }
     });
   } catch (error) {
-    console.error('Get featured products error:', error);
+    console.error('Get products error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to retrieve featured products',
+      message: 'Failed to retrieve products',
       error: error.message
     });
   }
 });
+
 
 // Advanced search with filters - FIXED for PostgreSQL
 router.get('/search', searchCache, async (req, res) => {

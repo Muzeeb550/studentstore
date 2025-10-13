@@ -800,6 +800,25 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* See All Products Button */}
+        {products.length >= MAX_FEATURED_PRODUCTS && (
+          <div className="text-center mt-12">
+            <Link 
+              href="/products"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-student-blue to-cyan-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+            >
+              <span>See All Products</span>
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+              <span className="ml-3 px-2.5 py-0.5 bg-white/20 rounded-full text-xs">
+                {products.length}+ Products
+              </span>
+            </Link>
+          </div>
+        )}
+
+
       <Footer />
     </div>
   );
