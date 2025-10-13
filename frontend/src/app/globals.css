@@ -1379,6 +1379,48 @@ textarea:focus {
   }
 }
 
+
+/* Mobile two-row horizontal grid for Recently Viewed */
+@media (max-width: 640px) {
+  .rv-grid-mobile {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: 1fr 1fr; /* two rows */
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 2px; /* prevents scrollbar overlap */
+  }
+
+  .rv-grid-mobile > a {
+    scroll-snap-align: start;
+    display: block;
+    width: 140px;         /* tile width; adjust if needed */
+    aspect-ratio: 1 / 1;  /* perfect square tiles */
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-light);
+  }
+
+  .rv-grid-mobile > a img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* Right-edge fade to hint more content: */
+.rv-grid-mobile {
+mask-image: linear-gradient(to right, black 85%, transparent 100%);
+-webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+/* Reduced-motion friendly snap: */
+
+@media (prefers-reduced-motion: reduce) {
+.rv-grid-mobile { scroll-snap-type: x proximity; }
+}
 /* -------------------------------------------
    6.3 IMAGE COMPONENTS
    ------------------------------------------- */

@@ -49,84 +49,114 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
     addToRecentlyViewed(product);
   };
 
+  const imgSrc = getProductImage(product.image_urls);
+
   return (
-    <Link href={`/products/${product.id}`} className="group cursor-pointer touch-optimized" onClick={handleProductClick}>
-      <div className="recently-viewed-card">
-        {/* Image Container */}
-        <div className="recently-viewed-image-container">
-          <img 
-            src={getProductImage(product.image_urls)} 
-            alt={product.name}
-            className="recently-viewed-image"
-            loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
-            }}
-          />
-          
-          {/* Time Badge */}
-          <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
-            <span className="bg-student-blue/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
-              🕒 {getTimeAgo(viewedAt)}
-            </span>
-          </div>
+    <>
+      {/* Mobile: image-only tile (hidden on sm and up) */}
+      <Link
+        href={`/products/${product.id}`}
+        onClick={handleProductClick}
+        className="group cursor-pointer touch-optimized block sm:hidden"
+        aria-label={product.name}
+        style={{
+          width: '140px',
+          aspectRatio: '1 / 1',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          background: 'var(--bg-light)',
+          position: 'relative'
+        }}
+      >
+        {/* Optional small time badge for context; remove if you want pure image */}
+        <span
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: 8,
+            zIndex: 2
+          }}
+          className="bg-student-blue/90 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium shadow-lg"
+        >
+          🕒 {getTimeAgo(viewedAt)}
+        </span>
 
-          {/* Continue Badge */}
-          {/* <div style={{ position: 'absolute', top: '10px', right: '60px', zIndex: 10 }}>
-            <span className="bg-gradient-to-r from-cyan-500 to-student-blue text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
-              Continue
-            </span>
-          </div> */}
-          
-          {/* Wishlist Button */}
-          <div 
-            onClick={handleWishlistClick}
-            style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}
-          >
-            <WishlistButton 
-              productId={product.id}
-              size="lg"
-              className="shadow-xl hover:shadow-2xl transition-shadow duration-200"
+        <img
+          src={imgSrc}
+          alt={product.name}
+          loading="lazy"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src =
+              'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
+          }}
+        />
+      </Link>
+
+      {/* Tablet/desktop: full card (hidden on mobile) */}
+      <Link
+        href={`/products/${product.id}`}
+        className="group cursor-pointer touch-optimized hidden sm:block"
+        onClick={handleProductClick}
+      >
+        <div className="recently-viewed-card">
+          {/* Image Container */}
+          <div className="recently-viewed-image-container">
+            <img
+              src={imgSrc}
+              alt={product.name}
+              className="recently-viewed-image"
+              loading="lazy"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src =
+                  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
+              }}
             />
+
+            {/* Time Badge */}
+            <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 10 }}>
+              <span className="bg-student-blue/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
+                🕒 {getTimeAgo(viewedAt)}
+              </span>
+            </div>
+
+            {/* Wishlist Button */}
+            <div
+              onClick={handleWishlistClick}
+              style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}
+            >
+              <WishlistButton
+                productId={product.id}
+                size="lg"
+                className="shadow-xl hover:shadow-2xl transition-shadow duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Product Info */}
+          <div className="recently-viewed-info">
+            <h4 className="recently-viewed-title">
+              {product.name}
+            </h4>
+
+            <p className="recently-viewed-description">
+              {product.description}
+            </p>
+
+            {/* CTA */}
+            <button className="recently-viewed-cta">
+              <span className="flex items-center justify-center">
+                Continue
+                <svg className="ml-2 w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+            </button>
           </div>
         </div>
-
-        {/* Product Info */}
-        <div className="recently-viewed-info">
-          <h4 className="recently-viewed-title">
-            {product.name}
-          </h4>
-          
-          <p className="recently-viewed-description">
-            {product.description}
-          </p>
-
-          {/* Context */}
-          {/* <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem' }}>
-            <div className="flex items-center text-student-blue">
-              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-xs font-medium">Pick up here</span>
-            </div>
-            
-            <div className="text-student-secondary text-xs">
-              Don't lose this!
-            </div>
-          </div> */}
-
-          {/* CTA */}
-          <button className="recently-viewed-cta">
-            <span className="flex items-center justify-center">
-              Continue
-              <svg className="ml-2 w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </span>
-          </button>
-        </div>
-      </div>
-    </Link>
+      </Link>
+    </>
   );
 }

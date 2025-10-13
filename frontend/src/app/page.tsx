@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import { getRecentlyViewed } from './utils/recentlyViewed';
 import RecentlyViewedCard from './components/RecentlyViewedCard';
 import TrendingCard from './components/TrendingCard';
+import Link from 'next/link';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -73,7 +74,7 @@ export default function HomePage() {
 
   const categorySliderRef = useRef<any>(null);
 
-  // Refs for horizontal rows (typed as HTMLDivElement)
+  // Refs for horizontal rows
   const recentRowMobileRef = useRef<HTMLDivElement>(null);
   const recentRowTabletRef = useRef<HTMLDivElement>(null);
   const recentRowDesktopRef = useRef<HTMLDivElement>(null);
@@ -251,7 +252,8 @@ export default function HomePage() {
 
   const loadRecentlyViewed = useCallback(() => {
     const recentProducts = getRecentlyViewed();
-    setRecentlyViewed(recentProducts);
+    // Only keep up to 10 items as per requirement
+    setRecentlyViewed(recentProducts.slice(0, 10));
   }, []);
 
   // Smooth scroll by one card width (kept for future accessibility/keyboard support)
@@ -383,6 +385,15 @@ export default function HomePage() {
     );
   };
 
+  const getProductImage = (imageUrls: string) => {
+    try {
+      const urls = JSON.parse(imageUrls);
+      return urls[0] || '/placeholder-product.jpg';
+    } catch {
+      return '/placeholder-product.jpg';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-student-page flex items-center justify-center">
@@ -460,18 +471,49 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Mobile (<=640px): 3 + 0.5 card */}
-            <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
-              <div ref={recentRowMobileRef} className="flex gap-3">
-                {recentlyViewed.map((item) => (
-                  <div
-                    key={`recent-m-${item.product.id}-${item.viewedAt}`}
-                    data-snap-card
-                    className="snap-start shrink-0"
-                    style={{ width: 'calc((100% - (2 * 12px)) / 3.5)' }}
+            {/* Mobile (<=640px): 2-row horizontal grid, image-only tiles */}
+            <div className="block sm:hidden -mx-4 px-4">
+              <div
+                ref={recentRowMobileRef}
+                className="rv-grid-mobile"
+                style={{
+                  display: 'grid',
+                  gridAutoFlow: 'column',
+                  gridTemplateRows: '1fr 1fr',
+                  gap: '12px',
+                  overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch' as any,
+                  scrollSnapType: 'x mandatory',
+                  paddingBottom: '2px',
+                }}
+              >
+                {recentlyViewed.map((item, idx) => (
+                  <Link
+                    key={`recent-m2-${item.product.id}-${item.viewedAt}-${idx}`}
+                    href={`/products/${item.product.id}`}
+                    className="block"
+                    style={{
+                      scrollSnapAlign: 'start',
+                      width: '140px',
+                      aspectRatio: '1 / 1',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      background: 'var(--bg-light)',
+                    }}
                   >
-                    <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
-                  </div>
+                    {/* Image only */}
+                    <img
+                      src={getProductImage(item.product.image_urls)}
+                      alt={item.product.name}
+                      loading="lazy"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src =
+                          'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
+                      }}
+                    />
+                  </Link>
                 ))}
               </div>
             </div>
@@ -492,7 +534,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Laptops/desktops (>=1025px): smooth scroll with 6-up sizing, no arrows */}
+            {/* Laptops/desktops (>=1025px): smooth scroll with 6-up sizing */}
             <div className="relative hidden lg:block row-desktop">
               <div className="overflow-x-auto scroll-smooth overscroll-x-contain">
                 <div
@@ -517,7 +559,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Trending Section */}
+      {/* Trending Section (unchanged) */}
       {trendingProducts.length > 0 && (
         <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
           <div className="trending-section">
@@ -536,7 +578,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Mobile (<=640px): 3 + 0.5 card */}
+            {/* Mobile (<=640px): keep existing single-row mini cards for now */}
             <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
               <div ref={trendingRowMobileRef} className="flex gap-3">
                 {trendingProducts.map((product, index) => (
@@ -568,7 +610,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Laptops/desktops (>=1025px): smooth scroll with 6-up sizing, no arrows */}
+            {/* Laptops/desktops (>=1025px): smooth scroll with 6-up sizing */}
             <div className="relative hidden lg:block row-desktop">
               <div className="overflow-x-auto scroll-smooth overscroll-x-contain">
                 <div
