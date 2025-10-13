@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
@@ -48,7 +48,7 @@ interface CacheData {
 type SortOption = 'newest' | 'oldest' | 'popular' | 'rating' | 'reviews' | 'trending';
 type ViewMode = 'grid' | 'list';
 
-export default function AllProductsPage() {
+function ProductsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -413,6 +413,7 @@ export default function AllProductsPage() {
       </div>
     );
   };
+
   if (loading && loadingStates.initial) {
     return (
       <div className="min-h-screen bg-student-page">
@@ -639,19 +640,18 @@ export default function AllProductsPage() {
           <ProductGridSkeleton />
         ) : data.products.length > 0 ? (
           <>
-           {/* Products Grid/List */}
+            {/* Products Grid/List */}
             <div className={`${
-            viewMode === 'grid' 
-                ? 'product-grid'  // ← USE YOUR EXISTING CSS CLASS
+              viewMode === 'grid' 
+                ? 'product-grid'
                 : 'space-y-6'
             } mb-12`}>
-            {data.products.map((product) => (
+              {data.products.map((product) => (
                 <div key={product.id} className={viewMode === 'list' ? 'w-full' : ''}>
-                <ProductCard product={product} />
+                  <ProductCard product={product} />
                 </div>
-            ))}
+              ))}
             </div>
-
 
             {/* Pagination */}
             {data.pagination.total_pages > 1 && (
@@ -793,5 +793,26 @@ export default function AllProductsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+// Export wrapper with Suspense boundary
+export default function AllProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-student-page">
+        <Navbar />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="loading-shimmer rounded-full h-16 w-16 mx-auto mb-4"></div>
+            <p className="text-student-secondary font-medium">Loading products...</p>
+            <p className="text-student-secondary text-sm mt-2">Preparing your shopping experience</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    }>
+      <ProductsPageContent />
+    </Suspense>
   );
 }
