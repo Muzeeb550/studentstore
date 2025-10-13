@@ -47,12 +47,10 @@ interface RecentlyViewed {
   viewedAt: number;
 }
 
-interface CacheState {
-  banners: { data: Banner[]; timestamp: number; };
-  categories: { data: Category[]; timestamp: number; };
-  products: { data: Product[]; timestamp: number; };
-  trendingProducts: { data: Product[]; timestamp: number; };
-}
+// ✅ CHANGE 5: Configurable limits
+const MAX_RECENTLY_VIEWED = 10;
+const MAX_TRENDING_PRODUCTS = 10;
+const MAX_FEATURED_PRODUCTS = 12;
 
 export default function HomePage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -61,6 +59,9 @@ export default function HomePage() {
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewed[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // ✅ CHANGE 3: Error state for API failures
+  const [error, setError] = useState<string | null>(null);
 
   const [loadingStates, setLoadingStates] = useState({
     banners: false,
@@ -69,7 +70,6 @@ export default function HomePage() {
     trending: false
   });
 
-  const [cacheState, setCacheState] = useState<Partial<CacheState>>({});
   const [lastRefresh, setLastRefresh] = useState<number>(0);
 
   const categorySliderRef = useRef<any>(null);
@@ -100,7 +100,7 @@ export default function HomePage() {
       loadRecentlyViewed();
     }, 30000);
     return () => clearInterval(interval);
-  }, [cacheState]);
+  }, []);
 
   const initializeHomepage = async () => {
     try {
@@ -160,18 +160,33 @@ export default function HomePage() {
     }
   };
 
+  // ✅ CHANGE 3: Enhanced error handling with user-friendly messages
   const fetchAndUpdateData = async (showLoading: boolean = false) => {
     if (showLoading) setLoading(true);
+    setError(null); // Clear any previous errors
+    
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const now = Date.now();
       const cacheBuster = `t=${now}&v=${Math.random().toString(36).substr(2, 9)}`;
 
       const [bannerRes, categoryRes, productsRes, trendingRes] = await Promise.all([
-        fetch(`${apiUrl}/api/public/banners?${cacheBuster}`, { headers: { 'Cache-Control': 'no-cache' } }),
-        fetch(`${apiUrl}/api/public/categories?${cacheBuster}`, { headers: { 'Cache-Control': 'no-cache' } }),
-        fetch(`${apiUrl}/api/public/products?limit=12&${cacheBuster}`, { headers: { 'Cache-Control': 'no-cache' } }),
-        fetch(`${apiUrl}/api/public/products?limit=10&sort=trending&${cacheBuster}`, { headers: { 'Cache-Control': 'no-cache' } })
+        fetch(`${apiUrl}/api/public/banners?${cacheBuster}`, { 
+          headers: { 'Cache-Control': 'no-cache' },
+          signal: AbortSignal.timeout(15000) // 15 second timeout
+        }),
+        fetch(`${apiUrl}/api/public/categories?${cacheBuster}`, { 
+          headers: { 'Cache-Control': 'no-cache' },
+          signal: AbortSignal.timeout(15000)
+        }),
+        fetch(`${apiUrl}/api/public/products?limit=${MAX_FEATURED_PRODUCTS}&${cacheBuster}`, { 
+          headers: { 'Cache-Control': 'no-cache' },
+          signal: AbortSignal.timeout(15000)
+        }),
+        fetch(`${apiUrl}/api/public/products?limit=${MAX_TRENDING_PRODUCTS}&sort=trending&${cacheBuster}`, { 
+          headers: { 'Cache-Control': 'no-cache' },
+          signal: AbortSignal.timeout(15000)
+        })
       ]);
 
       const bannerData = await bannerRes.json();
@@ -197,14 +212,29 @@ export default function HomePage() {
 
       const trendingData = await trendingRes.json();
       if (trendingData.status === 'success') {
-        const trendingList = trendingData.data.products?.slice(0, 10) || [];
+        const trendingList = trendingData.data.products?.slice(0, MAX_TRENDING_PRODUCTS) || [];
         setTrendingProducts(trendingList);
         saveToLocalCache('trending', trendingList);
       }
 
       setLastRefresh(now);
-    } catch {
-      // noop
+    } catch (err) {
+      console.error('Homepage fetch error:', err);
+      
+      // Try to show cached data even if API fails
+      const cached = loadFromLocalCache();
+      if (cached.hasValidCache) {
+        if (cached.banners) setBanners(cached.banners);
+        if (cached.categories) setCategories(cached.categories);
+        if (cached.products) setProducts(cached.products);
+        if (cached.trending) setTrendingProducts(cached.trending);
+        
+        // Show error but with cached data
+        setError('Showing cached content. Click refresh for latest updates.');
+      } else {
+        // No cached data available
+        setError('Unable to load content. The server might be starting up (takes 20-30 seconds on free hosting). Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -252,8 +282,8 @@ export default function HomePage() {
 
   const loadRecentlyViewed = useCallback(() => {
     const recentProducts = getRecentlyViewed();
-    // Only keep up to 10 items as per requirement
-    setRecentlyViewed(recentProducts.slice(0, 10));
+    // ✅ CHANGE 5: Use configurable limit
+    setRecentlyViewed(recentProducts.slice(0, MAX_RECENTLY_VIEWED));
   }, []);
 
   // Smooth scroll by one card width (kept for future accessibility/keyboard support)
@@ -411,6 +441,34 @@ export default function HomePage() {
       <Navbar />
       {process.env.NODE_ENV === 'development' && <CacheStatusIndicator />}
 
+      {/* ✅ CHANGE 3: Error banner for API failures */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-4 mt-4">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-md">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start flex-1">
+                <span className="text-yellow-500 mr-3 text-xl flex-shrink-0">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-yellow-800 text-sm font-medium">{error}</p>
+                  <p className="text-yellow-700 text-xs mt-1">
+                    This might be due to server startup delay (free hosting). Usually takes 20-30 seconds.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={async () => {
+                  setError(null);
+                  await forceRefresh();
+                }}
+                className="ml-4 px-3 py-1.5 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 transition-colors flex-shrink-0"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Banner */}
       <section className="banner-container relative max-w-7xl mx-auto">
         <div className="relative" style={{ paddingBottom: '40px' }}>
@@ -471,7 +529,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Mobile (<=640px): 2-row horizontal grid, image-only tiles */}
+            {/* ✅ CHANGE 1: Mobile - 2-row horizontal grid with product name below */}
             <div className="block sm:hidden -mx-4 px-4">
               <div
                 ref={recentRowMobileRef}
@@ -488,32 +546,44 @@ export default function HomePage() {
                 }}
               >
                 {recentlyViewed.map((item, idx) => (
-                  <Link
+                  <div
                     key={`recent-m2-${item.product.id}-${item.viewedAt}-${idx}`}
-                    href={`/products/${item.product.id}`}
-                    className="block"
+                    className="shrink-0"
                     style={{
                       scrollSnapAlign: 'start',
                       width: '140px',
-                      aspectRatio: '1 / 1',
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      background: 'var(--bg-light)',
                     }}
                   >
-                    {/* Image only */}
-                    <img
-                      src={getProductImage(item.product.image_urls)}
-                      alt={item.product.name}
-                      loading="lazy"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src =
-                          'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
-                      }}
-                    />
-                  </Link>
+                    <Link href={`/products/${item.product.id}`} className="block">
+                      {/* Image tile */}
+                      <div
+                        style={{
+                          width: '140px',
+                          aspectRatio: '1 / 1',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          background: 'var(--bg-light)',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        <img
+                          src={getProductImage(item.product.image_urls)}
+                          alt={item.product.name}
+                          loading="lazy"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src =
+                              'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
+                          }}
+                        />
+                      </div>
+                      {/* Product name below */}
+                      <p className="text-xs text-student-primary font-medium line-clamp-2 px-1 leading-tight">
+                        {item.product.name}
+                      </p>
+                    </Link>
+                  </div>
                 ))}
               </div>
             </div>
@@ -559,7 +629,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Trending Section (unchanged) */}
+      {/* Trending Section */}
       {trendingProducts.length > 0 && (
         <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
           <div className="trending-section">
@@ -573,12 +643,13 @@ export default function HomePage() {
               <div className="trending-live-indicator ml-7 mt-2 sm:mt-3">
                 <div className="flex items-center text-xs sm:text-sm text-student-orange">
                   <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
-                  <span className="font-medium">Live trending data • Updated every hour</span>
+                  {/* ✅ CHANGE 6: Honest text matching actual cache behavior */}
+                  <span className="font-medium">Live trending data • Updated every 5 minutes</span>
                 </div>
               </div>
             </div>
 
-            {/* Mobile (<=640px): keep existing single-row mini cards for now */}
+            {/* Mobile (<=640px): keep existing single-row mini cards */}
             <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
               <div ref={trendingRowMobileRef} className="flex gap-3">
                 {trendingProducts.map((product, index) => (
