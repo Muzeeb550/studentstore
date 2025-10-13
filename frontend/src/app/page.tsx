@@ -465,8 +465,8 @@ export default function HomePage() {
               </div>
               <div className="recently-viewed-progress ml-7 mt-2 sm:mt-3">
                 <div className="flex items-center text-xs sm:text-sm text-student-blue">
-                  <div className="w-2 h-2 bg-student-blue rounded-full mr-2 animate-pulse"></div>
-                  <span className="font-medium">{recentlyViewed.length} items in your browsing session</span>
+                  {/* <div className="w-2 h-2 bg-student-blue rounded-full mr-2 animate-pulse"></div> */}
+                  {/* <span className="font-medium">{recentlyViewed.length} items in your browsing session</span> */}
                 </div>
               </div>
             </div>

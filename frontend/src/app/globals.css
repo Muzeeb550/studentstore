@@ -524,12 +524,12 @@ textarea:focus {
    ------------------------------------------- */
 
 .recently-viewed-section {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.03) 0%, rgba(56, 189, 248, 0.03) 100%);
-  border-radius: 20px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  border: 1px solid rgba(79, 70, 229, 0.1);
-  overflow: hidden; /* ✅ ADD THIS */
+background: linear-gradient(135deg, rgba(14,165,233,0.10) 0%, rgba(125,211,252,0.10) 100%);
+border: 1px solid rgba(14,165,233,0.22);
+border-radius: 20px;
+padding: 1.5rem;
+margin: 1rem 0;
+overflow: hidden;
 }
 
 
@@ -644,6 +644,13 @@ textarea:focus {
 .recently-viewed-cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(79, 70, 229, 0.25);
+}
+
+@media (max-width: 640px) {
+.recently-viewed-section {
+background: linear-gradient(135deg, #60A5FA 0%, #93C5FD 100%); /* blue-400 → blue-300 /
+border: 1px solid #93C5FD; / blue-300 */
+}
 }
 
 /* Responsive Recently Viewed Cards */
