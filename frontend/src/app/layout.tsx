@@ -53,7 +53,7 @@ export const metadata: Metadata = {
       }
     ]
   },
-  manifest: '/site.webmanifest',
+  manifest: '/manifest.webmanifest',
 };
 
 export default function RootLayout({
@@ -67,7 +67,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/site.webmanifest" />
+        <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content="#6f8b66" />
         <meta name="msapplication-TileColor" content="#6f8b66" />
       </head>
