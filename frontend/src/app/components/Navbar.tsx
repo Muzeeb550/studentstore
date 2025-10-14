@@ -22,6 +22,10 @@ export default function Navbar() {
   const [profilePicture, setProfilePicture] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // ✅ PWA Install functionality
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('studentstore_user');
     if (storedUser) {
@@ -41,6 +45,39 @@ export default function Navbar() {
     }
     setLoading(false);
   }, []);
+
+  // ✅ PWA Install event listener
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallButton(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // ✅ PWA Install handler
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
+
+    setDeferredPrompt(null);
+    setShowInstallButton(false);
+  };
 
   useEffect(() => {
     const handleProfileUpdate = () => {
@@ -170,7 +207,6 @@ export default function Navbar() {
     return user?.name || user?.display_name || user?.email.split('@')[0] || 'Student';
   };
 
-  // StudentStore Logo Component - UPDATED with CSS class
   const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => (
     <a 
       href="/"
@@ -194,7 +230,6 @@ export default function Navbar() {
     </a>
   );
 
-  // Profile Avatar Component - UPDATED with CSS classes
   const ProfileAvatar = ({ 
     size = 'w-12 h-12', 
     textSize = 'text-base',
@@ -233,7 +268,6 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Desktop Navigation */}
         <div className="hidden md:flex justify-between items-center h-20">
-          {/* Logo Section - Desktop */}
           <div className="flex items-center space-x-4">
             <StudentStoreLogo />
             <div className="hidden lg:block text-sm text-student-secondary font-medium">
@@ -241,14 +275,25 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Search Bar - Desktop Center */}
           <div className="flex-1 max-w-lg mx-8">
             <SearchBar className="w-full" />
           </div>
 
-          {/* Desktop Auth Section */}
           <div className="flex items-center space-x-6">
-            {/* Wishlist Icon */}
+            {/* ✅ Desktop PWA Install Button */}
+            {showInstallButton && (
+              <button
+                onClick={handleInstallClick}
+                className="hidden lg:flex items-center px-4 py-2 bg-gradient-to-r from-student-blue to-student-green hover:from-student-blue/90 hover:to-student-green/90 text-white rounded-xl font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                title="Install StudentStore App"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Install App
+              </button>
+            )}
+
             {user && (
               <a
                 href="/wishlist"
@@ -269,7 +314,6 @@ export default function Navbar() {
                   />
                 </svg>
                 
-                {/* Count Badge - UPDATED */}
                 {wishlistCount > 0 && (
                   <div className="wishlist-badge">
                     {wishlistCount > 99 ? '99+' : wishlistCount}
@@ -282,7 +326,6 @@ export default function Navbar() {
               <div className="loading-shimmer w-12 h-12 rounded-full"></div>
             ) : user ? (
               <div className="flex items-center space-x-4">
-                {/* Desktop User Profile Dropdown - UPDATED */}
                 <div className="navbar-dropdown-container" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -309,10 +352,8 @@ export default function Navbar() {
                     </svg>
                   </button>
 
-                  {/* Desktop Dropdown Menu - UPDATED */}
                   {dropdownOpen && (
                     <div className="navbar-dropdown-menu" style={{ width: '16rem' }}>
-                      {/* User Info Header */}
                       <div className="px-6 py-5 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
                         <div className="flex items-center space-x-4">
                           <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
@@ -326,7 +367,6 @@ export default function Navbar() {
                         </div>
                       </div>
 
-                      {/* Menu Items */}
                       <div className="py-3">
                         <button
                           onClick={() => handleNavigation('/dashboard')}
@@ -419,8 +459,20 @@ export default function Navbar() {
           <div className="flex justify-between items-start h-auto py-4">
             <StudentStoreLogo mobile={true} />
 
-            <div className="flex items-center space-x-4 mt-1">
-              {/* Mobile Wishlist */}
+            <div className="flex items-center space-x-3 mt-1">
+              {/* ✅ Mobile PWA Install Button */}
+              {showInstallButton && (
+                <button
+                  onClick={handleInstallClick}
+                  className="p-2 rounded-xl bg-student-blue/10 hover:bg-student-blue/20 active:bg-student-blue/30 transition-all duration-200"
+                  title="Install App"
+                >
+                  <svg className="w-5 h-5 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+              )}
+
               {user && (
                 <a
                   href="/wishlist"
@@ -441,7 +493,6 @@ export default function Navbar() {
                     />
                   </svg>
                   
-                  {/* Mobile Count Badge - UPDATED */}
                   {wishlistCount > 0 && (
                     <div className="wishlist-badge" style={{ width: '1.25rem', height: '1.25rem', fontSize: '0.625rem' }}>
                       {wishlistCount > 9 ? '9+' : wishlistCount}
@@ -450,7 +501,6 @@ export default function Navbar() {
                 </a>
               )}
 
-              {/* Mobile Profile or Login */}
               {loading ? (
                 <div className="loading-shimmer w-10 h-10 rounded-full"></div>
               ) : user ? (
@@ -462,94 +512,92 @@ export default function Navbar() {
                     <ProfileAvatar mobile={true} />
                   </button>
 
-                {/* Mobile Dropdown Menu - UPDATED */}
-                {dropdownOpen && (
-                  <div 
-                    className="navbar-dropdown-menu" 
-                    style={{ width: '14rem' }}
-                    onClick={(e) => e.stopPropagation()} // ✅ Prevent close on click inside
-                  >
-                    <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
-                      <div className="flex items-center space-x-3">
-                        <ProfileAvatar size="w-12 h-12" textSize="text-base" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
-                          <p className="text-xs text-student-secondary truncate">{user.email}</p>
-                          <p className="text-xs text-student-blue font-medium capitalize mt-1">
-                            {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                          </p>
+                  {dropdownOpen && (
+                    <div 
+                      className="navbar-dropdown-menu" 
+                      style={{ width: '14rem' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
+                        <div className="flex items-center space-x-3">
+                          <ProfileAvatar size="w-12 h-12" textSize="text-base" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
+                            <p className="text-xs text-student-secondary truncate">{user.email}</p>
+                            <p className="text-xs text-student-blue font-medium capitalize mt-1">
+                              {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="py-2">
-                      <button
-                        onClick={() => handleNavigation('/profile')}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleNavigation('/profile');
-                        }}
-                        className="navbar-dropdown-item"
-                      >
-                        <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <span className="font-medium">My Profile</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavigation('/dashboard')}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleNavigation('/dashboard');
-                        }}
-                        className="navbar-dropdown-item"
-                      >
-                        <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                        </svg>
-                        <span className="font-medium">Dashboard</span>
-                      </button>
-
-                      {user.role === 'admin' && (
+                      <div className="py-2">
                         <button
-                          onClick={() => handleNavigation('/admin')}
+                          onClick={() => handleNavigation('/profile')}
                           onTouchEnd={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleNavigation('/admin');
+                            handleNavigation('/profile');
                           }}
                           className="navbar-dropdown-item"
                         >
                           <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            </svg>
-                          <span className="font-medium">Admin Panel</span>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="font-medium">My Profile</span>
                         </button>
-                      )}
 
-                      <div className="border-t border-border-light mt-2 pt-2">
                         <button
-                          onClick={handleLogout}
+                          onClick={() => handleNavigation('/dashboard')}
                           onTouchEnd={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleLogout();
+                            handleNavigation('/dashboard');
                           }}
-                          className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
+                          className="navbar-dropdown-item"
                         >
-                          <svg className="w-5 h-5 text-student-secondary hover:text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                           </svg>
-                          <span className="font-medium">Sign Out</span>
+                          <span className="font-medium">Dashboard</span>
                         </button>
+
+                        {user.role === 'admin' && (
+                          <button
+                            onClick={() => handleNavigation('/admin')}
+                            onTouchEnd={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleNavigation('/admin');
+                            }}
+                            className="navbar-dropdown-item"
+                          >
+                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            </svg>
+                            <span className="font-medium">Admin Panel</span>
+                          </button>
+                        )}
+
+                        <div className="border-t border-border-light mt-2 pt-2">
+                          <button
+                            onClick={handleLogout}
+                            onTouchEnd={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleLogout();
+                            }}
+                            className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
+                          >
+                            <svg className="w-5 h-5 text-student-secondary hover:text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span className="font-medium">Sign Out</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-
+                  )}
                 </div>
               ) : (
                 <button 
@@ -565,7 +613,6 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Mobile Row 2 - Full Width Search */}
           <div className="pb-4">
             <SearchBar className="w-full" />
           </div>
