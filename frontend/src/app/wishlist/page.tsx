@@ -22,7 +22,7 @@ interface WishlistProduct {
   buy_button_1_name: string;
   buy_button_1_url: string;
   views_count: number;
-  rating_average: number;
+  rating_average: number | string;  // ✅ Can be number OR string
   review_count: number;
 }
 
@@ -165,10 +165,10 @@ export default function WishlistPage() {
     }
   };
 
- const handleLoginRedirect = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  window.location.href = `${apiUrl}/auth/google`;
-};
+  const handleLoginRedirect = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    window.location.href = `${apiUrl}/auth/google`;
+  };
 
   const getFilteredProducts = () => {
     if (!data?.products) return [];
@@ -192,7 +192,9 @@ export default function WishlistPage() {
         case 'category':
           return a.category_name.localeCompare(b.category_name);
         case 'rating':
-          return (b.rating_average || 0) - (a.rating_average || 0);
+          const ratingA = parseFloat(a.rating_average as any) || 0;
+          const ratingB = parseFloat(b.rating_average as any) || 0;
+          return ratingB - ratingA;
         default:
           return 0;
       }
@@ -201,9 +203,14 @@ export default function WishlistPage() {
     return filtered;
   };
 
+  // ✅ Clean category names (remove emojis)
+  const cleanCategoryName = (categoryName: string): string => {
+    return categoryName.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+  };
+
   const getUniqueCategories = () => {
     if (!data?.products) return [];
-    const categories = [...new Set(data.products.map(p => p.category_name))];
+    const categories = [...new Set(data.products.map(p => cleanCategoryName(p.category_name)))];
     return categories.sort();
   };
 
@@ -222,7 +229,7 @@ export default function WishlistPage() {
     );
   }
 
-  // Not logged in state - Enhanced
+  // Not logged in state
   if (!user) {
     return (
       <div className="min-h-screen bg-student-page">
@@ -238,7 +245,6 @@ export default function WishlistPage() {
                 Join <span className="text-student-blue font-semibold">25,847+ students</span> who save their favorite products and never miss a great deal!
               </p>
 
-              {/* Benefits List */}
               <div className="bg-student-light rounded-xl p-6 mb-8 text-left">
                 <h3 className="font-semibold text-student-primary mb-4 text-center">🎓 Why Students Love Wishlists:</h3>
                 <ul className="space-y-3 text-student-secondary">
@@ -284,7 +290,7 @@ export default function WishlistPage() {
     );
   }
 
-  // Error state - Enhanced
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-student-page">
@@ -347,14 +353,33 @@ export default function WishlistPage() {
                   <div className="text-student-secondary">Saved Products</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-student-green">{uniqueCategories.length}</div>
-                  <div className="text-student-secondary">Categories</div>
-                </div>
-                <div className="text-center">
                   <div className="text-2xl font-bold text-student-orange">
-                    {data.products.reduce((sum, p) => sum + (p.rating_average || 0), 0) / data.products.length || 0 > 0 
-                      ? (data.products.reduce((sum, p) => sum + (p.rating_average || 0), 0) / data.products.length).toFixed(1) 
-                      : 'N/A'}
+                    {(() => {
+                      // Filter products that have valid ratings
+                      const productsWithRatings = data.products.filter(p => {
+                        const rating = parseFloat(p.rating_average as any);
+                        return !isNaN(rating) && rating > 0;
+                      });
+                      
+                      // If no products have ratings, show N/A
+                      if (productsWithRatings.length === 0) {
+                        return 'N/A';
+                      }
+                      
+                      // Calculate average rating - Convert string to number first
+                      const sum = productsWithRatings.reduce((total, p) => {
+                        const rating = parseFloat(p.rating_average as any) || 0;
+                        return total + rating;
+                      }, 0);
+                      const avgRating = sum / productsWithRatings.length;
+                      
+                      // Check if result is valid
+                      if (isNaN(avgRating)) {
+                        return 'N/A';
+                      }
+                      
+                      return avgRating.toFixed(1) + '⭐';
+                    })()}
                   </div>
                   <div className="text-student-secondary">Avg Rating</div>
                 </div>
@@ -365,24 +390,23 @@ export default function WishlistPage() {
           </div>
         </div>
 
-        {/* Controls & Filters - Enhanced */}
+        {/* Controls & Filters */}
         {data && data.products.length > 0 && (
           <div className="bg-student-card rounded-xl p-6 shadow-lg border border-border-light mb-8">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
               
               {/* Left Controls */}
               <div className="flex flex-wrap items-center space-x-4">
-                {/* Category Filter */}
                 <div className="relative">
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="appearance-none bg-student-light border border-border-light rounded-xl px-4 py-2 pr-8 text-student-primary font-medium focus:outline-none focus:ring-2 focus:ring-student-blue focus:border-student-blue transition-all duration-200"
                   >
-                    <option value="all">📂 All Categories</option>
+                    <option value="all">All Categories</option>
                     {uniqueCategories.map((category) => (
                       <option key={category} value={category}>
-                        📁 {category}
+                        {category}
                       </option>
                     ))}
                   </select>
@@ -393,7 +417,6 @@ export default function WishlistPage() {
                   </div>
                 </div>
 
-                {/* Sort Options */}
                 <div className="relative">
                   <select
                     value={sortMode}
@@ -416,7 +439,6 @@ export default function WishlistPage() {
 
               {/* Right Controls */}
               <div className="flex items-center space-x-4">
-                {/* View Mode Toggle */}
                 <div className="flex items-center bg-student-light rounded-xl p-1 border border-border-light">
                   <button
                     onClick={() => setViewMode('grid')}
@@ -444,7 +466,6 @@ export default function WishlistPage() {
                   </button>
                 </div>
 
-                {/* Clear All Button */}
                 {data.total > 1 && (
                   <button
                     onClick={handleClearAllWishlist}
@@ -464,7 +485,6 @@ export default function WishlistPage() {
         {/* Wishlist Content */}
         {data && filteredProducts.length > 0 ? (
           <>
-            {/* Products Grid/List */}
             <div className={`${
               viewMode === 'grid' 
                 ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
@@ -474,7 +494,6 @@ export default function WishlistPage() {
                 <div key={`wishlist-${product.wishlist_id}`} className={`relative group ${viewMode === 'list' ? 'w-full' : ''}`}>
                   <ProductCard product={product} />
                   
-                  {/* Enhanced Remove Button */}
                   <button
                     onClick={() => handleRemoveFromWishlist(product.id)}
                     className="absolute top-3 left-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-2 rounded-full shadow-lg transition-all duration-200 z-10 opacity-90 hover:opacity-100 hover:scale-110"
@@ -485,7 +504,6 @@ export default function WishlistPage() {
                     </svg>
                   </button>
 
-                  {/* Enhanced Added Date Badge */}
                   <div className="absolute bottom-3 right-3 bg-student-card/95 backdrop-blur-sm border border-border-light px-3 py-1 rounded-xl text-xs text-student-secondary font-medium shadow-md">
                     Added {new Date(product.added_at).toLocaleDateString('en-US', { 
                       month: 'short', 
@@ -494,20 +512,16 @@ export default function WishlistPage() {
                     })}
                   </div>
 
-                  {/* Category Badge */}
                   <div className="absolute top-3 right-16 bg-student-green/90 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
-                    📂 {product.category_name}
+                    {cleanCategoryName(product.category_name)}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Enhanced Pagination */}
             {data.pagination.total_pages > 1 && (
               <div className="bg-student-card rounded-xl p-6 shadow-lg border border-border-light">
                 <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                  
-                  {/* Previous Button */}
                   <button
                     onClick={() => handlePageChange(data.pagination.current_page - 1)}
                     disabled={!data.pagination.has_prev}
@@ -519,7 +533,6 @@ export default function WishlistPage() {
                     Previous
                   </button>
                   
-                  {/* Page Numbers */}
                   <div className="flex space-x-2">
                     {Array.from({ length: Math.min(data.pagination.total_pages, 7) }, (_, i) => {
                       let pageNum;
@@ -553,7 +566,6 @@ export default function WishlistPage() {
                     })}
                   </div>
 
-                  {/* Next Button */}
                   <button
                     onClick={() => handlePageChange(data.pagination.current_page + 1)}
                     disabled={!data.pagination.has_next}
@@ -566,7 +578,6 @@ export default function WishlistPage() {
                   </button>
                 </div>
 
-                {/* Pagination Info */}
                 <div className="text-center mt-4 text-sm text-student-secondary">
                   Page {data.pagination.current_page} of {data.pagination.total_pages} • Showing {filteredProducts.length} of {data.total} products
                 </div>
@@ -574,7 +585,6 @@ export default function WishlistPage() {
             )}
           </>
         ) : (
-          /* Enhanced Empty Wishlist */
           <div className="text-center py-16">
             <div className="bg-student-card rounded-2xl p-12 shadow-xl border border-border-light max-w-2xl mx-auto">
               <div className="text-8xl mb-6">💔</div>
@@ -590,7 +600,6 @@ export default function WishlistPage() {
                   }
                 </p>
 
-                {/* Student Tips */}
                 <div className="bg-student-blue/10 border border-student-blue/20 rounded-xl p-6">
                   <h4 className="font-semibold text-student-blue mb-4 flex items-center justify-center">
                     💡 Pro Student Tips:
@@ -611,7 +620,6 @@ export default function WishlistPage() {
                   </ul>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   {data?.total === 0 ? (
                     <>

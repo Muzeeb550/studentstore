@@ -35,12 +35,10 @@ export default function ProfilePage() {
   });
   const router = useRouter();
 
-  // Student stats simulation (can be from API later)
-  const [studentStats] = useState({
-    wishlistItems: Math.floor(Math.random() * 20) + 5,
-    reviewsWritten: Math.floor(Math.random() * 15) + 2,
-    productsViewed: Math.floor(Math.random() * 100) + 50,
-    moneySaved: Math.floor(Math.random() * 5000) + 1000
+  // ✅ Real student stats from API
+  const [studentStats, setStudentStats] = useState({
+    wishlistItems: 0,
+    reviewsWritten: 0
   });
 
   useEffect(() => {
@@ -58,6 +56,9 @@ export default function ProfilePage() {
         
         // Fetch fresh user data from backend
         fetchUserProfile();
+        
+        // ✅ NEW: Fetch real stats
+        fetchUserStats();
       } catch (error) {
         console.error('Error parsing user data:', error);
         router.push('/');
@@ -70,58 +71,91 @@ export default function ProfilePage() {
     setLoading(false);
   }, [router]);
 
- const fetchUserProfile = async () => {
-  try {
-    const token = localStorage.getItem('studentstore_token');
-    if (!token) return;
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('studentstore_token');
+      if (!token) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    const response = await fetch(`${apiUrl}/api/users/profile`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (response.ok) {
-      const result = await response.json();
-      if (result.status === 'success') {
-        const userData = result.data;
-        console.log('📋 Fetched user data:', userData);
-        
-        if (user) {
-          setUser({
-            ...user,
-            name: userData.name,
-            display_name: userData.display_name,
-            profile_picture: userData.profile_picture
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          const userData = result.data;
+          console.log('📋 Fetched user data:', userData);
+          
+          if (user) {
+            setUser({
+              ...user,
+              name: userData.name,
+              display_name: userData.display_name,
+              profile_picture: userData.profile_picture
+            });
+          }
+          
+          // BETTER: Only set profile picture if it's a valid URL
+          if (userData.profile_picture && 
+              typeof userData.profile_picture === 'string' && 
+              userData.profile_picture.trim() !== '' &&
+              (userData.profile_picture.startsWith('http://') || 
+               userData.profile_picture.startsWith('https://'))) {
+            setProfilePicture(userData.profile_picture);
+          } else {
+            setProfilePicture(''); // Explicitly use initials
+          }
+          
+          // Update localStorage with complete user data
+          const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
+          const updatedUser = { ...currentUser, ...userData };
+          localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
+        }
+      } else {
+        console.error('Failed to fetch user profile:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
+  // ✅ NEW: Fetch real user stats
+  const fetchUserStats = async () => {
+    try {
+      const token = localStorage.getItem('studentstore_token');
+      if (!token) return;
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/users/dashboard-stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          const stats = result.data.stats;
+          console.log('📊 Fetched user stats:', stats);
+          
+          // Update with real data
+          setStudentStats({
+            wishlistItems: stats.wishlist_count || 0,
+            reviewsWritten: stats.total_reviews || 0
           });
         }
-        
-        // BETTER: Only set profile picture if it's a valid URL
-        if (userData.profile_picture && 
-            typeof userData.profile_picture === 'string' && 
-            userData.profile_picture.trim() !== '' &&
-            (userData.profile_picture.startsWith('http://') || 
-             userData.profile_picture.startsWith('https://'))) {
-          setProfilePicture(userData.profile_picture);
-        } else {
-          setProfilePicture(''); // Explicitly use initials
-        }
-        
-        // Update localStorage with complete user data
-        const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
-        const updatedUser = { ...currentUser, ...userData };
-        localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
+      } else {
+        console.error('Failed to fetch user stats:', response.status);
       }
-    } else {
-      console.error('Failed to fetch user profile:', response.status);
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
     }
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-  }
-};
-
+  };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -429,8 +463,8 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Student Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {/* ✅ Updated Student Stats - Only 2 stats with real data */}
+            <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
               <div className="text-center">
                 <div className="text-2xl font-bold text-student-blue">{studentStats.wishlistItems}</div>
                 <div className="text-student-secondary text-sm">Saved Products</div>
@@ -438,14 +472,6 @@ export default function ProfilePage() {
               <div className="text-center">
                 <div className="text-2xl font-bold text-student-green">{studentStats.reviewsWritten}</div>
                 <div className="text-student-secondary text-sm">Reviews Written</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-student-orange">{studentStats.productsViewed}</div>
-                <div className="text-student-secondary text-sm">Products Viewed</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-student-green">₹{studentStats.moneySaved.toLocaleString()}</div>
-                <div className="text-student-secondary text-sm">Money Saved</div>
               </div>
             </div>
           </div>
@@ -456,35 +482,34 @@ export default function ProfilePage() {
           <div className="lg:col-span-1">
             <div className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light">
               {/* Profile Picture */}
-                <div className="text-center mb-6">
-                  {profilePicture && profilePicture.trim() !== '' ? (
-                    <img
-                      src={profilePicture}
-                      alt={getDisplayName()}
-                      className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-student-blue/20 shadow-lg"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null; // Prevent infinite loop
-                        setProfilePicture(''); // Reset to initials on error
-                      }}
-                    />
-                  ) : (
-                    <div className="w-24 h-24 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-lg">
-                      {getInitials(user.email)}
-                    </div>
-                  )}
-                  <h3 className="font-semibold text-student-primary">{getDisplayName()}</h3>
-                  <p className="text-sm text-student-secondary">{user.email}</p>
-                  <div className="mt-2">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      user.role === 'admin' 
-                        ? 'bg-student-orange/20 text-student-orange' 
-                        : 'bg-student-blue/20 text-student-blue'
-                      }`}>
-                      {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                    </span>
+              <div className="text-center mb-6">
+                {profilePicture && profilePicture.trim() !== '' ? (
+                  <img
+                    src={profilePicture}
+                    alt={getDisplayName()}
+                    className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-student-blue/20 shadow-lg"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null; // Prevent infinite loop
+                      setProfilePicture(''); // Reset to initials on error
+                    }}
+                  />
+                ) : (
+                  <div className="w-24 h-24 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-lg">
+                    {getInitials(user.email)}
                   </div>
+                )}
+                <h3 className="font-semibold text-student-primary">{getDisplayName()}</h3>
+                <p className="text-sm text-student-secondary">{user.email}</p>
+                <div className="mt-2">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                    user.role === 'admin' 
+                      ? 'bg-student-orange/20 text-student-orange' 
+                      : 'bg-student-blue/20 text-student-blue'
+                    }`}>
+                    {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
+                  </span>
                 </div>
-
+              </div>
 
               {/* Navigation Tabs */}
               <nav className="space-y-2">
@@ -726,7 +751,7 @@ export default function ProfilePage() {
                     <p className="text-student-secondary mb-6">Your StudentStore activity and achievements</p>
                   </div>
 
-                  {/* Activity Stats */}
+                  {/* ✅ Updated Activity Stats - Only 2 cards with real data */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-student-blue/10 border border-student-blue/20 rounded-xl p-6">
                       <h3 className="font-medium text-student-blue mb-4 flex items-center">
@@ -754,36 +779,6 @@ export default function ProfilePage() {
                         </div>
                         <div className="text-sm text-student-secondary">
                           Help fellow students with your honest reviews!
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-student-orange/10 border border-student-orange/20 rounded-xl p-6">
-                      <h3 className="font-medium text-student-orange mb-4 flex items-center">
-                        👀 Browsing Activity
-                      </h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-student-secondary">Products Viewed:</span>
-                          <span className="font-bold text-student-orange">{studentStats.productsViewed}</span>
-                        </div>
-                        <div className="text-sm text-student-secondary">
-                          Keep exploring to find the best products!
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-student-green/10 border border-student-green/20 rounded-xl p-6">
-                      <h3 className="font-medium text-student-green mb-4 flex items-center">
-                        💰 Smart Shopping
-                      </h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-student-secondary">Money Saved:</span>
-                          <span className="font-bold text-student-green">₹{studentStats.moneySaved.toLocaleString()}</span>
-                        </div>
-                        <div className="text-sm text-student-secondary">
-                          Great job finding the best deals!
                         </div>
                       </div>
                     </div>

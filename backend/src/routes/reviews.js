@@ -1,7 +1,7 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/adminAuth');
-const { invalidateCache } = require('../config/redis');
+const { invalidateCache, deleteCache } = require('../config/redis');  // ✅ ADDED deleteCache
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
@@ -148,6 +148,12 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
         try {
             await invalidateCache.reviews(product_id);
             await invalidateCache.products(productInfo.category_id, product_id);
+            
+            // ✅ Clear user's cached stats for instant updates
+            await deleteCache(`profile:user:${userId}`);
+            await deleteCache(`dashboard:user:${userId}`);
+            await deleteCache(`stats:user:${userId}`);
+            
             console.log(`🔄 Cache invalidated for new review on product: ${productInfo.name} (ID: ${product_id}) - Rating: ${rating}/5`);
         } catch (cacheError) {
             console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
@@ -236,6 +242,12 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             } else {
                 console.log(`🔄 Cache invalidated for review update: ${reviewInfo.product_name} (ID: ${productId})`);
             }
+            
+            // ✅ Clear user's cached stats for instant updates
+            await deleteCache(`profile:user:${userId}`);
+            await deleteCache(`dashboard:user:${userId}`);
+            await deleteCache(`stats:user:${userId}`);
+            
         } catch (cacheError) {
             console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
         }
@@ -314,6 +326,12 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
             } else {
                 console.log(`🔄 Cache invalidated for review deletion: ${reviewInfo.product_name} (${deletedRating}/5 stars)`);
             }
+            
+            // ✅ Clear user's cached stats for instant updates
+            await deleteCache(`profile:user:${userId}`);
+            await deleteCache(`dashboard:user:${userId}`);
+            await deleteCache(`stats:user:${userId}`);
+            
         } catch (cacheError) {
             console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
         }

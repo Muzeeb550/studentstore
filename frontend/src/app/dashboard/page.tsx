@@ -62,16 +62,6 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const router = useRouter();
 
-  // Enhanced student metrics simulation
-  const [studentMetrics] = useState({
-    moneySaved: Math.floor(Math.random() * 10000) + 5000,
-    studentsHelped: Math.floor(Math.random() * 100) + 25,
-    searchesPerformed: Math.floor(Math.random() * 500) + 100,
-    categoriesExplored: Math.floor(Math.random() * 15) + 8,
-    avgSessionTime: Math.floor(Math.random() * 30) + 15,
-    lastActive: new Date()
-  });
-
   useEffect(() => {
     const storedUser = localStorage.getItem('studentstore_user');
     if (storedUser) {
@@ -154,11 +144,11 @@ export default function Dashboard() {
   const getStudentLevel = () => {
     if (!data) return { level: 'Newcomer', color: 'student-blue' };
     
-    const totalActivity = data.stats.total_reviews + data.stats.wishlist_count + (data.stats.products_viewed / 10);
+    const totalActivity = data.stats.total_reviews + data.stats.wishlist_count;
     
-    if (totalActivity >= 100) return { level: 'Student Expert', color: 'student-orange' };
-    if (totalActivity >= 50) return { level: 'Active Student', color: 'student-green' };
-    if (totalActivity >= 20) return { level: 'Rising Student', color: 'student-blue' };
+    if (totalActivity >= 50) return { level: 'Student Expert', color: 'student-orange' };
+    if (totalActivity >= 25) return { level: 'Active Student', color: 'student-green' };
+    if (totalActivity >= 10) return { level: 'Rising Student', color: 'student-blue' };
     return { level: 'New Student', color: 'student-secondary' };
   };
 
@@ -216,50 +206,40 @@ export default function Dashboard() {
         </nav>
       </div>
 
-      {/* Enhanced Header */}
+      {/* ✅ Cleaned Header - No "Total Saved" */}
       <section className="max-w-7xl mx-auto px-4 pb-12">
         <div className="bg-student-card rounded-2xl p-8 shadow-xl border border-border-light mb-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-            <div className="flex items-center space-x-6 mb-4 md:mb-0">
-              {/* Enhanced Profile Picture */}
-              {getProfilePicture() ? (
-                <img
-                  src={getProfilePicture()}
-                  alt="Profile"
-                  className="w-20 h-20 rounded-full object-cover ring-4 ring-student-blue/20 shadow-lg"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                  {getInitials()}
-                </div>
-              )}
-              
-              <div>
-                <div className="flex items-center space-x-3 mb-2">
-                  <h1 className="text-3xl md:text-4xl font-bold text-student-primary">
-                    Welcome back, {getDisplayName()}! 👋
-                  </h1>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${studentLevel.color}/20 text-${studentLevel.color}`}>
-                    {studentLevel.level}
-                  </span>
-                </div>
-                <p className="text-student-secondary text-lg">
-                  🎓 StudentStore Member since {formatDate(data.stats.member_since)} • {data.stats.days_since_joining} days strong
-                </p>
+          <div className="flex items-center space-x-6">
+            {/* Enhanced Profile Picture */}
+            {getProfilePicture() ? (
+              <img
+                src={getProfilePicture()}
+                alt="Profile"
+                className="w-20 h-20 rounded-full object-cover ring-4 ring-student-blue/20 shadow-lg"
+              />
+            ) : (
+              <div className="w-20 h-20 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                {getInitials()}
               </div>
-            </div>
+            )}
             
-            {/* Quick Stats */}
-            <div className="bg-student-light rounded-xl p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-student-green">₹{studentMetrics.moneySaved.toLocaleString()}</div>
-                <div className="text-student-secondary text-sm">Total Saved</div>
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-2">
+                <h1 className="text-3xl md:text-4xl font-bold text-student-primary">
+                  Welcome back, {getDisplayName()}! 👋
+                </h1>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${studentLevel.color}/20 text-${studentLevel.color}`}>
+                  {/* {studentLevel.level} */}
+                </span>
               </div>
+              <p className="text-student-secondary text-lg">
+                🎓 StudentStore Member since {formatDate(data.stats.member_since)} • {data.stats.days_since_joining} days strong
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Tab Navigation */}
+        {/* ✅ Updated Tab Navigation - Only 2 Tabs */}
         <div className="bg-student-card rounded-xl shadow-lg border border-border-light mb-8">
           <div className="flex space-x-1 p-2">
             <button
@@ -271,16 +251,6 @@ export default function Dashboard() {
               }`}
             >
               📊 Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('activity')}
-              className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'activity'
-                  ? 'bg-student-green text-white shadow-md'
-                  : 'text-student-primary hover:bg-student-light'
-              }`}
-            >
-              📈 Activity
             </button>
             <button
               onClick={() => setActiveTab('achievements')}
@@ -298,8 +268,8 @@ export default function Dashboard() {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <>
-            {/* Enhanced Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {/* ✅ Cleaned Stats Grid - Only 3 Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
               {/* Wishlist Stats */}
               <div className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
@@ -327,23 +297,6 @@ export default function Dashboard() {
                   <div className="w-14 h-14 bg-student-green/20 rounded-2xl flex items-center justify-center">
                     <svg className="w-7 h-7 text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Products Viewed */}
-              <div className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light hover:shadow-2xl transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-student-secondary mb-1">👀 Products Viewed</p>
-                    <p className="text-3xl font-bold text-student-blue">{data.stats.products_viewed}</p>
-                    <p className="text-sm text-student-secondary mt-1">Explored items</p>
-                  </div>
-                  <div className="w-14 h-14 bg-student-blue/20 rounded-2xl flex items-center justify-center">
-                    <svg className="w-7 h-7 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </div>
                 </div>
@@ -438,75 +391,131 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-          </>
-        )}
 
-        {/* Activity Tab */}
-        {activeTab === 'activity' && (
-          <div className="space-y-8">
-            {/* Extended Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light">
-                <h3 className="text-lg font-bold text-student-primary mb-4 flex items-center">
-                  💰 Smart Shopping Impact
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Money Saved:</span>
-                    <span className="font-bold text-student-green">₹{studentMetrics.moneySaved.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Students Helped:</span>
-                    <span className="font-bold text-student-blue">{studentMetrics.studentsHelped}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Avg Session:</span>
-                    <span className="font-bold text-student-orange">{studentMetrics.avgSessionTime}min</span>
-                  </div>
+            {/* No Reviews Message */}
+            {data.recent_reviews.length === 0 && (
+              <div className="mb-12">
+                <div className="bg-student-card rounded-2xl shadow-xl p-8 border border-border-light text-center">
+                  <div className="text-6xl mb-4">✍️</div>
+                  <h3 className="text-xl font-bold text-student-primary mb-2">No Reviews Yet</h3>
+                  <p className="text-student-secondary mb-6">Start sharing your experiences with products to help fellow students make better decisions!</p>
+                  <a href="/" className="btn-primary">
+                    🛍️ Browse Products
+                  </a>
                 </div>
               </div>
+            )}
 
-              <div className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light">
-                <h3 className="text-lg font-bold text-student-primary mb-4 flex items-center">
-                  🔍 Search & Discovery
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Searches:</span>
-                    <span className="font-bold text-student-blue">{studentMetrics.searchesPerformed}</span>
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+              <a
+                href="/wishlist"
+                className="bg-student-card hover:bg-student-light border border-border-light rounded-xl p-4 transition-all duration-200 hover:shadow-lg group"
+              >
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-student-orange/20 group-hover:bg-student-orange/30 rounded-xl flex items-center justify-center mr-3 transition-colors duration-200">
+                    <svg className="w-6 h-6 text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Categories:</span>
-                    <span className="font-bold text-student-green">{studentMetrics.categoriesExplored}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Products Viewed:</span>
-                    <span className="font-bold text-student-orange">{data.stats.products_viewed}</span>
+                  <div>
+                    <p className="font-medium text-student-primary">💖 My Wishlist</p>
+                    <p className="text-sm text-student-secondary">
+                      {data.stats.wishlist_count > 0 ? `${data.stats.wishlist_count} items saved` : 'Start saving items'}
+                    </p>
                   </div>
                 </div>
-              </div>
+              </a>
 
-              <div className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light">
-                <h3 className="text-lg font-bold text-student-primary mb-4 flex items-center">
-                  📊 Community Contribution
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Reviews Written:</span>
-                    <span className="font-bold text-student-green">{data.stats.total_reviews}</span>
+              <a
+                href="/profile"
+                className="bg-student-card hover:bg-student-light border border-border-light rounded-xl p-4 transition-all duration-200 hover:shadow-lg group"
+              >
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-student-blue/20 group-hover:bg-student-blue/30 rounded-xl flex items-center justify-center mr-3 transition-colors duration-200">
+                    <svg className="w-6 h-6 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Avg Rating:</span>
-                    <span className="font-bold text-warning">{data.stats.total_reviews > 0 ? data.stats.average_rating_given.toFixed(1) : '0.0'}★</span>
+                  <div>
+                    <p className="font-medium text-student-primary">👤 Edit Profile</p>
+                    <p className="text-sm text-student-secondary">Update your info</p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-student-secondary">Wishlist Items:</span>
-                    <span className="font-bold text-student-orange">{data.stats.wishlist_count}</span>
+                </div>
+              </a>
+
+              <a
+                href="/"
+                className="bg-student-card hover:bg-student-light border border-border-light rounded-xl p-4 transition-all duration-200 hover:shadow-lg group"
+              >
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-student-green/20 group-hover:bg-student-green/30 rounded-xl flex items-center justify-center mr-3 transition-colors duration-200">
+                    <svg className="w-6 h-6 text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
                   </div>
+                  <div>
+                    <p className="font-medium text-student-primary">🛍️ Browse Products</p>
+                    <p className="text-sm text-student-secondary">Discover new items</p>
+                  </div>
+                </div>
+              </a>
+
+              <a
+                href="/search"
+                className="bg-student-card hover:bg-student-light border border-border-light rounded-xl p-4 transition-all duration-200 hover:shadow-lg group"
+              >
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-warning/20 group-hover:bg-warning/30 rounded-xl flex items-center justify-center mr-3 transition-colors duration-200">
+                    <svg className="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-student-primary">🔍 Search Products</p>
+                    <p className="text-sm text-student-secondary">Find what you need</p>
+                  </div>
+                </div>
+              </a>
+            </div>
+
+            {/* ✅ Simplified Welcome Message */}
+            <div className="bg-gradient-to-r from-student-blue to-student-green rounded-2xl p-8 text-white shadow-xl">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-4">
+                    {data.stats.total_reviews > 0 ? '🎯 Keep Contributing to the Community!' : '🎉 Welcome to Your StudentStore Dashboard!'}
+                  </h2>
+                  <p className="text-lg opacity-90 mb-6">
+                    {data.stats.total_reviews > 0 
+                      ? `Amazing! You've written ${data.stats.total_reviews} review${data.stats.total_reviews > 1 ? 's' : ''} and saved ${data.stats.wishlist_count} product${data.stats.wishlist_count > 1 ? 's' : ''}. Your contributions are making a real difference in the student community!`
+                      : 'Your personalized dashboard is ready! Start exploring products, build your wishlist, and share your experiences to help fellow students make better purchasing decisions.'
+                    }
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <a
+                      href="/"
+                      className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 backdrop-blur-sm hover:scale-105"
+                    >
+                      {data.stats.wishlist_count > 0 ? '🛍️ Continue Shopping' : '🚀 Start Exploring'}
+                    </a>
+                    <a
+                      href="/profile"
+                      className="bg-white text-student-blue hover:bg-gray-100 px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105"
+                    >
+                      👤 Complete Profile
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="text-right ml-6">
+                  <div className="text-3xl mb-2">🎓</div>
+                  <div className="text-sm opacity-75">Student Level</div>
+                  <div className="font-bold">{studentLevel.level}</div>
                 </div>
               </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* Achievements Tab */}
@@ -544,8 +553,8 @@ export default function Dashboard() {
                       <ul className="text-sm text-student-primary text-left space-y-1">
                         <li>• Write your first product review</li>
                         <li>• Save 10 products to your wishlist</li>
-                        <li>• Explore 5 different categories</li>
-                        <li>• Help 25 students with your reviews</li>
+                        <li>• Write 5 detailed reviews</li>
+                        <li>• Maintain a high average rating</li>
                       </ul>
                     </div>
                     <a href="/" className="btn-primary inline-block">
@@ -557,130 +566,6 @@ export default function Dashboard() {
             )}
           </div>
         )}
-
-        {/* No Reviews Message (Only in Overview) */}
-        {activeTab === 'overview' && data.recent_reviews.length === 0 && (
-          <div className="mb-12">
-            <div className="bg-student-card rounded-2xl shadow-xl p-8 border border-border-light text-center">
-              <div className="text-6xl mb-4">✍️</div>
-              <h3 className="text-xl font-bold text-student-primary mb-2">No Reviews Yet</h3>
-              <p className="text-student-secondary mb-6">Start sharing your experiences with products to help fellow students make better decisions!</p>
-              <a href="/" className="btn-primary">
-                🛍️ Browse Products
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* Enhanced Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          <a
-            href="/wishlist"
-            className="bg-student-card hover:bg-student-light border border-border-light rounded-xl p-4 transition-all duration-200 hover:shadow-lg group"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-student-orange/20 group-hover:bg-student-orange/30 rounded-xl flex items-center justify-center mr-3 transition-colors duration-200">
-                <svg className="w-6 h-6 text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-student-primary">💖 My Wishlist</p>
-                <p className="text-sm text-student-secondary">
-                  {data.stats.wishlist_count > 0 ? `${data.stats.wishlist_count} items saved` : 'Start saving items'}
-                </p>
-              </div>
-            </div>
-          </a>
-
-          <a
-            href="/profile"
-            className="bg-student-card hover:bg-student-light border border-border-light rounded-xl p-4 transition-all duration-200 hover:shadow-lg group"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-student-blue/20 group-hover:bg-student-blue/30 rounded-xl flex items-center justify-center mr-3 transition-colors duration-200">
-                <svg className="w-6 h-6 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-student-primary">👤 Edit Profile</p>
-                <p className="text-sm text-student-secondary">Update your info</p>
-              </div>
-            </div>
-          </a>
-
-          <a
-            href="/"
-            className="bg-student-card hover:bg-student-light border border-border-light rounded-xl p-4 transition-all duration-200 hover:shadow-lg group"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-student-green/20 group-hover:bg-student-green/30 rounded-xl flex items-center justify-center mr-3 transition-colors duration-200">
-                <svg className="w-6 h-6 text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-student-primary">🛍️ Browse Products</p>
-                <p className="text-sm text-student-secondary">Discover new items</p>
-              </div>
-            </div>
-          </a>
-
-          <a
-            href="/search"
-            className="bg-student-card hover:bg-student-light border border-border-light rounded-xl p-4 transition-all duration-200 hover:shadow-lg group"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-warning/20 group-hover:bg-warning/30 rounded-xl flex items-center justify-center mr-3 transition-colors duration-200">
-                <svg className="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium text-student-primary">🔍 Search Products</p>
-                <p className="text-sm text-student-secondary">Find what you need</p>
-              </div>
-            </div>
-          </a>
-        </div>
-
-        {/* Enhanced Welcome Message */}
-        <div className="bg-gradient-to-r from-student-blue to-student-green rounded-2xl p-8 text-white shadow-xl">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold mb-4">
-                {data.stats.total_reviews > 0 ? '🎯 Keep Contributing to the Community!' : '🎉 Welcome to Your StudentStore Dashboard!'}
-              </h2>
-              <p className="text-lg opacity-90 mb-6">
-                {data.stats.total_reviews > 0 
-                  ? `Amazing! You've written ${data.stats.total_reviews} review${data.stats.total_reviews > 1 ? 's' : ''} and helped ${studentMetrics.studentsHelped}+ fellow students. Your contributions are making a real difference in the student community!`
-                  : 'Your personalized dashboard is ready! Start exploring products, build your wishlist, and share your experiences to help fellow students make better purchasing decisions.'
-                }
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <a
-                  href="/"
-                  className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 backdrop-blur-sm hover:scale-105"
-                >
-                  {data.stats.wishlist_count > 0 ? '🛍️ Continue Shopping' : '🚀 Start Exploring'}
-                </a>
-                <a
-                  href="/profile"
-                  className="bg-white text-student-blue hover:bg-gray-100 px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105"
-                >
-                  👤 Complete Profile
-                </a>
-              </div>
-            </div>
-            
-            <div className="text-right ml-6">
-              <div className="text-3xl mb-2">🎓</div>
-              <div className="text-sm opacity-75">Student Level</div>
-              <div className="font-bold">{studentLevel.level}</div>
-            </div>
-          </div>
-        </div>
       </section>
 
       <Footer />

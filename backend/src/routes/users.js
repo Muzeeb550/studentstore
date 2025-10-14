@@ -66,7 +66,7 @@ const generalApiLimit = rateLimit({
 // Cache configurations
 const dashboardStatsCache = createCacheMiddleware(
     (req) => `dashboard:user:${req.user.id}`,
-    600,
+    300,   // ✅ 5 minutes instead of 10
     (req) => !req.user
 );
 
