@@ -2,7 +2,7 @@ const express = require('express');
 const { pool } = require('../config/database');
 const router = express.Router();
 
-// Create all tables including Wishlists
+// Create all tables including Wishlists and Review Votes
 router.post('/create-tables', async (req, res) => {
     const createTableQueries = [
         `CREATE TABLE IF NOT EXISTS Users (
@@ -79,6 +79,7 @@ router.post('/create-tables', async (req, res) => {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id, product_id)
         )`,
+        // ✅ UPDATED: Reviews table with helpful/not_helpful counts
         `CREATE TABLE IF NOT EXISTS Reviews (
             id SERIAL PRIMARY KEY,
             user_id INT NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
@@ -89,8 +90,19 @@ router.post('/create-tables', async (req, res) => {
             review_images TEXT,
             is_verified_purchase BOOLEAN DEFAULT false,
             helpfulness_score INT DEFAULT 0,
+            helpful_count INT DEFAULT 0,
+            not_helpful_count INT DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        // ✅ NEW: Review votes tracking table
+        `CREATE TABLE IF NOT EXISTS review_votes (
+            id SERIAL PRIMARY KEY,
+            review_id INT NOT NULL REFERENCES Reviews(id) ON DELETE CASCADE,
+            user_id INT NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
+            vote_type VARCHAR(20) NOT NULL CHECK (vote_type IN ('helpful', 'not_helpful')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(review_id, user_id)
         )`,
         `CREATE TABLE IF NOT EXISTS Banners (
             id SERIAL PRIMARY KEY,
@@ -129,7 +141,7 @@ router.post('/create-tables', async (req, res) => {
     }
 });
 
-// Create indexes including for Wishlists
+// Create indexes including for Wishlists and Review Votes
 router.post('/create-indexes', async (req, res) => {
     const indexQueries = [
         `CREATE INDEX IF NOT EXISTS idx_products_category ON Products(category_id)`,
@@ -139,6 +151,10 @@ router.post('/create-indexes', async (req, res) => {
         `CREATE INDEX IF NOT EXISTS idx_reviews_course ON Reviews(course_id)`,
         `CREATE INDEX IF NOT EXISTS idx_reviews_user ON Reviews(user_id)`,
         `CREATE INDEX IF NOT EXISTS idx_reviews_rating ON Reviews(rating)`,
+        // ✅ NEW: Indexes for review voting
+        `CREATE INDEX IF NOT EXISTS idx_reviews_helpful ON Reviews(helpful_count DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_review_votes_review ON review_votes(review_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_review_votes_user ON review_votes(user_id)`,
         `CREATE INDEX IF NOT EXISTS idx_users_googleid ON Users(google_id)`,
         `CREATE INDEX IF NOT EXISTS idx_users_email ON Users(email)`,
         `CREATE INDEX IF NOT EXISTS idx_cart_user ON Cart(user_id)`,
@@ -166,6 +182,69 @@ router.post('/create-indexes', async (req, res) => {
         res.status(500).json({
             status: 'error',
             message: 'Failed to create indexes',
+            error: error.message
+        });
+    }
+});
+
+// ✅ NEW: Add review voting columns to existing Reviews table
+router.post('/migrate-review-voting', async (req, res) => {
+    const migrationQueries = [
+        // Add new columns to Reviews table if they don't exist
+        `DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'reviews' AND column_name = 'helpful_count'
+            ) THEN
+                ALTER TABLE Reviews ADD COLUMN helpful_count INT DEFAULT 0;
+            END IF;
+        END $$;`,
+        
+        `DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'reviews' AND column_name = 'not_helpful_count'
+            ) THEN
+                ALTER TABLE Reviews ADD COLUMN not_helpful_count INT DEFAULT 0;
+            END IF;
+        END $$;`,
+        
+        // Create review_votes table if it doesn't exist
+        `CREATE TABLE IF NOT EXISTS review_votes (
+            id SERIAL PRIMARY KEY,
+            review_id INT NOT NULL REFERENCES Reviews(id) ON DELETE CASCADE,
+            user_id INT NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
+            vote_type VARCHAR(20) NOT NULL CHECK (vote_type IN ('helpful', 'not_helpful')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(review_id, user_id)
+        )`,
+        
+        // Create indexes
+        `CREATE INDEX IF NOT EXISTS idx_reviews_helpful ON Reviews(helpful_count DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_review_votes_review ON review_votes(review_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_review_votes_user ON review_votes(user_id)`
+    ];
+
+    try {
+        const results = [];
+        for (const sql of migrationQueries) {
+            await pool.query(sql);
+            results.push('✅ Migration step executed successfully');
+        }
+        
+        res.json({
+            status: 'success',
+            message: '🔄 Review voting migration completed successfully!',
+            results: results,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Migration error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to run migration',
             error: error.message
         });
     }
@@ -234,6 +313,61 @@ router.get('/check-tables', async (req, res) => {
         res.status(500).json({
             status: 'error',
             message: 'Failed to check tables',
+            error: error.message
+        });
+    }
+});
+
+// ✅ NEW: Check review voting setup
+router.get('/check-review-voting', async (req, res) => {
+    try {
+        // Check if columns exist
+        const columnsCheck = await pool.query(`
+            SELECT column_name, data_type, column_default 
+            FROM information_schema.columns 
+            WHERE table_name = 'reviews' 
+            AND column_name IN ('helpful_count', 'not_helpful_count')
+        `);
+
+        // Check if review_votes table exists
+        const tableCheck = await pool.query(`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_name = 'review_votes'
+        `);
+
+        // Check indexes
+        const indexCheck = await pool.query(`
+            SELECT indexname 
+            FROM pg_indexes 
+            WHERE tablename IN ('reviews', 'review_votes')
+            AND indexname LIKE '%helpful%' OR indexname LIKE '%vote%'
+        `);
+
+        // Get vote statistics
+        const voteStats = await pool.query(`
+            SELECT 
+                COUNT(*) as total_votes,
+                COUNT(DISTINCT review_id) as reviews_with_votes,
+                COUNT(DISTINCT user_id) as users_who_voted
+            FROM review_votes
+        `);
+
+        res.json({
+            status: 'success',
+            message: '📊 Review voting setup check',
+            data: {
+                columns: columnsCheck.rows,
+                table_exists: tableCheck.rows.length > 0,
+                indexes: indexCheck.rows,
+                statistics: voteStats.rows[0]
+            }
+        });
+    } catch (error) {
+        console.error('Check review voting error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to check review voting setup',
             error: error.message
         });
     }

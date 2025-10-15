@@ -49,6 +49,7 @@ router.get('/product/:productId', async (req, res) => {
             SELECT 
                 r.id, r.rating, r.review_text, r.review_images,
                 r.is_verified_purchase, r.helpfulness_score,
+                r.helpful_count, r.not_helpful_count,
                 r.created_at, r.updated_at,
                 u.name, u.display_name, u.profile_picture
             FROM Reviews r
@@ -495,5 +496,171 @@ router.post('/admin/recalculate-ratings', authenticateToken, async (req, res) =>
         });
     }
 });
+
+// ✅ NEW: Vote on review helpfulness
+router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const reviewId = parseInt(req.params.reviewId, 10);
+        const { voteType } = req.body;
+
+        if (!reviewId || Number.isNaN(reviewId)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid review ID'
+            });
+        }
+
+        if (!voteType || !['helpful', 'not_helpful'].includes(voteType)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid vote type. Must be "helpful" or "not_helpful"'
+            });
+        }
+
+        // Check if review exists
+        const reviewCheck = await pool.query(
+            'SELECT id, product_id, user_id FROM reviews WHERE id = $1',
+            [reviewId]
+        );
+
+        if (reviewCheck.rows.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Review not found'
+            });
+        }
+
+        const review = reviewCheck.rows[0];
+
+        // Prevent users from voting on their own reviews
+        if (review.user_id === userId) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'You cannot vote on your own review'
+            });
+        }
+
+        // Check if user already voted
+        const existingVote = await pool.query(
+            'SELECT id, vote_type FROM review_votes WHERE review_id = $1 AND user_id = $2',
+            [reviewId, userId]
+        );
+
+        if (existingVote.rows.length > 0) {
+            const oldVoteType = existingVote.rows[0].vote_type;
+
+            // If same vote, remove it (toggle off)
+            if (oldVoteType === voteType) {
+                await pool.query('DELETE FROM review_votes WHERE review_id = $1 AND user_id = $2', [reviewId, userId]);
+
+                // Decrement the count
+                const column = voteType === 'helpful' ? 'helpful_count' : 'not_helpful_count';
+                await pool.query(
+                    `UPDATE reviews SET ${column} = GREATEST(${column} - 1, 0) WHERE id = $1`,
+                    [reviewId]
+                );
+
+                return res.json({
+                    status: 'success',
+                    message: 'Vote removed',
+                    data: { action: 'removed', voteType }
+                });
+            } else {
+                // Different vote, update it
+                await pool.query(
+                    'UPDATE review_votes SET vote_type = $1 WHERE review_id = $2 AND user_id = $3',
+                    [voteType, reviewId, userId]
+                );
+
+                // Update counts: decrement old, increment new
+                const oldColumn = oldVoteType === 'helpful' ? 'helpful_count' : 'not_helpful_count';
+                const newColumn = voteType === 'helpful' ? 'helpful_count' : 'not_helpful_count';
+                
+                await pool.query(
+                    `UPDATE reviews 
+                     SET ${oldColumn} = GREATEST(${oldColumn} - 1, 0),
+                         ${newColumn} = ${newColumn} + 1
+                     WHERE id = $1`,
+                    [reviewId]
+                );
+
+                return res.json({
+                    status: 'success',
+                    message: 'Vote updated',
+                    data: { action: 'updated', oldVoteType, newVoteType: voteType }
+                });
+            }
+        } else {
+            // New vote
+            await pool.query(
+                'INSERT INTO review_votes (review_id, user_id, vote_type) VALUES ($1, $2, $3)',
+                [reviewId, userId, voteType]
+            );
+
+            // Increment the count
+            const column = voteType === 'helpful' ? 'helpful_count' : 'not_helpful_count';
+            await pool.query(
+                `UPDATE reviews SET ${column} = ${column} + 1 WHERE id = $1`,
+                [reviewId]
+            );
+
+            return res.json({
+                status: 'success',
+                message: 'Vote recorded',
+                data: { action: 'added', voteType }
+            });
+        }
+
+    } catch (error) {
+        console.error('Vote review error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to record vote',
+            error: error.message
+        });
+    }
+});
+
+// ✅ NEW: Get user's votes for reviews
+router.get('/votes/my-votes', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const productId = req.query.productId ? parseInt(req.query.productId.toString(), 10) : null;
+
+        let query = `
+            SELECT rv.review_id, rv.vote_type, rv.created_at
+            FROM review_votes rv
+        `;
+        const params = [userId];
+
+        if (productId) {
+            query += `
+                JOIN reviews r ON rv.review_id = r.id
+                WHERE rv.user_id = $1 AND r.product_id = $2
+            `;
+            params.push(productId);
+        } else {
+            query += ` WHERE rv.user_id = $1`;
+        }
+
+        const result = await pool.query(query, params);
+
+        res.json({
+            status: 'success',
+            message: 'User votes retrieved successfully',
+            data: { votes: result.rows }
+        });
+
+    } catch (error) {
+        console.error('Get user votes error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to retrieve votes',
+            error: error.message
+        });
+    }
+});
+
 
 module.exports = router;
