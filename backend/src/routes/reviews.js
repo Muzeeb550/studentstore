@@ -367,16 +367,18 @@ router.get('/my-reviews', authenticateToken, async (req, res) => {
         const offset = (page - 1) * limit;
 
         const result = await pool.query(`
-            SELECT 
-                r.id, r.rating, r.review_text, r.review_images,
-                r.helpfulness_score, r.created_at, r.updated_at,
-                p.id as product_id, p.name as product_name, p.image_urls as product_images
+        SELECT 
+            r.id, r.rating, r.review_text, r.review_images,
+            r.helpful_count, r.not_helpful_count,
+            r.helpfulness_score, r.created_at, r.updated_at,
+            p.id as product_id, p.name as product_name, p.image_urls as product_images
             FROM Reviews r
             JOIN Products p ON r.product_id = p.id
             WHERE r.user_id = $1
             ORDER BY r.created_at DESC
             OFFSET $2 LIMIT $3
         `, [userId, offset, limit]);
+
 
         const countResult = await pool.query(
             'SELECT COUNT(*) as total FROM Reviews WHERE user_id = $1',

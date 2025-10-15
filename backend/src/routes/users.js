@@ -6,6 +6,7 @@ const imagekit = require('../config/imagekit');
 const { createCacheMiddleware } = require('../middleware/cache');
 const router = express.Router();
 
+
 // Profile upload rate limiting - ONLY for profile pictures (5 per hour)
 const profileUploadLimit = rateLimit({
     windowMs: 60 * 60 * 1000,
@@ -24,6 +25,7 @@ const profileUploadLimit = rateLimit({
     }
 });
 
+
 // Review image upload rate limiting - MORE generous (30 per hour)
 const reviewImageUploadLimit = rateLimit({
     windowMs: 60 * 60 * 1000,
@@ -38,6 +40,7 @@ const reviewImageUploadLimit = rateLimit({
     standardHeaders: true,
     legacyHeaders: false
 });
+
 
 // General API rate limiting - 100 requests per 15 minutes per user
 const generalApiLimit = rateLimit({
@@ -63,6 +66,7 @@ const generalApiLimit = rateLimit({
 });
 
 
+
 // Cache configurations
 const dashboardStatsCache = createCacheMiddleware(
     (req) => `dashboard:user:${req.user.id}`,
@@ -70,15 +74,18 @@ const dashboardStatsCache = createCacheMiddleware(
     (req) => !req.user
 );
 
+
 const userProfileCache = createCacheMiddleware(
     (req) => `profile:user:${req.user.id}`,
     600
 );
 
+
 const userStatsCache = createCacheMiddleware(
     (req) => `stats:user:${req.user.id}`,
     300
 );
+
 
 // Get all users (admin only)
 router.get('/', generalApiLimit, async (req, res) => {
@@ -95,6 +102,7 @@ router.get('/', generalApiLimit, async (req, res) => {
         });
     }
 });
+
 
 // ImageKit authentication endpoint
 router.get('/imagekit-auth', authenticateToken, async (req, res) => {
@@ -145,6 +153,7 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
     }
 });
 
+
 // Get user profile (protected route) - WITH CACHING
 router.get('/profile', authenticateToken, userProfileCache, generalApiLimit, async (req, res) => {
     try {
@@ -178,6 +187,7 @@ router.get('/profile', authenticateToken, userProfileCache, generalApiLimit, asy
         });
     }
 });
+
 
 // Update user profile picture
 router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req, res) => {
@@ -293,6 +303,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
     }
 });
 
+
 // Get user stats for dashboard - WITH CACHING
 router.get('/stats', authenticateToken, userStatsCache, generalApiLimit, async (req, res) => {
     try {
@@ -337,6 +348,7 @@ router.get('/stats', authenticateToken, userStatsCache, generalApiLimit, async (
     }
 });
 
+
 // Get enhanced user stats for dashboard (protected route) - WITH CACHING  
 router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalApiLimit, async (req, res) => {
     try {
@@ -365,19 +377,33 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
             [userId]
         );
         
+        // ✅ ENHANCED: Include vote statistics
         const reviewStatsResult = await pool.query(`
             SELECT 
                 COUNT(*) as total_reviews,
                 AVG(rating::DECIMAL(3,2)) as average_rating_given,
                 MIN(created_at) as first_review_date,
-                MAX(created_at) as latest_review_date
+                MAX(created_at) as latest_review_date,
+                SUM(helpful_count) as total_helpful_votes_received,
+                SUM(not_helpful_count) as total_not_helpful_votes_received
             FROM Reviews 
+            WHERE user_id = $1
+        `, [userId]);
+
+        // ✅ NEW: Get vote statistics (votes given by user)
+        const votesGivenResult = await pool.query(`
+            SELECT 
+                COUNT(*) as total_votes_given,
+                SUM(CASE WHEN vote_type = 'helpful' THEN 1 ELSE 0 END) as helpful_votes_given,
+                SUM(CASE WHEN vote_type = 'not_helpful' THEN 1 ELSE 0 END) as not_helpful_votes_given
+            FROM review_votes
             WHERE user_id = $1
         `, [userId]);
         
         const recentReviewsResult = await pool.query(`
             SELECT 
                 r.id, r.rating, r.review_text, r.review_images,
+                r.helpful_count, r.not_helpful_count,
                 r.created_at, r.updated_at,
                 p.id as product_id, p.name as product_name, 
                 p.image_urls as product_images
@@ -395,6 +421,19 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
         const reviewStats = reviewStatsResult.rows[0];
         const totalReviews = parseInt(reviewStats.total_reviews) || 0;
         const avgRatingGiven = parseFloat(reviewStats.average_rating_given) || 0;
+
+        // ✅ NEW: Parse vote statistics
+        const votesGiven = votesGivenResult.rows[0];
+        const totalVotesGiven = parseInt(votesGiven.total_votes_given) || 0;
+        const helpfulVotesGiven = parseInt(votesGiven.helpful_votes_given) || 0;
+        const notHelpfulVotesGiven = parseInt(votesGiven.not_helpful_votes_given) || 0;
+        const totalHelpfulReceived = parseInt(reviewStats.total_helpful_votes_received) || 0;
+        const totalNotHelpfulReceived = parseInt(reviewStats.total_not_helpful_votes_received) || 0;
+
+        // Calculate helpfulness ratio (for badges)
+        const helpfulnessRatio = totalReviews > 0 
+            ? ((totalHelpfulReceived / (totalHelpfulReceived + totalNotHelpfulReceived + 1)) * 100).toFixed(1)
+            : 0;
         
         // Calculate achievement badges
         const badges = [];
@@ -459,6 +498,69 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
             });
         }
 
+        // ✅ NEW: Voting engagement badges
+        if (totalVotesGiven >= 10) {
+            badges.push({
+                id: 'active_voter',
+                name: 'Active Voter',
+                description: 'Voted on 10+ reviews',
+                icon: '🗳️',
+                earned_date: null
+            });
+        }
+
+        if (totalVotesGiven >= 50) {
+            badges.push({
+                id: 'super_voter',
+                name: 'Super Voter',
+                description: 'Voted on 50+ reviews',
+                icon: '⚡',
+                earned_date: null
+            });
+        }
+
+        // ✅ NEW: Helpful reviewer badges
+        if (totalHelpfulReceived >= 10) {
+            badges.push({
+                id: 'helpful_reviewer',
+                name: 'Helpful Reviewer',
+                description: '10+ people found your reviews helpful',
+                icon: '🌟',
+                earned_date: null
+            });
+        }
+
+        if (totalHelpfulReceived >= 50) {
+            badges.push({
+                id: 'highly_helpful',
+                name: 'Highly Helpful',
+                description: '50+ people found your reviews helpful',
+                icon: '💎',
+                earned_date: null
+            });
+        }
+
+        if (totalHelpfulReceived >= 100) {
+            badges.push({
+                id: 'community_hero',
+                name: 'Community Hero',
+                description: '100+ people found your reviews helpful',
+                icon: '🦸',
+                earned_date: null
+            });
+        }
+
+        // ✅ NEW: High helpfulness ratio badge
+        if (totalReviews >= 5 && parseFloat(helpfulnessRatio) >= 80) {
+            badges.push({
+                id: 'quality_contributor',
+                name: 'Quality Contributor',
+                description: '80%+ helpfulness rating',
+                icon: '✨',
+                earned_date: null
+            });
+        }
+
         res.json({
             status: 'success',
             message: 'Dashboard stats retrieved successfully',
@@ -480,7 +582,16 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
                     total_reviews: totalReviews,
                     average_rating_given: parseFloat(avgRatingGiven.toFixed(1)),
                     first_review_date: reviewStats.first_review_date,
-                    latest_review_date: reviewStats.latest_review_date
+                    latest_review_date: reviewStats.latest_review_date,
+                    // ✅ NEW: Vote statistics
+                    voting: {
+                        total_votes_given: totalVotesGiven,
+                        helpful_votes_given: helpfulVotesGiven,
+                        not_helpful_votes_given: notHelpfulVotesGiven,
+                        total_helpful_votes_received: totalHelpfulReceived,
+                        total_not_helpful_votes_received: totalNotHelpfulReceived,
+                        helpfulness_ratio: parseFloat(helpfulnessRatio)
+                    }
                 },
                 recent_reviews: recentReviewsResult.rows,
                 achievement_badges: badges,
@@ -497,6 +608,5 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
     }
 });
 
+
 module.exports = router;
-
-

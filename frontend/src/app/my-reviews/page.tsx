@@ -11,6 +11,8 @@ interface Review {
   rating: number;
   review_text: string;
   review_images: string;
+  helpful_count: number;          // ✅ ADDED
+  not_helpful_count: number;      // ✅ ADDED
   helpfulness_score: number;
   created_at: string;
   updated_at: string;
@@ -189,7 +191,7 @@ export default function MyReviews() {
     if (reviews.length === 0) return { avgRating: 0, totalHelpfulness: 0, categories: [] };
     
     const avgRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
-    const totalHelpfulness = reviews.reduce((sum, review) => sum + review.helpfulness_score, 0);
+    const totalHelpfulness = reviews.reduce((sum, review) => sum + (review.helpful_count || 0), 0);
     
     return {
       avgRating: avgRating.toFixed(1),
@@ -508,28 +510,70 @@ export default function MyReviews() {
                       </div>
                     )}
 
-                    {/* Review Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t border-border-light">
-                      <div className="flex items-center space-x-4">
-                        <div className="text-sm text-student-secondary">
-                          📅 {getRelativeTime(review.created_at)}
-                        </div>
-                        {review.updated_at !== review.created_at && (
-                          <span className="text-xs text-student-orange bg-student-orange/10 px-2 py-1 rounded-full">
-                            ✏️ Edited
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        {review.helpfulness_score > 0 && (
-                          <div className="flex items-center text-sm text-student-green bg-student-green/10 px-2 py-1 rounded-full">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                            </svg>
-                            {review.helpfulness_score} helpful
+                    {/* ✅ NEW: Review Footer - Enhanced with Vote Counts */}
+                    <div className="flex flex-col space-y-3 pt-4 border-t border-border-light">
+                      {/* Vote Counts Display */}
+                      {(review.helpful_count > 0 || review.not_helpful_count > 0) ? (
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                          <div className="flex items-center space-x-3">
+                            {review.helpful_count > 0 && (
+                              <div className="flex items-center space-x-1.5 text-sm bg-student-green/10 px-3 py-1.5 rounded-full">
+                                <svg className="w-4 h-4 text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                </svg>
+                                <span className="font-semibold text-student-green">{review.helpful_count}</span>
+                                <span className="text-student-secondary text-xs">students found helpful</span>
+                              </div>
+                            )}
+                            
+                            {review.not_helpful_count > 0 && (
+                              <div className="flex items-center space-x-1.5 text-sm bg-student-orange/10 px-3 py-1.5 rounded-full">
+                                <svg className="w-4 h-4 text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                </svg>
+                                <span className="font-semibold text-student-orange">{review.not_helpful_count}</span>
+                                <span className="text-student-secondary text-xs">not helpful</span>
+                              </div>
+                            )}
                           </div>
-                        )}
+                          
+                          {/* Helpfulness Percentage - Show if 5+ votes */}
+                          {(review.helpful_count + review.not_helpful_count) >= 5 && (
+                            <div className="text-sm">
+                              <span className={`font-semibold ${
+                                Math.round((review.helpful_count / (review.helpful_count + review.not_helpful_count)) * 100) >= 70 
+                                  ? 'text-student-green' 
+                                  : 'text-student-orange'
+                              }`}>
+                                {Math.round((review.helpful_count / (review.helpful_count + review.not_helpful_count)) * 100)}% helpful
+                              </span>
+                              <span className="text-student-secondary ml-1">
+                                ({review.helpful_count + review.not_helpful_count} votes)
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-sm text-student-secondary bg-student-light/50 px-3 py-2 rounded-lg">
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          No votes yet - Keep writing helpful reviews!
+                        </div>
+                      )}
+                      
+                      {/* Bottom Row - Date and Actions */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="text-sm text-student-secondary">
+                            📅 {getRelativeTime(review.created_at)}
+                          </div>
+                          {review.updated_at !== review.created_at && (
+                            <span className="text-xs text-student-orange bg-student-orange/10 px-2 py-1 rounded-full">
+                              ✏️ Edited
+                            </span>
+                          )}
+                        </div>
                         
                         <a
                           href={`/products/${review.product_id}`}

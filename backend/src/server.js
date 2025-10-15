@@ -98,9 +98,6 @@ app.use(cors({
     optionsSuccessStatus: 204
 }));
 
-
-
-
 // Session Configuration
 app.use(session({
     secret: process.env.SESSION_SECRET,
