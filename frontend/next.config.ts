@@ -28,10 +28,10 @@ const nextConfig: NextConfig = {
   // ✅ Performance optimizations
   poweredByHeader: false,
   
-  // ✅ Experimental features for better performance
-  experimental: {
-    optimizeCss: true,
-  },
+  // ❌ REMOVED: optimizeCss causes build errors in Vercel
+  // experimental: {
+  //   optimizeCss: true,
+  // },
 };
 
 export default nextConfig;
