@@ -65,6 +65,7 @@ export default function ProductPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [images, setImages] = useState<string[]>([]);
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
+  const [userName, setUserName] = useState<string>('Student'); // ✅ ADDED
   
   const [loadingStates, setLoadingStates] = useState({
     initial: true,
@@ -97,6 +98,19 @@ export default function ProductPage() {
       initializeProductPage();
     }
   }, [productId]);
+
+  // ✅ NEW: Fetch user name for personalized messages
+  useEffect(() => {
+    const storedUser = localStorage.getItem('studentstore_user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        setUserName(user.name || user.display_name || 'Student');
+      } catch (error) {
+        console.error('Error parsing user:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (data?.product) {
@@ -485,6 +499,101 @@ export default function ProductPage() {
     );
   };
 
+ // ✅ MOBILE-OPTIMIZED: Review Encouragement Messages Component
+const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact' | 'detailed' }) => {
+  const isLoggedIn = typeof window !== 'undefined' && localStorage.getItem('studentstore_token');
+  
+  if (!isLoggedIn) return null;
+
+  const scrollToReviews = () => {
+    const reviewSection = document.querySelector('#reviews-section');
+    if (reviewSection) {
+      reviewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  if (variant === 'compact') {
+    return (
+      <div className="bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 rounded-lg md:rounded-xl p-3 md:p-4 mb-4 md:mb-6 border-2 border-student-blue/30 shadow-lg animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          {/* Icon + Text */}
+          <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1">
+            <div className="bg-student-blue/20 p-1.5 sm:p-2 rounded-lg flex-shrink-0">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm sm:text-base text-student-primary font-medium leading-tight">
+                Hey <span className="font-bold text-student-blue">{userName}</span>! 👋 Have you used this product?
+              </p>
+              <p className="text-xs sm:text-sm text-student-secondary mt-0.5 sm:mt-1 leading-snug">
+                Share your honest experience - your review could help thousands of students! ✍️
+              </p>
+            </div>
+          </div>
+          
+          {/* Button */}
+          <button
+            onClick={scrollToReviews}
+            className="w-full sm:w-auto bg-student-blue hover:bg-student-blue/90 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-semibold transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 whitespace-nowrap"
+          >
+            Write Review
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-student-blue/10 via-student-green/5 to-student-orange/10 rounded-xl md:rounded-2xl p-5 sm:p-6 md:p-8 mb-6 md:mb-8 border-2 border-student-green/30 shadow-xl">
+      <div className="text-center max-w-3xl mx-auto">
+        {/* Header with Icon */}
+        <div className="flex items-center justify-center mb-3 sm:mb-4">
+          <div className="bg-student-green/20 p-2 sm:p-3 rounded-full mr-2 sm:mr-3">
+            <svg className="w-6 h-6 sm:w-8 sm:h-8 text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-student-primary">
+            Hey <span className="text-student-blue">{userName}</span>! 👋
+          </h3>
+        </div>
+        
+        {/* Main Message */}
+        <p className="text-sm sm:text-base md:text-lg text-student-primary mb-2 sm:mb-3 leading-relaxed px-2">
+          Have you tried this product? Share your honest experience with fellow students - 
+          <span className="font-semibold text-student-green"> whether you loved it or not</span>, 
+          your review helps others make smarter choices.
+        </p>
+        
+        {/* Safe Space Badge */}
+        <div className="bg-student-green/10 border border-student-green/30 rounded-lg md:rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+          <p className="text-xs sm:text-sm md:text-base text-student-primary font-medium flex items-center justify-center flex-wrap gap-1">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-student-green flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-center">
+              This is a <span className="font-bold text-student-green">judgment-free student community</span> - your real opinion matters!
+            </span>
+          </p>
+        </div>
+        
+        {/* CTA Button */}
+        <button
+          onClick={scrollToReviews}
+          className="bg-gradient-to-r from-student-blue to-student-green hover:from-student-blue/90 hover:to-student-green/90 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg sm:rounded-xl font-bold text-base sm:text-lg transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center mx-auto group w-full sm:w-auto"
+        >
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Write Your Review
+        </button>
+      </div>
+    </div>
+  );
+};
+
   if (loading && loadingStates.initial) {
     return (
       <div className="min-h-screen bg-student-page">
@@ -561,6 +670,9 @@ export default function ProductPage() {
           </svg>
           <span className="text-student-blue font-semibold">{product.name}</span>
         </nav>
+        
+        {/* ✅ MESSAGE 1: Quick Review Encouragement */}
+        <ReviewEncouragementBanner variant="compact" />
       </div>
 
       <section className="max-w-7xl mx-auto px-4 mb-16">
@@ -823,7 +935,7 @@ export default function ProductPage() {
                     <span className="mr-2">💰</span>
                     {product.buy_button_3_name}
                     <svg className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </span>
                 </a>
@@ -859,7 +971,12 @@ export default function ProductPage() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 mb-16">
+      {/* ✅ MESSAGE 2: Detailed Safe Space Message */}
+      <section className="max-w-7xl mx-auto px-4 mb-8">
+        <ReviewEncouragementBanner variant="detailed" />
+      </section>
+
+      <section className="max-w-7xl mx-auto px-4 mb-16" id="reviews-section">
         <div className="bg-student-card rounded-2xl p-6 border border-border-light shadow-xl">
           <h2 className="text-2xl md:text-3xl font-bold text-student-primary mb-6 flex items-center">
             💬 Student Reviews & Opinions
