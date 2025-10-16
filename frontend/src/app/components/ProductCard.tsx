@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import WishlistButton from './WishlistButton';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
+import { optimizeProductImage, getFirstImageOrPlaceholder } from '../utils/imageOptimizer';
 
 interface Product {
   id: number;
@@ -17,13 +18,11 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  // ✅ OPTIMIZED: Get optimized image URL with proper size and quality
   const getProductImage = (imageUrls: string) => {
-    try {
-      const urls = JSON.parse(imageUrls);
-      return urls[0] || '/placeholder-product.jpg';
-    } catch {
-      return '/placeholder-product.jpg';
-    }
+    const firstImage = getFirstImageOrPlaceholder(imageUrls, '/placeholder-product.jpg');
+    // Optimize for medium size (800x800) - perfect for product cards
+    return optimizeProductImage(firstImage, 'medium');
   };
 
   const handleWishlistClick = (e: React.MouseEvent) => {
@@ -41,11 +40,15 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="product-card">
         {/* Product Image Container - 65% of card height */}
         <div className="product-image-container">
+          {/* ✅ OPTIMIZED: Using optimized image with lazy loading and proper attributes */}
           <img 
             src={getProductImage(product.image_urls)} 
             alt={product.name}
             className="product-image"
             loading="lazy"
+            decoding="async"
+            width={800}
+            height={800}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC41IDc4IDEyNiA4OS41IDEyNiAxMDRDMTI2IDExOC41IDExNC41IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';

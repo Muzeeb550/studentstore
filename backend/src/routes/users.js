@@ -4,6 +4,7 @@ const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/adminAuth');
 const imagekit = require('../config/imagekit');
 const { createCacheMiddleware } = require('../middleware/cache');
+const { addDefaultTransformations } = require('../utils/imagekitHelper'); // ✅ NEW IMPORT
 const router = express.Router();
 
 
@@ -189,7 +190,7 @@ router.get('/profile', authenticateToken, userProfileCache, generalApiLimit, asy
 });
 
 
-// Update user profile picture
+// ✅ UPDATED: Update user profile picture with optimization
 router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -262,12 +263,16 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
                 message: 'Account is deactivated'
             });
         }
+
+        // ✅ NEW: Optimize profile picture URL before storing
+        const optimizedProfilePicture = addDefaultTransformations(profile_picture, 'profile');
+        console.log(`🎨 Optimized profile picture for user ${userId}`);
         
         const result = await pool.query(`
             UPDATE Users 
             SET profile_picture = $1, updated_at = NOW()
             WHERE id = $2 AND is_active = true
-        `, [profile_picture, userId]);
+        `, [optimizedProfilePicture, userId]); // ✅ Use optimized URL
         
         if (result.rowCount === 0) {
             return res.status(404).json({
@@ -286,9 +291,9 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         
         res.json({
             status: 'success',
-            message: 'Profile picture updated successfully',
+            message: 'Profile picture updated successfully with optimization',
             data: {
-                profile_picture: profile_picture,
+                profile_picture: optimizedProfilePicture, // ✅ Return optimized URL
                 updated_at: new Date().toISOString()
             }
         });
@@ -302,6 +307,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         });
     }
 });
+
 
 
 // Get user stats for dashboard - WITH CACHING

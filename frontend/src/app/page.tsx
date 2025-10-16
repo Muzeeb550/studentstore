@@ -10,6 +10,7 @@ import { getRecentlyViewed } from './utils/recentlyViewed';
 import RecentlyViewedCard from './components/RecentlyViewedCard';
 import TrendingCard from './components/TrendingCard';
 import Link from 'next/link';
+import { optimizeBannerImage, optimizeProductImage, getFirstImageOrPlaceholder } from './utils/imageOptimizer';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -47,7 +48,6 @@ interface RecentlyViewed {
   viewedAt: number;
 }
 
-// ✅ CHANGE 5: Configurable limits
 const MAX_RECENTLY_VIEWED = 10;
 const MAX_TRENDING_PRODUCTS = 10;
 const MAX_FEATURED_PRODUCTS = 12;
@@ -59,8 +59,6 @@ export default function HomePage() {
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewed[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // ✅ CHANGE 3: Error state for API failures
   const [error, setError] = useState<string | null>(null);
 
   const [loadingStates, setLoadingStates] = useState({
@@ -71,10 +69,8 @@ export default function HomePage() {
   });
 
   const [lastRefresh, setLastRefresh] = useState<number>(0);
-
   const categorySliderRef = useRef<any>(null);
 
-  // Refs for horizontal rows
   const recentRowMobileRef = useRef<HTMLDivElement>(null);
   const recentRowTabletRef = useRef<HTMLDivElement>(null);
   const recentRowDesktopRef = useRef<HTMLDivElement>(null);
@@ -88,6 +84,16 @@ export default function HomePage() {
     products: 5 * 60 * 1000,
     trending: 5 * 60 * 1000,
   };
+
+  // ✅ NEW: Get optimized banner based on screen size
+  const getOptimizedBanner = useCallback((url: string) => {
+    if (typeof window === 'undefined') return optimizeBannerImage(url, 'desktop');
+    
+    const width = window.innerWidth;
+    if (width <= 640) return optimizeBannerImage(url, 'mobile');
+    if (width <= 1024) return optimizeBannerImage(url, 'tablet');
+    return optimizeBannerImage(url, 'desktop');
+  }, []);
 
   useEffect(() => {
     initializeHomepage();
@@ -160,10 +166,9 @@ export default function HomePage() {
     }
   };
 
-  // ✅ CHANGE 3: Enhanced error handling with user-friendly messages
   const fetchAndUpdateData = async (showLoading: boolean = false) => {
     if (showLoading) setLoading(true);
-    setError(null); // Clear any previous errors
+    setError(null);
     
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -173,7 +178,7 @@ export default function HomePage() {
       const [bannerRes, categoryRes, productsRes, trendingRes] = await Promise.all([
         fetch(`${apiUrl}/api/public/banners?${cacheBuster}`, { 
           headers: { 'Cache-Control': 'no-cache' },
-          signal: AbortSignal.timeout(15000) // 15 second timeout
+          signal: AbortSignal.timeout(15000)
         }),
         fetch(`${apiUrl}/api/public/categories?${cacheBuster}`, { 
           headers: { 'Cache-Control': 'no-cache' },
@@ -221,7 +226,6 @@ export default function HomePage() {
     } catch (err) {
       console.error('Homepage fetch error:', err);
       
-      // Try to show cached data even if API fails
       const cached = loadFromLocalCache();
       if (cached.hasValidCache) {
         if (cached.banners) setBanners(cached.banners);
@@ -229,10 +233,8 @@ export default function HomePage() {
         if (cached.products) setProducts(cached.products);
         if (cached.trending) setTrendingProducts(cached.trending);
         
-        // Show error but with cached data
         setError('Showing cached content. Click refresh for latest updates.');
       } else {
-        // No cached data available
         setError('Unable to load content. The server might be starting up (takes 20-30 seconds on free hosting). Please try again.');
       }
     } finally {
@@ -282,11 +284,9 @@ export default function HomePage() {
 
   const loadRecentlyViewed = useCallback(() => {
     const recentProducts = getRecentlyViewed();
-    // ✅ CHANGE 5: Use configurable limit
     setRecentlyViewed(recentProducts.slice(0, MAX_RECENTLY_VIEWED));
   }, []);
 
-  // Smooth scroll by one card width (kept for future accessibility/keyboard support)
   const scrollByCard = (
     ref: React.RefObject<HTMLDivElement | null>,
     direction: 1 | -1
@@ -300,7 +300,6 @@ export default function HomePage() {
     row.scrollBy({ left: direction * delta, behavior: 'smooth' });
   };
 
-  // No custom arrows anywhere; disable arrows to avoid unknown prop warnings
   const bannerSettings = {
     dots: true,
     arrows: false,
@@ -415,13 +414,10 @@ export default function HomePage() {
     );
   };
 
+  // ✅ OPTIMIZED: Get optimized product image
   const getProductImage = (imageUrls: string) => {
-    try {
-      const urls = JSON.parse(imageUrls);
-      return urls[0] || '/placeholder-product.jpg';
-    } catch {
-      return '/placeholder-product.jpg';
-    }
+    const firstImage = getFirstImageOrPlaceholder(imageUrls, '/placeholder-product.jpg');
+    return optimizeProductImage(firstImage, 'small');
   };
 
   if (loading) {
@@ -441,7 +437,6 @@ export default function HomePage() {
       <Navbar />
       {process.env.NODE_ENV === 'development' && <CacheStatusIndicator />}
 
-      {/* ✅ CHANGE 3: Error banner for API failures */}
       {error && (
         <div className="max-w-7xl mx-auto px-4 mt-4">
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-md">
@@ -469,7 +464,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Banner */}
+      {/* ✅ OPTIMIZED: Banner Section */}
       <section className="banner-container relative max-w-7xl mx-auto">
         <div className="relative" style={{ paddingBottom: '40px' }}>
           <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
@@ -483,7 +478,15 @@ export default function HomePage() {
                       {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
                         <video src={banner.media_url} autoPlay muted loop playsInline className="banner-image touch-optimized" />
                       ) : (
-                        <img src={banner.media_url} alt={banner.name} className="banner-image touch-optimized" loading="eager" />
+                        <img 
+                          src={getOptimizedBanner(banner.media_url)} 
+                          alt={banner.name} 
+                          className="banner-image touch-optimized" 
+                          loading="eager"
+                          decoding="async"
+                          width={1920}
+                          height={1080}
+                        />
                       )}
                       <div className="banner-overlay">
                         <h2 className="banner-title">{banner.name}</h2>
@@ -521,15 +524,8 @@ export default function HomePage() {
                   🔄 Continue Your Shopping Journey
                 </h3>
               </div>
-              <div className="recently-viewed-progress ml-7 mt-2 sm:mt-3">
-                <div className="flex items-center text-xs sm:text-sm text-student-blue">
-                  {/* <div className="w-2 h-2 bg-student-blue rounded-full mr-2 animate-pulse"></div> */}
-                  {/* <span className="font-medium">{recentlyViewed.length} items in your browsing session</span> */}
-                </div>
-              </div>
             </div>
 
-            {/* ✅ CHANGE 1: Mobile - 2-row horizontal grid with product name below */}
             <div className="block sm:hidden -mx-4 px-4">
               <div
                 ref={recentRowMobileRef}
@@ -555,7 +551,6 @@ export default function HomePage() {
                     }}
                   >
                     <Link href={`/products/${item.product.id}`} className="block">
-                      {/* Image tile */}
                       <div
                         style={{
                           width: '140px',
@@ -570,6 +565,8 @@ export default function HomePage() {
                           src={getProductImage(item.product.image_urls)}
                           alt={item.product.name}
                           loading="lazy"
+                          width={400}
+                          height={400}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
@@ -578,7 +575,6 @@ export default function HomePage() {
                           }}
                         />
                       </div>
-                      {/* Product name below */}
                       <p className="text-xs text-student-primary font-medium line-clamp-2 px-1 leading-tight">
                         {item.product.name}
                       </p>
@@ -588,7 +584,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Tablets (641px–1024px): 4 + 0.5 card */}
             <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
               <div ref={recentRowTabletRef} className="flex gap-3">
                 {recentlyViewed.map((item) => (
@@ -604,7 +599,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Laptops/desktops (>=1025px): smooth scroll with 6-up sizing */}
             <div className="relative hidden lg:block row-desktop">
               <div className="overflow-x-auto scroll-smooth overscroll-x-contain">
                 <div
@@ -643,13 +637,11 @@ export default function HomePage() {
               <div className="trending-live-indicator ml-7 mt-2 sm:mt-3">
                 <div className="flex items-center text-xs sm:text-sm text-student-orange">
                   <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
-                  {/* ✅ CHANGE 6: Honest text matching actual cache behavior */}
                   <span className="font-medium">Live trending data • Updated every 5 minutes</span>
                 </div>
               </div>
             </div>
 
-            {/* Mobile (<=640px): keep existing single-row mini cards */}
             <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
               <div ref={trendingRowMobileRef} className="flex gap-3">
                 {trendingProducts.map((product, index) => (
@@ -665,7 +657,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Tablets (641px–1024px): 4 + 0.5 card */}
             <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain">
               <div ref={trendingRowTabletRef} className="flex gap-3">
                 {trendingProducts.map((product, index) => (
@@ -681,7 +672,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Laptops/desktops (>=1025px): smooth scroll with 6-up sizing */}
             <div className="relative hidden lg:block row-desktop">
               <div className="overflow-x-auto scroll-smooth overscroll-x-contain">
                 <div
@@ -800,24 +790,22 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* See All Products Button */}
-        {products.length >= MAX_FEATURED_PRODUCTS && (
-          <div className="text-center mt-12">
-            <Link 
-              href="/products"
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-student-blue to-cyan-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-            >
-              <span>See All Products</span>
-              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-              <span className="ml-3 px-2.5 py-0.5 bg-white/20 rounded-full text-xs">
-                {products.length}+ Products
-              </span>
-            </Link>
-          </div>
-        )}
-
+      {products.length >= MAX_FEATURED_PRODUCTS && (
+        <div className="text-center mt-12">
+          <Link 
+            href="/products"
+            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-student-blue to-cyan-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+          >
+            <span>See All Products</span>
+            <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+            <span className="ml-3 px-2.5 py-0.5 bg-white/20 rounded-full text-xs">
+              {products.length}+ Products
+            </span>
+          </Link>
+        </div>
+      )}
 
       <Footer />
     </div>

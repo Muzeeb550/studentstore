@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { optimizeCategoryIcon } from '../utils/imageOptimizer';
 
 interface Category {
   id: number;
@@ -19,6 +20,12 @@ export default function CategoryCard({ category }: CategoryCardProps) {
   const showImage = !!category.icon_url && !imgError;
   const initial = category.name?.trim()?.charAt(0)?.toUpperCase() || '?';
 
+  // ✅ OPTIMIZED: Get optimized category icon (300x300, 90% quality, WebP)
+  const getOptimizedIcon = (iconUrl: string) => {
+    if (!iconUrl) return '';
+    return optimizeCategoryIcon(iconUrl);
+  };
+
   return (
     <Link
       href={`/categories/${category.id}`}
@@ -29,12 +36,14 @@ export default function CategoryCard({ category }: CategoryCardProps) {
         <div className="category-image-area">
           {showImage ? (
             <img
-              src={category.icon_url}
-              alt=""               // decorative; accessible name comes from aria-label
+              src={getOptimizedIcon(category.icon_url)}
+              alt=""
               aria-hidden="true"
               className="category-icon"
               loading="lazy"
               decoding="async"
+              width={300}
+              height={300}
               onError={() => setImgError(true)}
             />
           ) : (
@@ -44,8 +53,6 @@ export default function CategoryCard({ category }: CategoryCardProps) {
           )}
         </div>
 
-        {/* Keep or hide the text label based on design needs.
-            To hide: add style={{ display: 'none' }} or a utility class. */}
         <div className="category-text-area">
           <h4 className="category-title">{category.name}</h4>
         </div>

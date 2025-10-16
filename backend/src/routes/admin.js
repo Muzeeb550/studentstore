@@ -4,9 +4,12 @@ const { pool } = require('../config/database');
 const { invalidateCache } = require('../config/redis');
 const router = express.Router();
 const imagekit = require('../config/imagekit');
+const { addDefaultTransformations } = require('../utils/imagekitHelper'); // ✅ NEW IMPORT
+
 
 // All admin routes require admin authentication
 router.use(requireAdmin);
+
 
 // Admin Dashboard Stats
 router.get('/dashboard', async (req, res) => {
@@ -20,6 +23,7 @@ router.get('/dashboard', async (req, res) => {
             pool.query('SELECT COUNT(*) as count FROM Banners')
         ]);
 
+
         const recentProducts = await pool.query(`
             SELECT p.id, p.name, p.created_at, c.name as category_name, u.display_name as admin_name
             FROM Products p
@@ -28,6 +32,7 @@ router.get('/dashboard', async (req, res) => {
             ORDER BY p.created_at DESC
             LIMIT 5
         `);
+
 
         res.json({
             status: 'success',
@@ -52,12 +57,14 @@ router.get('/dashboard', async (req, res) => {
     }
 });
 
+
 // Get all products for admin management
 router.get('/products', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
+
 
         const result = await pool.query(`
             SELECT 
@@ -75,8 +82,10 @@ router.get('/products', async (req, res) => {
             OFFSET $1 LIMIT $2
         `, [offset, limit]);
 
+
         const countResult = await pool.query('SELECT COUNT(*) as total FROM Products');
         const total = parseInt(countResult.rows[0].total);
+
 
         res.json({
             status: 'success',
@@ -101,6 +110,7 @@ router.get('/products', async (req, res) => {
     }
 });
 
+
 // Get all categories for dropdowns
 router.get('/categories', async (req, res) => {
     try {
@@ -109,6 +119,7 @@ router.get('/categories', async (req, res) => {
             FROM Categories
             ORDER BY sort_order, name
         `);
+
 
         res.json({
             status: 'success',
@@ -124,6 +135,7 @@ router.get('/categories', async (req, res) => {
         });
     }
 });
+
 
 // Get single product for editing
 router.get('/products/:id', async (req, res) => {
@@ -166,6 +178,7 @@ router.get('/products/:id', async (req, res) => {
         });
     }
 });
+
 
 // Delete product with intelligent cache invalidation
 router.delete('/products/:id', async (req, res) => {
@@ -246,6 +259,7 @@ router.delete('/products/:id', async (req, res) => {
     }
 });
 
+
 // Create new category with instant cache invalidation
 router.post('/categories', async (req, res) => {
     try {
@@ -277,12 +291,15 @@ router.post('/categories', async (req, res) => {
         );
         const nextSortOrder = sortOrderResult.rows[0].next_order;
         
+        // ✅ NEW: Optimize category icon URL before storing
+        const optimizedIconUrl = icon_url ? addDefaultTransformations(icon_url, 'category') : null;
+        
         // Insert new category
         const result = await pool.query(`
             INSERT INTO Categories (name, description, icon_url, sort_order)
             VALUES ($1, $2, $3, $4)
             RETURNING *
-        `, [name, description || null, icon_url || null, nextSortOrder]);
+        `, [name, description || null, optimizedIconUrl, nextSortOrder]);
         
         // Cache invalidation
         try {
@@ -307,6 +324,7 @@ router.post('/categories', async (req, res) => {
         });
     }
 });
+
 
 // Update category with instant cache invalidation
 router.put('/categories/:id', async (req, res) => {
@@ -334,11 +352,14 @@ router.put('/categories/:id', async (req, res) => {
             });
         }
         
+        // ✅ NEW: Optimize category icon URL before storing
+        const optimizedIconUrl = icon_url ? addDefaultTransformations(icon_url, 'category') : null;
+        
         const result = await pool.query(`
             UPDATE Categories 
             SET name = $1, description = $2, icon_url = $3
             WHERE id = $4
-        `, [name, description, icon_url, id]);
+        `, [name, description, optimizedIconUrl, id]);
         
         if (result.rowCount === 0) {
             return res.status(404).json({
@@ -370,6 +391,7 @@ router.put('/categories/:id', async (req, res) => {
         });
     }
 });
+
 
 // Delete category with intelligent cache invalidation
 router.delete('/categories/:id', async (req, res) => {
@@ -426,6 +448,7 @@ router.delete('/categories/:id', async (req, res) => {
     }
 });
 
+
 // ImageKit authentication endpoint
 router.get('/imagekit-auth', async (req, res) => {
     try {
@@ -440,7 +463,8 @@ router.get('/imagekit-auth', async (req, res) => {
     }
 });
 
-// Create new product with intelligent cache invalidation
+
+// ✅ UPDATED: Create new product with image optimization
 router.post('/products', async (req, res) => {
     try {
         const {
@@ -457,6 +481,16 @@ router.post('/products', async (req, res) => {
             });
         }
 
+        // ✅ NEW: Optimize image URLs before storing
+        let optimizedImageUrls = [];
+        if (Array.isArray(image_urls) && image_urls.length > 0) {
+            optimizedImageUrls = image_urls
+                .filter(url => url && url.trim() !== '')
+                .map(url => addDefaultTransformations(url, 'product'));
+            
+            console.log(`🎨 Optimized ${optimizedImageUrls.length} product images`);
+        }
+
         const result = await pool.query(`
             INSERT INTO Products (
                 name, description, category_id, image_urls, 
@@ -468,7 +502,7 @@ router.post('/products', async (req, res) => {
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
             RETURNING *
         `, [
-            name, description, category_id, JSON.stringify(image_urls || []),
+            name, description, category_id, JSON.stringify(optimizedImageUrls),
             buy_button_1_name, buy_button_1_url,
             buy_button_2_name || null, buy_button_2_url || null,
             buy_button_3_name || null, buy_button_3_url || null,
@@ -487,7 +521,7 @@ router.post('/products', async (req, res) => {
 
         res.json({
             status: 'success',
-            message: 'Product created successfully',
+            message: 'Product created successfully with optimized images',
             data: newProduct,
             cacheCleared: true
         });
@@ -501,7 +535,8 @@ router.post('/products', async (req, res) => {
     }
 });
 
-// Update existing product with intelligent cache invalidation
+
+// ✅ UPDATED: Update product with image optimization
 router.put('/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -523,6 +558,16 @@ router.put('/products/:id', async (req, res) => {
         const oldProductInfo = await pool.query('SELECT category_id FROM Products WHERE id = $1', [id]);
         const oldCategoryId = oldProductInfo.rows[0]?.category_id;
 
+        // ✅ NEW: Optimize image URLs before storing
+        let optimizedImageUrls = [];
+        if (Array.isArray(image_urls) && image_urls.length > 0) {
+            optimizedImageUrls = image_urls
+                .filter(url => url && url.trim() !== '')
+                .map(url => addDefaultTransformations(url, 'product'));
+            
+            console.log(`🎨 Optimized ${optimizedImageUrls.length} product images for update`);
+        }
+
         const result = await pool.query(`
             UPDATE Products SET
                 name = $1, description = $2, category_id = $3, image_urls = $4,
@@ -532,7 +577,7 @@ router.put('/products/:id', async (req, res) => {
                 updated_at = NOW()
             WHERE id = $11 AND admin_id = $12
         `, [
-            name, description, category_id, JSON.stringify(image_urls || []),
+            name, description, category_id, JSON.stringify(optimizedImageUrls),
             buy_button_1_name, buy_button_1_url,
             buy_button_2_name || null, buy_button_2_url || null,
             buy_button_3_name || null, buy_button_3_url || null,
@@ -561,7 +606,7 @@ router.put('/products/:id', async (req, res) => {
 
         res.json({
             status: 'success',
-            message: 'Product updated successfully',
+            message: 'Product updated successfully with optimized images',
             cacheCleared: true
         });
     } catch (error) {
@@ -573,6 +618,7 @@ router.put('/products/:id', async (req, res) => {
         });
     }
 });
+
 
 // Get all banners for admin management
 router.get('/banners', async (req, res) => {
@@ -586,6 +632,7 @@ router.get('/banners', async (req, res) => {
             JOIN Users u ON b.admin_id = u.id
             ORDER BY b.display_order ASC, b.created_at DESC
         `);
+
 
         res.json({
             status: 'success',
@@ -601,6 +648,7 @@ router.get('/banners', async (req, res) => {
         });
     }
 });
+
 
 // Get single banner for editing
 router.get('/banners/:id', async (req, res) => {
@@ -639,7 +687,8 @@ router.get('/banners/:id', async (req, res) => {
     }
 });
 
-// Create new banner with instant cache invalidation
+
+// ✅ UPDATED: Create banner with image optimization
 router.post('/banners', async (req, res) => {
     try {
         const { name, media_url, link_url, display_order } = req.body;
@@ -651,11 +700,15 @@ router.post('/banners', async (req, res) => {
             });
         }
 
+        // ✅ NEW: Optimize banner image URL before storing
+        const optimizedMediaUrl = addDefaultTransformations(media_url, 'banner');
+        console.log(`🎨 Optimized banner image: ${name}`);
+
         const result = await pool.query(`
             INSERT INTO Banners (name, media_url, link_url, display_order, admin_id, is_active, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW())
             RETURNING *
-        `, [name, media_url, link_url, display_order || 0, req.user.id]);
+        `, [name, optimizedMediaUrl, link_url, display_order || 0, req.user.id]);
 
         // Cache invalidation
         try {
@@ -667,7 +720,7 @@ router.post('/banners', async (req, res) => {
 
         res.json({
             status: 'success',
-            message: 'Banner created successfully',
+            message: 'Banner created successfully with optimized image',
             data: result.rows[0],
             cacheCleared: true
         });
@@ -681,7 +734,8 @@ router.post('/banners', async (req, res) => {
     }
 });
 
-// Update existing banner with instant cache invalidation
+
+// ✅ UPDATED: Update banner with image optimization
 router.put('/banners/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -694,12 +748,16 @@ router.put('/banners/:id', async (req, res) => {
             });
         }
 
+        // ✅ NEW: Optimize banner image URL before storing
+        const optimizedMediaUrl = addDefaultTransformations(media_url, 'banner');
+        console.log(`🎨 Optimized banner image for update: ${name}`);
+
         const result = await pool.query(`
             UPDATE Banners SET
                 name = $1, media_url = $2, link_url = $3,
                 display_order = $4, updated_at = NOW()
             WHERE id = $5 AND admin_id = $6
-        `, [name, media_url, link_url, display_order || 0, id, req.user.id]);
+        `, [name, optimizedMediaUrl, link_url, display_order || 0, id, req.user.id]);
 
         if (result.rowCount === 0) {
             return res.status(404).json({
@@ -718,7 +776,7 @@ router.put('/banners/:id', async (req, res) => {
 
         res.json({
             status: 'success',
-            message: 'Banner updated successfully',
+            message: 'Banner updated successfully with optimized image',
             cacheCleared: true
         });
     } catch (error) {
@@ -730,6 +788,7 @@ router.put('/banners/:id', async (req, res) => {
         });
     }
 });
+
 
 // Delete banner with instant cache invalidation
 router.delete('/banners/:id', async (req, res) => {
@@ -778,5 +837,6 @@ router.delete('/banners/:id', async (req, res) => {
         });
     }
 });
+
 
 module.exports = router;

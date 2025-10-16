@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import WishlistButton from './WishlistButton';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
+import { optimizeProductImage, getFirstImageOrPlaceholder } from '../utils/imageOptimizer';
 
 interface Product {
   id: number;
@@ -18,13 +19,11 @@ interface RecentlyViewedCardProps {
 }
 
 export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewedCardProps) {
+  // ✅ OPTIMIZED: Get optimized product image (small size for recently viewed)
   const getProductImage = (imageUrls: string) => {
-    try {
-      const urls = JSON.parse(imageUrls);
-      return urls[0] || '/placeholder-product.jpg';
-    } catch {
-      return '/placeholder-product.jpg';
-    }
+    const firstImage = getFirstImageOrPlaceholder(imageUrls, '/placeholder-product.jpg');
+    // Use 'small' size (400x400) for recently viewed cards
+    return optimizeProductImage(firstImage, 'small');
   };
 
   const getTimeAgo = (timestamp: number) => {
@@ -68,7 +67,7 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
           position: 'relative'
         }}
       >
-        {/* Optional small time badge for context; remove if you want pure image */}
+        {/* Optional small time badge for context */}
         <span
           style={{
             position: 'absolute',
@@ -81,10 +80,14 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
           🕒 {getTimeAgo(viewedAt)}
         </span>
 
+        {/* ✅ OPTIMIZED: Mobile image with proper attributes */}
         <img
           src={imgSrc}
           alt={product.name}
           loading="lazy"
+          decoding="async"
+          width={400}
+          height={400}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -103,11 +106,15 @@ export default function RecentlyViewedCard({ product, viewedAt }: RecentlyViewed
         <div className="recently-viewed-card">
           {/* Image Container */}
           <div className="recently-viewed-image-container">
+            {/* ✅ OPTIMIZED: Desktop/tablet image with proper attributes */}
             <img
               src={imgSrc}
               alt={product.name}
               className="recently-viewed-image"
               loading="lazy"
+              decoding="async"
+              width={400}
+              height={400}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src =

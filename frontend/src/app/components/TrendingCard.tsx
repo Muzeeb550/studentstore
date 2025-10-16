@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import WishlistButton from './WishlistButton';
 import { addToRecentlyViewed } from '../utils/recentlyViewed';
+import { optimizeProductImage, getFirstImageOrPlaceholder } from '../utils/imageOptimizer';
 
 interface Product {
   id: number;
@@ -18,13 +19,11 @@ interface TrendingCardProps {
 }
 
 export default function TrendingCard({ product, trendingRank = 1 }: TrendingCardProps) {
+  // ✅ OPTIMIZED: Get optimized product image (small size for trending cards)
   const getProductImage = (imageUrls: string) => {
-    try {
-      const urls = JSON.parse(imageUrls);
-      return urls[0] || '/placeholder-product.jpg';
-    } catch {
-      return '/placeholder-product.jpg';
-    }
+    const firstImage = getFirstImageOrPlaceholder(imageUrls, '/placeholder-product.jpg');
+    // Use 'small' size (400x400) for trending cards - perfect for compact display
+    return optimizeProductImage(firstImage, 'small');
   };
 
   const getTrendingData = (rank: number) => {
@@ -55,11 +54,15 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
       <div className="trending-card">
         {/* Image Container */}
         <div className="trending-image-container">
+          {/* ✅ OPTIMIZED: Using optimized image with proper attributes */}
           <img 
             src={getProductImage(product.image_urls)} 
             alt={product.name}
             className="trending-image"
             loading="lazy"
+            decoding="async"
+            width={400}
+            height={400}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTMwQzg1LjUgMTMwIDc0IDExOC41IDc0IDEwNEM3NCA4OS41IDg1LjUgNzggMTAwIDc4QzExNC01IDEzMCAxMDAgMTMwWiIgZmlsbD0iI0U1RTdFQiIvPgo8L3N2Zz4K';
