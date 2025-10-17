@@ -1353,7 +1353,7 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
     {/* Instructions */}
     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-medium z-50">
       <span className="hidden md:inline">Double-click to zoom | Scroll wheel | Drag to pan | ← → arrows | ESC to close</span>
-      <span className="md:hidden">🤏 Pinch zoom | 👆 Double-tap | Drag pan | 👈👉 Swipe sides | Tap X close</span>
+      <span className="md:hidden">🤏 Pinch zoom | 👆 Double-tap | Drag pan | 👈👉 Swipe sides | Tap       Here close</span>
     </div>
   </div>
 )}
