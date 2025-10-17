@@ -363,17 +363,30 @@ export default function ProductPage() {
     console.log('📝 Review updated, product cache invalidated');
   }, [productId]);
 
-  // 🚀 NEW: Lightbox handlers
-  const openLightbox = (index: number) => {
-    setLightboxImageIndex(index);
-    setIsLightboxOpen(true);
-    document.body.style.overflow = 'hidden';
-  };
+ // ✅ FIXED: Lightbox handlers with proper cleanup
+const openLightbox = (index: number) => {
+  setLightboxImageIndex(index);
+  setIsLightboxOpen(true);
+};
 
-  const closeLightbox = () => {
-    setIsLightboxOpen(false);
+const closeLightbox = () => {
+  setIsLightboxOpen(false);
+};
+
+// ✅ FIXED: Auto-cleanup scroll lock on unmount or lightbox close
+useEffect(() => {
+  if (isLightboxOpen) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = 'unset';
+  }
+  
+  // Always restore scroll when component unmounts (user navigates away)
+  return () => {
     document.body.style.overflow = 'unset';
   };
+}, [isLightboxOpen]);
+
 
   const nextImage = () => {
     setLightboxImageIndex((prev) => (prev + 1) % images.length);
