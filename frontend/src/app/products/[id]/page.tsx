@@ -11,6 +11,7 @@ import ReviewForm from '../../components/ReviewForm';
 import ReviewList from '../../components/ReviewList';
 import ReviewManager from '../../components/ReviewManager';
 import { addToRecentlyViewed } from '../../utils/recentlyViewed';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 interface Product {
   id: number;
@@ -1053,70 +1054,48 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
         </section>
       )}
 
-      {/* ✅ ENHANCED: Image Lightbox with Touch Swipe + Zoom Support */}
+      {/* ✅ ENHANCED: Image Lightbox with Full Zoom Support */}
 {isLightboxOpen && (
   <div 
     className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
     onClick={closeLightbox}
-    onTouchStart={(e) => {
-      const touch = e.touches[0];
-      setTouchStart(touch.clientX);
-    }}
-    onTouchMove={(e) => {
-      const touch = e.touches[0];
-      setTouchEnd(touch.clientX);
-    }}
-    onTouchEnd={() => {
-      if (!touchStart || !touchEnd) return;
-      
-      const distance = touchStart - touchEnd;
-      const isLeftSwipe = distance > 50;
-      const isRightSwipe = distance < -50;
-      
-      if (isLeftSwipe && lightboxImageIndex < images.length - 1) {
-        nextImage();
-      }
-      
-      if (isRightSwipe && lightboxImageIndex > 0) {
-        prevImage();
-      }
-      
-      setTouchStart(0);
-      setTouchEnd(0);
-    }}
   >
+    {/* Close Button */}
     <button
       onClick={closeLightbox}
-      className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-20"
+      className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-50"
     >
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
       </svg>
     </button>
     
+    {/* Share Button */}
     <button
       onClick={(e) => {
         e.stopPropagation();
         handleShareProduct();
       }}
-      className="absolute top-4 right-16 text-white hover:text-gray-300 transition-colors z-20"
+      className="absolute top-4 right-16 text-white hover:text-gray-300 transition-colors z-50"
     >
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
       </svg>
     </button>
     
-    <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium z-20">
+    {/* Image Counter */}
+    <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium z-50">
       {lightboxImageIndex + 1} / {images.length}
     </div>
     
+    {/* Previous Button */}
     {images.length > 1 && lightboxImageIndex > 0 && (
       <button
         onClick={(e) => {
           e.stopPropagation();
           prevImage();
         }}
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-20"
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-50"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1124,50 +1103,72 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
       </button>
     )}
     
-    {/* ✅ NEW: Zoomable Image Container */}
+    {/* ✅ NEW: Zoomable Image with Pan Support */}
     <div 
-      className="max-w-6xl max-h-[90vh] p-4 overflow-hidden"
+      className="w-full h-full flex items-center justify-center p-4"
       onClick={(e) => e.stopPropagation()}
-      style={{ touchAction: 'none' }}
     >
-      <img
-        src={getImageSrc(images[lightboxImageIndex] || '')}
-        alt={`${product.name} ${lightboxImageIndex + 1}`}
-        className="max-w-full max-h-full object-contain rounded-lg transition-transform duration-200 cursor-zoom-in"
-        style={{
-          transform: 'scale(1)',
-          transformOrigin: 'center center',
+      <TransformWrapper
+        initialScale={1}
+        minScale={1}
+        maxScale={4}
+        doubleClick={{
+          mode: "toggle",
+          step: 0.7
         }}
-        loading="lazy"
-        decoding="async"
-        onDoubleClick={(e) => {
-          const img = e.currentTarget;
-          const currentScale = parseFloat(img.style.transform.replace(/[^0-9.]/g, '') || '1');
-          
-          if (currentScale === 1) {
-            // Zoom in to 2x
-            img.style.transform = 'scale(2)';
-            img.style.cursor = 'zoom-out';
-          } else {
-            // Zoom out to normal
-            img.style.transform = 'scale(1)';
-            img.style.cursor = 'zoom-in';
-          }
+        wheel={{
+          step: 0.2
         }}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = getImageSrc('');
+        pinch={{
+          step: 5
         }}
-      />
+        panning={{
+          velocityDisabled: true
+        }}
+      >
+        <TransformComponent
+          wrapperStyle={{
+            width: "100%",
+            height: "100%",
+            maxWidth: "90vw",
+            maxHeight: "90vh"
+          }}
+          contentStyle={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <img
+            src={getImageSrc(images[lightboxImageIndex] || '')}
+            alt={`${product.name} ${lightboxImageIndex + 1}`}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "90vh",
+              objectFit: "contain",
+              borderRadius: "8px"
+            }}
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = getImageSrc('');
+            }}
+          />
+        </TransformComponent>
+      </TransformWrapper>
     </div>
     
+    {/* Next Button */}
     {images.length > 1 && lightboxImageIndex < images.length - 1 && (
       <button
         onClick={(e) => {
           e.stopPropagation();
           nextImage();
         }}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-20"
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-50"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -1175,13 +1176,14 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
       </button>
     )}
     
-    {/* ✅ UPDATED: Instructions with zoom info */}
-    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-medium z-20">
-      <span className="hidden md:inline">← → to navigate  |  Double-click to zoom  |  ESC to close</span>
-      <span className="md:hidden">👆 Swipe to navigate  |  Double-tap to zoom  |  Tap X to close</span>
+    {/* Instructions */}
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-medium z-50">
+      <span className="hidden md:inline">Double-click to zoom | Scroll wheel to zoom | Drag to pan | ESC to close</span>
+      <span className="md:hidden">🤏 Pinch to zoom | 👆 Double-tap | Drag to pan | Tap X to close</span>
     </div>
   </div>
 )}
+
 
       <Footer />
     </div>
