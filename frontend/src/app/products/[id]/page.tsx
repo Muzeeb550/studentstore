@@ -876,16 +876,19 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
               </button>
             </div>
 
-            <div className="bg-student-card rounded-xl p-6 border border-border-light shadow-md">
-              <h3 className="text-lg font-semibold text-student-primary mb-3 flex items-center">
+            <div className="bg-gradient-to-br from-student-card via-student-light to-student-card rounded-xl p-6 sm:p-8 border border-border-light shadow-lg">
+              <h3 className="text-xl sm:text-2xl font-bold text-student-primary mb-4 flex items-center">
                 📝 Product Details
               </h3>
-              <div className="prose prose-gray">
-                <p className="text-lg text-student-secondary leading-relaxed">
+              <div className="bg-white/50 backdrop-blur-sm rounded-lg p-4 sm:p-6">
+                <p className="text-base sm:text-lg md:text-xl text-student-primary leading-loose whitespace-pre-line font-semibold tracking-tight">
                   {product.description}
                 </p>
               </div>
             </div>
+
+
+
 
             <div className="space-y-4 bg-student-card rounded-xl p-6 border border-border-light shadow-md">
               <h3 className="text-lg font-semibold text-student-primary mb-4 flex items-center">
@@ -1050,85 +1053,135 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
         </section>
       )}
 
-      {/* 🚀 NEW: Image Lightbox */}
-      {isLightboxOpen && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
-          onClick={closeLightbox}
-        >
-          <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
-          >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+      {/* ✅ ENHANCED: Image Lightbox with Touch Swipe + Zoom Support */}
+{isLightboxOpen && (
+  <div 
+    className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+    onClick={closeLightbox}
+    onTouchStart={(e) => {
+      const touch = e.touches[0];
+      setTouchStart(touch.clientX);
+    }}
+    onTouchMove={(e) => {
+      const touch = e.touches[0];
+      setTouchEnd(touch.clientX);
+    }}
+    onTouchEnd={() => {
+      if (!touchStart || !touchEnd) return;
+      
+      const distance = touchStart - touchEnd;
+      const isLeftSwipe = distance > 50;
+      const isRightSwipe = distance < -50;
+      
+      if (isLeftSwipe && lightboxImageIndex < images.length - 1) {
+        nextImage();
+      }
+      
+      if (isRightSwipe && lightboxImageIndex > 0) {
+        prevImage();
+      }
+      
+      setTouchStart(0);
+      setTouchEnd(0);
+    }}
+  >
+    <button
+      onClick={closeLightbox}
+      className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-20"
+    >
+      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+    
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleShareProduct();
+      }}
+      className="absolute top-4 right-16 text-white hover:text-gray-300 transition-colors z-20"
+    >
+      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+      </svg>
+    </button>
+    
+    <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium z-20">
+      {lightboxImageIndex + 1} / {images.length}
+    </div>
+    
+    {images.length > 1 && lightboxImageIndex > 0 && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          prevImage();
+        }}
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-20"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+    )}
+    
+    {/* ✅ NEW: Zoomable Image Container */}
+    <div 
+      className="max-w-6xl max-h-[90vh] p-4 overflow-hidden"
+      onClick={(e) => e.stopPropagation()}
+      style={{ touchAction: 'none' }}
+    >
+      <img
+        src={getImageSrc(images[lightboxImageIndex] || '')}
+        alt={`${product.name} ${lightboxImageIndex + 1}`}
+        className="max-w-full max-h-full object-contain rounded-lg transition-transform duration-200 cursor-zoom-in"
+        style={{
+          transform: 'scale(1)',
+          transformOrigin: 'center center',
+        }}
+        loading="lazy"
+        decoding="async"
+        onDoubleClick={(e) => {
+          const img = e.currentTarget;
+          const currentScale = parseFloat(img.style.transform.replace(/[^0-9.]/g, '') || '1');
           
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleShareProduct();
-            }}
-            className="absolute top-4 right-16 text-white hover:text-gray-300 transition-colors z-10"
-          >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-            </svg>
-          </button>
-          
-          <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium z-10">
-            {lightboxImageIndex + 1} / {images.length}
-          </div>
-          
-          {images.length > 1 && lightboxImageIndex > 0 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                prevImage();
-              }}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-10"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
-          
-          <div 
-            className="max-w-6xl max-h-[90vh] p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={getImageSrc(images[lightboxImageIndex] || '')}
-              alt={`${product.name} ${lightboxImageIndex + 1}`}
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = getImageSrc('');
-              }}
-            />
-          </div>
-          
-          {images.length > 1 && lightboxImageIndex < images.length - 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                nextImage();
-              }}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-10"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          )}
-          
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-medium hidden md:block">
-            ← → to navigate  |  ESC to close
-          </div>
-        </div>
-      )}
+          if (currentScale === 1) {
+            // Zoom in to 2x
+            img.style.transform = 'scale(2)';
+            img.style.cursor = 'zoom-out';
+          } else {
+            // Zoom out to normal
+            img.style.transform = 'scale(1)';
+            img.style.cursor = 'zoom-in';
+          }
+        }}
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = getImageSrc('');
+        }}
+      />
+    </div>
+    
+    {images.length > 1 && lightboxImageIndex < images.length - 1 && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          nextImage();
+        }}
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-20"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    )}
+    
+    {/* ✅ UPDATED: Instructions with zoom info */}
+    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-medium z-20">
+      <span className="hidden md:inline">← → to navigate  |  Double-click to zoom  |  ESC to close</span>
+      <span className="md:hidden">👆 Swipe to navigate  |  Double-tap to zoom  |  Tap X to close</span>
+    </div>
+  </div>
+)}
 
       <Footer />
     </div>
