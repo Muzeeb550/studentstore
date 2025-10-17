@@ -2,23 +2,29 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
+
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono", 
   subsets: ["latin"],
 });
 
+
+// ✅ UPDATED: Disable zoom for PWA (native app behavior)
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
+  maximumScale: 1,        // ✅ Prevent zooming beyond 100%
+  userScalable: false,    // ✅ Disable pinch-to-zoom
   themeColor: '#6f8b66',
   colorScheme: 'light dark',
 }
+
 
 export const metadata: Metadata = {
   title: "StudentStore - Student Marketplace",
@@ -55,6 +61,7 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.webmanifest',
 };
+
 
 export default function RootLayout({
   children,
