@@ -388,6 +388,31 @@ useEffect(() => {
 }, [isLightboxOpen]);
 
 
+// ✅ FIXED: Auto-cleanup scroll lock on unmount or lightbox close
+useEffect(() => {
+  if (isLightboxOpen) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = 'unset';
+  }
+  
+  // Always restore scroll when component unmounts (user navigates away)
+  return () => {
+    document.body.style.overflow = 'unset';
+  };
+}, [isLightboxOpen]);
+
+// ✅ NEW: Reset lightbox state on component unmount
+useEffect(() => {
+  return () => {
+    // Clean up lightbox state when leaving page
+    setIsLightboxOpen(false);
+    setLightboxImageIndex(0);
+    document.body.style.overflow = 'unset';
+  };
+}, []);
+
+
   const nextImage = () => {
     setLightboxImageIndex((prev) => (prev + 1) % images.length);
   };
