@@ -7,8 +7,9 @@ interface Product {
   name: string;
   description: string;
   image_urls: string;
+  price: number;  // ✅ ADD THIS
   views_count: number;
-  rating_average: number | string | null;  // ← ADD string support
+  rating_average: number | string | null;
   review_count: number;
   created_at: string;
   updated_at: string;
@@ -21,6 +22,7 @@ interface Product {
   buy_button_3_name?: string;
   buy_button_3_url?: string;
 }
+
 
 interface ProductsData {
   products: Product[];
@@ -447,6 +449,10 @@ const getProductImage = (imageUrls: string) => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       📦 Product
                     </th>
+                    {/* ✅ NEW: Price Column */}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      💰 Price
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       📂 Category
                     </th>
@@ -508,7 +514,12 @@ const getProductImage = (imageUrls: string) => {
                           </div>
                         </div>
                       </td>
+                      {/* ✅ NEW: Price Cell */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        ₹{product.price ? parseFloat(product.price.toString()).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                      
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                           {product.category_name}
                         </span>

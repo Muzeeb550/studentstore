@@ -13,6 +13,7 @@ interface ProductFormData {
   name: string;
   description: string;
   category_id: number;
+  price: string;  // ✅ ADD THIS
   image_urls: string[];
   buy_button_1_name: string;
   buy_button_1_url: string;
@@ -22,6 +23,7 @@ interface ProductFormData {
   buy_button_3_url: string;
 }
 
+
 export default function CreateProduct() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -30,17 +32,19 @@ export default function CreateProduct() {
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
-    description: '',
-    category_id: 0,
-    image_urls: ['', '', ''],
-    buy_button_1_name: '',
-    buy_button_1_url: '',
-    buy_button_2_name: '',
-    buy_button_2_url: '',
-    buy_button_3_name: '',
-    buy_button_3_url: ''
-  });
+  name: '',
+  description: '',
+  category_id: 0,
+  price: '',  // ✅ ADD THIS
+  image_urls: ['', '', ''],
+  buy_button_1_name: '',
+  buy_button_1_url: '',
+  buy_button_2_name: '',
+  buy_button_2_url: '',
+  buy_button_3_name: '',
+  buy_button_3_url: ''
+});
+
 
   useEffect(() => {
     fetchCategories();
@@ -144,6 +148,13 @@ export default function CreateProduct() {
       return;
     }
 
+    // ✅ ADD: Price validation
+    if (!formData.price || parseFloat(formData.price) < 0) {
+      setError('Please enter a valid price');
+      return;
+    }
+
+
     if (!formData.image_urls[0]) {
       setError('Please upload at least one product image');
       return;
@@ -219,7 +230,7 @@ export default function CreateProduct() {
       <div className="bg-white rounded-lg shadow-sm border">
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           
-          {/* Product Basic Info */}
+                    {/* Product Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Product Name */}
             <div>
@@ -257,6 +268,31 @@ export default function CreateProduct() {
             </div>
           </div>
 
+          {/* ✅ Product Price (Full Width) */}
+          <div>
+
+
+            {/* ✅ NEW: Price Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Price (₹) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.price}
+                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Enter product price (e.g., 1299.00)"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">💡 Enter the price in Indian Rupees (₹)</p>
+            </div>
+          </div>
+
+          
+          
           {/* Product Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

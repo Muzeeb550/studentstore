@@ -17,6 +17,7 @@ interface Product {
   id: number;
   name: string;
   description: string;
+  price: number;  // ✅ ADD THIS
   image_urls: string;
   category_name: string;
   category_description: string;
@@ -864,9 +865,21 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
               </div>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-student-primary leading-tight">
+           <div>
+            {/* Product Title - Responsive */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-student-primary leading-tight mb-3 sm:mb-4">
               {product.name}
             </h1>
+            
+            {/* Price Badge - Fully Responsive (No Decimals) */}
+            <div className="inline-flex items-baseline space-x-2 bg-gradient-to-r from-student-green/10 to-emerald-600/10 px-4 py-2 rounded-lg border-2 border-student-green/30">
+              <span className="text-sm sm:text-base md:text-lg text-gray-600 font-medium">Price:</span>
+              <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-student-green">
+                ₹{product.price ? Math.round(parseFloat(product.price.toString())).toLocaleString('en-IN') : '0'}
+              </span>
+            </div>
+          </div>
+
 
             <div className="bg-student-card rounded-xl p-4 border border-border-light shadow-md">
               <div className="flex items-center justify-between">

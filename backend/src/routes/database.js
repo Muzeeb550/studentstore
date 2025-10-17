@@ -398,4 +398,49 @@ router.get('/users', async (req, res) => {
     }
 });
 
+// ✅ NEW: Add price column to Products table
+router.post('/add-product-price', async (req, res) => {
+    const migrationQueries = [
+        // Add price column if it doesn't exist
+        `DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'products' AND column_name = 'price'
+            ) THEN
+                ALTER TABLE Products ADD COLUMN price DECIMAL(10,2) DEFAULT 0.00;
+            END IF;
+        END $$;`,
+        
+        // Add comment to column
+        `COMMENT ON COLUMN Products.price IS 'Product price in INR (Indian Rupees)'`,
+        
+        // Create index for price-based queries
+        `CREATE INDEX IF NOT EXISTS idx_products_price ON Products(price DESC)`
+    ];
+
+    try {
+        const results = [];
+        for (const sql of migrationQueries) {
+            await pool.query(sql);
+            results.push('✅ Migration step executed successfully');
+        }
+        
+        res.json({
+            status: 'success',
+            message: '💰 Product price column added successfully!',
+            results: results,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Migration error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to run migration',
+            error: error.message
+        });
+    }
+});
+
+
 module.exports = router;

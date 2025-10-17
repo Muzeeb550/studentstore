@@ -4,6 +4,7 @@ const { createCacheMiddleware } = require('../middleware/cache');
 const { getCacheHealth } = require('../config/redis');
 const router = express.Router();
 
+
 // Cache middleware configurations
 const bannersCache = createCacheMiddleware(
   () => 'banners:active',
@@ -11,11 +12,13 @@ const bannersCache = createCacheMiddleware(
   (req) => req.headers['cache-control'] === 'no-cache'
 );
 
+
 const categoriesCache = createCacheMiddleware(
   () => 'categories:all',
   600,
   (req) => req.headers['cache-control'] === 'no-cache'
 );
+
 
 const featuredProductsCache = createCacheMiddleware(
   (req) => `products:featured:limit:${req.query.limit || 8}:sort:${req.query.sort || 'newest'}`,
@@ -23,17 +26,20 @@ const featuredProductsCache = createCacheMiddleware(
   (req) => req.headers['cache-control'] === 'no-cache'
 );
 
+
 const productDetailsCache = createCacheMiddleware(
   (req) => `product:${req.params.id}`,
   300,
   (req) => req.method !== 'GET' || req.headers['cache-control'] === 'no-cache'
 );
 
+
 const categoryProductsCache = createCacheMiddleware(
   (req) => `category:${req.params.id}:page:${req.query.page || 1}:limit:${req.query.limit || 12}:sort:${req.query.sort || 'newest'}`,
   180,
   (req) => req.headers['cache-control'] === 'no-cache'
 );
+
 
 const searchCache = createCacheMiddleware(
   (req) => {
@@ -43,6 +49,7 @@ const searchCache = createCacheMiddleware(
   180,
   (req) => req.headers['cache-control'] === 'no-cache'
 );
+
 
 // Cache health monitoring endpoint
 router.get('/cache/health', async (req, res) => {
@@ -62,6 +69,7 @@ router.get('/cache/health', async (req, res) => {
   }
 });
 
+
 // Get active banners
 router.get('/banners', bannersCache, async (req, res) => {
   try {
@@ -74,6 +82,7 @@ router.get('/banners', bannersCache, async (req, res) => {
       ORDER BY b.display_order ASC, b.created_at DESC
     `);
     const duration = Date.now() - startTime;
+
 
     res.json({
       status: 'success',
@@ -95,6 +104,7 @@ router.get('/banners', bannersCache, async (req, res) => {
   }
 });
 
+
 // Get categories with product count
 router.get('/categories', categoriesCache, async (req, res) => {
   try {
@@ -108,6 +118,7 @@ router.get('/categories', categoriesCache, async (req, res) => {
       ORDER BY c.sort_order, c.name
     `);
     const duration = Date.now() - startTime;
+
 
     res.json({
       status: 'success',
@@ -129,6 +140,7 @@ router.get('/categories', categoriesCache, async (req, res) => {
   }
 });
 
+
 // Get products by category with pagination
 router.get('/categories/:id/products', categoryProductsCache, async (req, res) => {
   try {
@@ -139,12 +151,14 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
     const sortBy = req.query.sort || 'newest';
     const offset = (page - 1) * limit;
 
+
     if (!categoryId || Number.isNaN(categoryId)) {
       return res.status(400).json({
         status: 'error',
         message: 'Invalid category ID'
       });
     }
+
 
     // Verify category exists
     const categoryResult = await pool.query(
@@ -155,6 +169,7 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
       return res.status(404).json({ status: 'error', message: 'Category not found' });
     }
     const category = categoryResult.rows[0];
+
 
     // Build sort order
     let orderBy;
@@ -168,8 +183,9 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
       default: orderBy = 'ORDER BY p.created_at DESC';
     }
 
+
     const productsQuery = `
-      SELECT p.id, p.name, p.description, p.image_urls,
+      SELECT p.id, p.name, p.description, p.price, p.image_urls,
              p.buy_button_1_name, p.buy_button_1_url,
              p.buy_button_2_name, p.buy_button_2_url,
              p.buy_button_3_name, p.buy_button_3_url,
@@ -183,6 +199,7 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
     `;
     const productsResult = await pool.query(productsQuery, [categoryId, offset, limit]);
 
+
     const countResult = await pool.query(
       'SELECT COUNT(*) AS total FROM Products WHERE category_id = $1',
       [categoryId]
@@ -190,6 +207,7 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
     const total = parseInt(countResult.rows[0].total, 10);
     const totalPages = Math.ceil(total / limit);
     const duration = Date.now() - startTime;
+
 
     res.json({
       status: 'success',
@@ -223,6 +241,7 @@ router.get('/categories/:id/products', categoryProductsCache, async (req, res) =
   }
 });
 
+
 // Get single product details with related products
 router.get('/products/:id', productDetailsCache, async (req, res) => {
   try {
@@ -232,8 +251,9 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Invalid product ID' });
     }
 
+
     const productQuery = `
-      SELECT p.id, p.name, p.description, p.image_urls,
+      SELECT p.id, p.name, p.description, p.price, p.image_urls,
              p.buy_button_1_name, p.buy_button_1_url,
              p.buy_button_2_name, p.buy_button_2_url,
              p.buy_button_3_name, p.buy_button_3_url,
@@ -248,16 +268,18 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
     `;
     const productResult = await pool.query(productQuery, [productId]);
 
+
     if (productResult.rows.length === 0) {
       return res.status(404).json({ status: 'error', message: 'Product not found' });
     }
     const product = productResult.rows[0];
 
+
     // Parallel execution: update view count and get related products
     const [_, relatedProductsResult] = await Promise.all([
       pool.query('UPDATE Products SET views_count = views_count + 1 WHERE id = $1', [productId]),
       pool.query(`
-        SELECT p.id, p.name, p.description, p.image_urls,
+        SELECT p.id, p.name, p.description, p.price, p.image_urls,
                p.buy_button_1_name, p.buy_button_1_url,
                p.rating_average, p.review_count, p.views_count,
                c.name AS category_name
@@ -269,7 +291,9 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
       `, [product.category_id, productId])
     ]);
 
+
     const duration = Date.now() - startTime;
+
 
     res.json({
       status: 'success',
@@ -295,6 +319,7 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
   }
 });
 
+
 // Get all products with pagination (UPDATED for /products page)
 router.get('/products', featuredProductsCache, async (req, res) => {
   try {
@@ -305,16 +330,19 @@ router.get('/products', featuredProductsCache, async (req, res) => {
     const sortBy = req.query.sort || 'newest';
     const categoryFilter = req.query.category ? parseInt(req.query.category, 10) : null;
 
+
     // Build WHERE clause for category filter
     let whereClause = '';
     const params = [];
     let paramIndex = 1;
+
 
     if (categoryFilter) {
       whereClause = `WHERE p.category_id = $${paramIndex}`;
       params.push(categoryFilter);
       paramIndex++;
     }
+
 
     // Build sort order
     let orderBy;
@@ -328,14 +356,16 @@ router.get('/products', featuredProductsCache, async (req, res) => {
       default: orderBy = 'ORDER BY p.created_at DESC';
     }
 
+
     // Get total count
     const countQuery = `SELECT COUNT(*) as total FROM Products p ${whereClause}`;
     const countResult = await pool.query(countQuery, params);
     const total = parseInt(countResult.rows[0].total, 10);
 
+
     // Get products with pagination
     const productsQuery = `
-      SELECT p.id, p.name, p.description, p.image_urls,
+      SELECT p.id, p.name, p.description, p.price, p.image_urls,
              p.buy_button_1_name, p.buy_button_1_url,
              p.rating_average, p.review_count, p.views_count,
              p.created_at,
@@ -349,8 +379,10 @@ router.get('/products', featuredProductsCache, async (req, res) => {
     params.push(offset, limit);
     const productsResult = await pool.query(productsQuery, params);
 
+
     const totalPages = Math.ceil(total / limit);
     const duration = Date.now() - startTime;
+
 
     res.json({
       status: 'success',
@@ -385,6 +417,7 @@ router.get('/products', featuredProductsCache, async (req, res) => {
 });
 
 
+
 // Advanced search with filters - FIXED for PostgreSQL
 router.get('/search', searchCache, async (req, res) => {
   try {
@@ -397,6 +430,7 @@ router.get('/search', searchCache, async (req, res) => {
     const minRating = req.query.min_rating ? parseFloat(req.query.min_rating.toString()) : null;
     const offset = (page - 1) * limit;
 
+
     if (!query || query.length < 2) {
       return res.status(400).json({
         status: 'error',
@@ -404,15 +438,18 @@ router.get('/search', searchCache, async (req, res) => {
       });
     }
 
+
     // Build search pattern
     const searchPattern = `%${query}%`;
     const exactPattern = query;
     const startsWithPattern = `${query}%`;
 
+
     // Build WHERE conditions and parameters array
     let whereConditions = ['(p.name ILIKE $1 OR p.description ILIKE $1)'];
     let params = [searchPattern]; // $1
     let paramCount = 1;
+
 
     // Add category filter
     if (category) {
@@ -421,6 +458,7 @@ router.get('/search', searchCache, async (req, res) => {
       params.push(category);
     }
 
+
     // Add rating filter
     if (minRating) {
       paramCount++;
@@ -428,12 +466,15 @@ router.get('/search', searchCache, async (req, res) => {
       params.push(minRating);
     }
 
+
     const whereClause = whereConditions.join(' AND ');
+
 
     // Build ORDER BY clause
     let orderBy = '';
     let searchParams = [...params]; // Copy params for search query
     let countParams = [...params]; // Copy params for count query
+
 
     switch (sort) {
       case 'newest':
@@ -479,6 +520,7 @@ router.get('/search', searchCache, async (req, res) => {
         break;
     }
 
+
     // Add pagination parameters to search query
     paramCount++;
     searchParams.push(offset);
@@ -488,9 +530,10 @@ router.get('/search', searchCache, async (req, res) => {
     searchParams.push(limit);
     const limitParam = paramCount;
 
+
     // Build final queries
     const searchQuery = `
-      SELECT p.id, p.name, p.description, p.image_urls,
+      SELECT p.id, p.name, p.description, p.price, p.image_urls,
              p.buy_button_1_name, p.buy_button_1_url,
              p.buy_button_2_name, p.buy_button_2_url,
              p.buy_button_3_name, p.buy_button_3_url,
@@ -503,15 +546,18 @@ router.get('/search', searchCache, async (req, res) => {
       OFFSET $${offsetParam} LIMIT $${limitParam}
     `;
 
+
     const countQuery = `
       SELECT COUNT(*) as total
       FROM Products p
       WHERE ${whereClause}
     `;
 
+
     console.log('🔍 Search query:', query);
     console.log('📊 WHERE clause:', whereClause);
     console.log('📦 Search params:', searchParams);
+
 
     // Execute queries in parallel
     const [searchResult, countResult, categoriesResult] = await Promise.all([
@@ -527,11 +573,14 @@ router.get('/search', searchCache, async (req, res) => {
       `, [searchPattern])
     ]);
 
+
     const total = parseInt(countResult.rows[0].total, 10);
     const totalPages = Math.ceil(total / limit);
     const duration = Date.now() - startTime;
 
+
     console.log(`📊 Found: ${total} products in ${duration}ms`);
+
 
     res.json({
       status: 'success',
@@ -573,12 +622,14 @@ router.get('/search', searchCache, async (req, res) => {
 });
 
 
+
 // Get popular products with timeframe filter
 router.get('/products/popular', async (req, res) => {
   try {
     const startTime = Date.now();
     const limit = parseInt(req.query.limit || '10', 10);
     const timeframe = req.query.timeframe || 'all';
+
 
     let dateFilter = '';
     if (timeframe === 'week') {
@@ -587,8 +638,9 @@ router.get('/products/popular', async (req, res) => {
       dateFilter = "AND p.created_at >= NOW() - INTERVAL '1 month'";
     }
 
+
     const result = await pool.query(`
-      SELECT p.id, p.name, p.description, p.image_urls,
+      SELECT p.id, p.name, p.description, p.price, p.image_urls,
              p.buy_button_1_name, p.buy_button_1_url,
              p.rating_average, p.review_count, p.views_count,
              c.name as category_name,
@@ -600,7 +652,9 @@ router.get('/products/popular', async (req, res) => {
       LIMIT $1
     `, [limit]);
 
+
     const duration = Date.now() - startTime;
+
 
     res.json({
       status: 'success',
@@ -623,5 +677,6 @@ router.get('/products/popular', async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;

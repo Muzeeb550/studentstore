@@ -68,7 +68,7 @@ router.get('/products', async (req, res) => {
 
         const result = await pool.query(`
             SELECT 
-                p.id, p.name, p.description, p.image_urls, p.views_count,
+                p.id, p.name, p.description, p.price, p.image_urls, p.views_count,
                 p.rating_average, p.review_count, p.created_at, p.updated_at,
                 c.name as category_name,
                 u.display_name as admin_name,
@@ -144,7 +144,7 @@ router.get('/products/:id', async (req, res) => {
         
         const result = await pool.query(`
             SELECT 
-                p.id, p.name, p.description, p.image_urls, p.views_count,
+                p.id, p.name, p.description, p.price, p.image_urls, p.views_count,
                 p.rating_average, p.review_count, p.created_at, p.updated_at,
                 p.category_id, c.name as category_name,
                 u.display_name as admin_name,
@@ -468,11 +468,12 @@ router.get('/imagekit-auth', async (req, res) => {
 router.post('/products', async (req, res) => {
     try {
         const {
-            name, description, category_id, image_urls,
+            name, description, category_id, image_urls, price,
             buy_button_1_name, buy_button_1_url,
             buy_button_2_name, buy_button_2_url,
             buy_button_3_name, buy_button_3_url
         } = req.body;
+
 
         if (!name || !description || !category_id || !buy_button_1_name || !buy_button_1_url) {
             return res.status(400).json({
@@ -493,21 +494,23 @@ router.post('/products', async (req, res) => {
 
         const result = await pool.query(`
             INSERT INTO Products (
-                name, description, category_id, image_urls, 
+                name, description, category_id, image_urls, price,
                 buy_button_1_name, buy_button_1_url,
                 buy_button_2_name, buy_button_2_url,
                 buy_button_3_name, buy_button_3_url,
                 admin_id, created_at, updated_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
             RETURNING *
         `, [
             name, description, category_id, JSON.stringify(optimizedImageUrls),
+            price || 0.00,
             buy_button_1_name, buy_button_1_url,
             buy_button_2_name || null, buy_button_2_url || null,
             buy_button_3_name || null, buy_button_3_url || null,
             req.user.id
         ]);
+
 
         const newProduct = result.rows[0];
 
@@ -541,11 +544,12 @@ router.put('/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const {
-            name, description, category_id, image_urls,
+            name, description, category_id, image_urls, price,
             buy_button_1_name, buy_button_1_url,
             buy_button_2_name, buy_button_2_url,
             buy_button_3_name, buy_button_3_url
         } = req.body;
+
 
         if (!name || !description || !category_id || !buy_button_1_name || !buy_button_1_url) {
             return res.status(400).json({
@@ -571,18 +575,21 @@ router.put('/products/:id', async (req, res) => {
         const result = await pool.query(`
             UPDATE Products SET
                 name = $1, description = $2, category_id = $3, image_urls = $4,
-                buy_button_1_name = $5, buy_button_1_url = $6,
-                buy_button_2_name = $7, buy_button_2_url = $8,
-                buy_button_3_name = $9, buy_button_3_url = $10,
+                price = $5,
+                buy_button_1_name = $6, buy_button_1_url = $7,
+                buy_button_2_name = $8, buy_button_2_url = $9,
+                buy_button_3_name = $10, buy_button_3_url = $11,
                 updated_at = NOW()
-            WHERE id = $11 AND admin_id = $12
+            WHERE id = $12 AND admin_id = $13
         `, [
             name, description, category_id, JSON.stringify(optimizedImageUrls),
+            price || 0.00,
             buy_button_1_name, buy_button_1_url,
             buy_button_2_name || null, buy_button_2_url || null,
             buy_button_3_name || null, buy_button_3_url || null,
             id, req.user.id
         ]);
+
 
         if (result.rowCount === 0) {
             return res.status(404).json({

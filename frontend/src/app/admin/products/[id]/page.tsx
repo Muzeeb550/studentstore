@@ -13,6 +13,7 @@ interface ProductFormData {
   name: string;
   description: string;
   category_id: number;
+  price: string;
   image_urls: string[];
   buy_button_1_name: string;
   buy_button_1_url: string;
@@ -37,6 +38,7 @@ export default function EditProduct() {
     name: '',
     description: '',
     category_id: 0,
+    price: '',
     image_urls: ['', '', ''],
     buy_button_1_name: '',
     buy_button_1_url: '',
@@ -89,6 +91,7 @@ export default function EditProduct() {
           name: product.name || '',
           description: product.description || '',
           category_id: product.category_id || 0,
+          price: product.price?.toString() || '0.00',
           image_urls: imageUrls,
           buy_button_1_name: product.buy_button_1_name || '',
           buy_button_1_url: product.buy_button_1_url || '',
@@ -211,6 +214,12 @@ export default function EditProduct() {
       return;
     }
 
+    // Price validation
+    if (!formData.price || parseFloat(formData.price) < 0) {
+      setError('Please enter a valid price (minimum ₹0.00)');
+      return;
+    }
+
     setSaving(true);
     setError('');
 
@@ -320,6 +329,24 @@ export default function EditProduct() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Product Price */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Product Price (₹) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.price}
+              onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter product price (e.g., 1299.00)"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">💡 Enter the price in Indian Rupees (₹)</p>
           </div>
 
           {/* Product Description */}
