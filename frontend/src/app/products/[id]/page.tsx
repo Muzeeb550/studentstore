@@ -1054,7 +1054,7 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
         </section>
       )}
 
-      {/* ✅ ENHANCED: Image Lightbox with Full Zoom Support */}
+      {/* ✅ ENHANCED: Image Lightbox with Zoom + Swipe Support */}
 {isLightboxOpen && (
   <div 
     className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
@@ -1088,12 +1088,36 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
       {lightboxImageIndex + 1} / {images.length}
     </div>
     
-    {/* Previous Button */}
+    {/* Previous Button - Swipeable Area */}
     {images.length > 1 && lightboxImageIndex > 0 && (
       <button
         onClick={(e) => {
           e.stopPropagation();
           prevImage();
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          const touch = e.touches[0];
+          setTouchStart(touch.clientX);
+        }}
+        onTouchMove={(e) => {
+          e.stopPropagation();
+          const touch = e.touches[0];
+          setTouchEnd(touch.clientX);
+        }}
+        onTouchEnd={(e) => {
+          e.stopPropagation();
+          if (!touchStart || !touchEnd) return;
+          
+          const distance = touchStart - touchEnd;
+          
+          // Right swipe on left button = previous image
+          if (distance < -50) {
+            prevImage();
+          }
+          
+          setTouchStart(0);
+          setTouchEnd(0);
         }}
         className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-50"
       >
@@ -1103,7 +1127,82 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
       </button>
     )}
     
-    {/* ✅ NEW: Zoomable Image with Pan Support */}
+    {/* ✅ Swipeable Side Panels for Navigation */}
+    {images.length > 1 && (
+      <>
+        {/* Left Swipe Area - Previous Image */}
+        {lightboxImageIndex > 0 && (
+          <div
+            className="absolute left-0 top-0 bottom-0 w-20 z-40 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              prevImage();
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              const touch = e.touches[0];
+              setTouchStart(touch.clientX);
+            }}
+            onTouchMove={(e) => {
+              e.stopPropagation();
+              const touch = e.touches[0];
+              setTouchEnd(touch.clientX);
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              if (!touchStart || !touchEnd) return;
+              
+              const distance = touchStart - touchEnd;
+              
+              // Right swipe = previous
+              if (distance < -50) {
+                prevImage();
+              }
+              
+              setTouchStart(0);
+              setTouchEnd(0);
+            }}
+          />
+        )}
+        
+        {/* Right Swipe Area - Next Image */}
+        {lightboxImageIndex < images.length - 1 && (
+          <div
+            className="absolute right-0 top-0 bottom-0 w-20 z-40 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              nextImage();
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              const touch = e.touches[0];
+              setTouchStart(touch.clientX);
+            }}
+            onTouchMove={(e) => {
+              e.stopPropagation();
+              const touch = e.touches[0];
+              setTouchEnd(touch.clientX);
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              if (!touchStart || !touchEnd) return;
+              
+              const distance = touchStart - touchEnd;
+              
+              // Left swipe = next
+              if (distance > 50) {
+                nextImage();
+              }
+              
+              setTouchStart(0);
+              setTouchEnd(0);
+            }}
+          />
+        )}
+      </>
+    )}
+    
+    {/* Zoomable Image */}
     <div 
       className="w-full h-full flex items-center justify-center p-4"
       onClick={(e) => e.stopPropagation()}
@@ -1161,12 +1260,36 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
       </TransformWrapper>
     </div>
     
-    {/* Next Button */}
+    {/* Next Button - Swipeable Area */}
     {images.length > 1 && lightboxImageIndex < images.length - 1 && (
       <button
         onClick={(e) => {
           e.stopPropagation();
           nextImage();
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          const touch = e.touches[0];
+          setTouchStart(touch.clientX);
+        }}
+        onTouchMove={(e) => {
+          e.stopPropagation();
+          const touch = e.touches[0];
+          setTouchEnd(touch.clientX);
+        }}
+        onTouchEnd={(e) => {
+          e.stopPropagation();
+          if (!touchStart || !touchEnd) return;
+          
+          const distance = touchStart - touchEnd;
+          
+          // Left swipe on right button = next image
+          if (distance > 50) {
+            nextImage();
+          }
+          
+          setTouchStart(0);
+          setTouchEnd(0);
         }}
         className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white p-3 rounded-full transition-all z-50"
       >
@@ -1178,11 +1301,12 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
     
     {/* Instructions */}
     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-medium z-50">
-      <span className="hidden md:inline">Double-click to zoom | Scroll wheel to zoom | Drag to pan | ESC to close</span>
-      <span className="md:hidden">🤏 Pinch to zoom | 👆 Double-tap | Drag to pan | Tap X to close</span>
+      <span className="hidden md:inline">Double-click to zoom | Scroll wheel | Drag to pan | ← → arrows | ESC to close</span>
+      <span className="md:hidden">🤏 Pinch zoom | 👆 Double-tap | Drag pan | 👈👉 Swipe sides | Tap X close</span>
     </div>
   </div>
 )}
+
 
 
       <Footer />
