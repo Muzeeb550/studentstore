@@ -22,7 +22,6 @@ export default function Navbar() {
   const [profilePicture, setProfilePicture] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ✅ PWA Install functionality
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
 
@@ -46,7 +45,6 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
-  // ✅ PWA Install event listener
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -56,7 +54,6 @@ export default function Navbar() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setShowInstallButton(false);
     }
@@ -66,7 +63,6 @@ export default function Navbar() {
     };
   }, []);
 
-  // ✅ PWA Install handler
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
@@ -159,6 +155,7 @@ export default function Navbar() {
     }
   };
 
+  // ✅ OLD: Full refresh (causes black/white flash)
   useEffect(() => {
     const handleWishlistChange = () => {
       if (user) {
@@ -171,6 +168,22 @@ export default function Navbar() {
       window.removeEventListener('wishlist-updated', handleWishlistChange);
     };
   }, [user]);
+
+  // ✅ NEW: Smooth count update (no API call, no refresh)
+  useEffect(() => {
+    const handleCountChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.change === 'number') {
+        setWishlistCount(prev => Math.max(0, prev + customEvent.detail.change));
+      }
+    };
+
+    window.addEventListener('wishlist-count-change', handleCountChange);
+    
+    return () => {
+      window.removeEventListener('wishlist-count-change', handleCountChange);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -446,7 +459,6 @@ export default function Navbar() {
             <StudentStoreLogo mobile={true} />
 
             <div className="flex items-center space-x-3 mt-1">
-              {/* ✅ Mobile PWA Install Button - Shows for ALL users */}
               {showInstallButton && (
                 <button
                   onClick={handleInstallClick}
@@ -459,7 +471,6 @@ export default function Navbar() {
                 </button>
               )}
 
-              {/* Mobile Wishlist - Only if logged in */}
               {user && (
                 <a
                   href="/wishlist"
