@@ -2,29 +2,25 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono", 
   subsets: ["latin"],
 });
 
-
-// ✅ UPDATED: Disable zoom for PWA (native app behavior)
+// ✅ Viewport for native app feel (no zoom)
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,        // ✅ Prevent zooming beyond 100%
-  userScalable: false,    // ✅ Disable pinch-to-zoom
+  maximumScale: 1,
+  userScalable: false,
   themeColor: '#6f8b66',
   colorScheme: 'light dark',
 }
-
 
 export const metadata: Metadata = {
   title: "StudentStore - Student Marketplace",
@@ -34,17 +30,20 @@ export const metadata: Metadata = {
   creator: "StudentStore",
   publisher: "StudentStore",
   robots: "index, follow",
+  
   openGraph: {
     title: "StudentStore - Student Marketplace",
-    description: "Discover student-verified products, deals, and reviews for campus life",
+    description: "Discover student-verified products, deals, and reviews for campus life. Find the best products recommended by fellow students.",
     type: "website",
     locale: "en_US",
   },
+  
   twitter: {
     card: "summary_large_image",
     title: "StudentStore - Student Marketplace", 
-    description: "Discover student-verified products, deals, and reviews for campus life",
+    description: "Discover student-verified products, deals, and reviews for campus life. Find the best products recommended by fellow students.",
   },
+  
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -59,9 +58,16 @@ export const metadata: Metadata = {
       }
     ]
   },
+  
   manifest: '/manifest.webmanifest',
+  
+  // ✅ Apple PWA settings
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'StudentStore',
+  },
 };
-
 
 export default function RootLayout({
   children,
