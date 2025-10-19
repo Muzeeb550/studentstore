@@ -439,264 +439,255 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ✅ SMART Banner Section - Internal links stay in same tab */}
-<section className="banner-container relative max-w-7xl mx-auto">
-  <div className="relative" style={{ paddingBottom: '40px' }}>
-    <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
-      {banners.length > 0 ? (
-        <Slider {...bannerSettings}>
-          {banners.map((banner) => {
-            // ✅ Check if link is internal or external
-            const isInternalLink = banner.link_url.includes('studentstore-zeta.vercel.app') || 
-                                   banner.link_url.startsWith('/') ||
-                                   banner.link_url.startsWith(window.location.origin);
-            
-            // ✅ Extract relative path for internal links
-            const getRelativePath = (url: string) => {
-              try {
-                // If already relative path
-                if (url.startsWith('/')) return url;
-                
-                // If full URL with our domain
-                const urlObj = new URL(url);
-                if (urlObj.hostname === 'studentstore-zeta.vercel.app' || 
-                    urlObj.hostname === window.location.hostname) {
-                  return urlObj.pathname + urlObj.search + urlObj.hash;
-                }
-                
-                return url; // External link
-              } catch {
-                return url; // Invalid URL, use as is
-              }
-            };
+      {/* ✅ TOUCH-FRIENDLY Banner Section */}
+      <section className="banner-container relative max-w-7xl mx-auto">
+        <div className="relative" style={{ paddingBottom: '40px' }}>
+          <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
+            {banners.length > 0 ? (
+              <Slider {...bannerSettings}>
+                {banners.map((banner) => {
+                  // ✅ Check if link is internal or external
+                  const isInternalLink = banner.link_url.includes('studentstore-zeta.vercel.app') || 
+                                         banner.link_url.startsWith('/') ||
+                                         (typeof window !== 'undefined' && banner.link_url.startsWith(window.location.origin));
+                  
+                  // ✅ Extract relative path for internal links
+                  const getRelativePath = (url: string) => {
+                    try {
+                      if (url.startsWith('/')) return url;
+                      
+                      const urlObj = new URL(url);
+                      if (typeof window !== 'undefined' && 
+                          (urlObj.hostname === 'studentstore-zeta.vercel.app' || 
+                           urlObj.hostname === window.location.hostname)) {
+                        return urlObj.pathname + urlObj.search + urlObj.hash;
+                      }
+                      
+                      return url;
+                    } catch {
+                      return url;
+                    }
+                  };
 
-            const href = isInternalLink ? getRelativePath(banner.link_url) : banner.link_url;
+                  const href = isInternalLink ? getRelativePath(banner.link_url) : banner.link_url;
 
-            return (
-              <div key={banner.id} className="relative">
-                {isInternalLink ? (
-                  // ✅ Internal link - use Next.js Link (stays in same tab)
-                  <Link href={href} className="block relative">
-                    {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
-                      <video 
-                        src={banner.media_url} 
-                        autoPlay 
-                        muted 
-                        loop 
-                        playsInline 
-                        className="banner-image" 
-                      />
-                    ) : (
-                      <img 
-                        src={getOptimizedBanner(banner.media_url)} 
-                        alt={banner.name} 
-                        className="banner-image" 
-                        loading="eager"
-                        decoding="async"
-                        width={1920}
-                        height={1080}
-                      />
-                    )}
-                  </Link>
-                ) : (
-                  // ✅ External link - opens in new tab
-                  <a 
-                    href={href} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="block relative"
-                  >
-                    {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
-                      <video 
-                        src={banner.media_url} 
-                        autoPlay 
-                        muted 
-                        loop 
-                        playsInline 
-                        className="banner-image" 
-                      />
-                    ) : (
-                      <img 
-                        src={getOptimizedBanner(banner.media_url)} 
-                        alt={banner.name} 
-                        className="banner-image" 
-                        loading="eager"
-                        decoding="async"
-                        width={1920}
-                        height={1080}
-                      />
-                    )}
-                  </a>
-                )}
+                  // ✅ Handle click for both internal and external links
+                  const handleBannerClick = (e: React.MouseEvent | React.TouchEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (isInternalLink) {
+                      // Internal navigation
+                      window.location.href = href;
+                    } else {
+                      // External navigation
+                      window.open(href, '_blank', 'noopener,noreferrer');
+                    }
+                  };
+
+                  return (
+                    <div key={banner.id} className="relative">
+                      <div
+                        onClick={handleBannerClick}
+                        onTouchEnd={handleBannerClick}
+                        className="block relative cursor-pointer"
+                        style={{ 
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation'
+                        }}
+                      >
+                        {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
+                          <video 
+                            src={banner.media_url} 
+                            autoPlay 
+                            muted 
+                            loop 
+                            playsInline 
+                            className="banner-image"
+                            style={{ pointerEvents: 'none' }}
+                          />
+                        ) : (
+                          <img 
+                            src={getOptimizedBanner(banner.media_url)} 
+                            alt={banner.name} 
+                            className="banner-image" 
+                            loading="eager"
+                            decoding="async"
+                            width={1920}
+                            height={1080}
+                            draggable={false}
+                            style={{ pointerEvents: 'none' }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </Slider>
+            ) : (
+              <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
+                <div className="text-center text-white px-4">
+                  <h2 className="banner-title">Welcome to StudentStore</h2>
+                  <p className="text-sm sm:text-base lg:text-lg opacity-90">
+                    Your personal shopping companion for student life
+                  </p>
+                </div>
               </div>
-            );
-          })}
-        </Slider>
-      ) : (
-        <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
-          <div className="text-center text-white px-4">
-            <h2 className="banner-title">Welcome to StudentStore</h2>
-            <p className="text-sm sm:text-base lg:text-lg opacity-90">
-              Your personal shopping companion for student life
-            </p>
+            )}
           </div>
         </div>
-      )}
-    </div>
-  </div>
-</section>
+      </section>
 
       {/* Recently Viewed Section - With Blue Background */}
-{recentlyViewed.length > 0 && (
-  <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-    <div className="recently-viewed-section">
-      <div className="mb-6 lg:mb-8">
-        <div className="flex items-center mb-3 sm:mb-4">
-          <div className="w-1 h-7 sm:h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-2.5 sm:mr-3"></div>
-          <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
-            🔄 Continue Your Shopping Journey
-          </h3>
-        </div>
-      </div>
-
-      {/* Mobile View */}
-      <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
-        <div className="flex gap-3">
-          {recentlyViewed.map((item, idx) => (
-            <div
-              key={`recent-m-${item.product.id}-${idx}`}
-              className="snap-start shrink-0"
-              style={{ width: '140px' }}
-            >
-              <Link href={`/products/${item.product.id}`} className="block">
-                <div
-                  style={{
-                    width: '140px',
-                    aspectRatio: '1 / 1',
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    background: 'var(--bg-light)',
-                    marginBottom: '6px',
-                  }}
-                >
-                  <img
-                    src={getProductImage(item.product.image_urls)}
-                    alt={item.product.name}
-                    loading="lazy"
-                    width={400}
-                    height={400}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-                <p className="text-xs text-student-primary font-medium line-clamp-2 px-1 leading-tight">
-                  {item.product.name}
-                </p>
-              </Link>
+      {recentlyViewed.length > 0 && (
+        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+          <div className="recently-viewed-section">
+            <div className="mb-6 lg:mb-8">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <div className="w-1 h-7 sm:h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-2.5 sm:mr-3"></div>
+                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
+                  🔄 Continue Your Shopping Journey
+                </h3>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Tablet View */}
-      <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
-        <div className="flex gap-3">
-          {recentlyViewed.map((item) => (
-            <div
-              key={`recent-t-${item.product.id}`}
-              className="snap-start shrink-0"
-              style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
-            >
-              <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+            {/* Mobile View */}
+            <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
+              <div className="flex gap-3">
+                {recentlyViewed.map((item, idx) => (
+                  <div
+                    key={`recent-m-${item.product.id}-${idx}`}
+                    className="snap-start shrink-0"
+                    style={{ width: '140px' }}
+                  >
+                    <Link href={`/products/${item.product.id}`} className="block">
+                      <div
+                        style={{
+                          width: '140px',
+                          aspectRatio: '1 / 1',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          background: 'var(--bg-light)',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        <img
+                          src={getProductImage(item.product.image_urls)}
+                          alt={item.product.name}
+                          loading="lazy"
+                          width={400}
+                          height={400}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                      <p className="text-xs text-student-primary font-medium line-clamp-2 px-1 leading-tight">
+                        {item.product.name}
+                      </p>
+                    </Link>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Desktop View */}
-      <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
-        <div ref={recentRowDesktopRef} className="flex gap-4">
-          {recentlyViewed.map((item) => (
-            <div
-              key={`recent-d-${item.product.id}`}
-              className="snap-start shrink-0"
-              style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
-            >
-              <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+            {/* Tablet View */}
+            <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
+              <div className="flex gap-3">
+                {recentlyViewed.map((item) => (
+                  <div
+                    key={`recent-t-${item.product.id}`}
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
+                  >
+                    <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  </section>
-)}
 
-{/* Trending Section - With Orange Background */}
-{trendingProducts.length > 0 && (
-  <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-    <div className="trending-section">
-      <div className="mb-6 lg:mb-8">
-        <div className="flex items-center mb-3 sm:mb-4">
-          <div className="w-1 h-7 sm:h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-2.5 sm:mr-3"></div>
-          <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
-            🔥 What's Trending Among Students
-          </h3>
-        </div>
-        <div className="trending-live-indicator ml-7 mt-2 sm:mt-3">
-          <div className="flex items-center text-xs sm:text-sm text-student-orange">
-            <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
-            <span className="font-medium">Live trending data • Updated every 5 minutes</span>
+            {/* Desktop View */}
+            <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
+              <div ref={recentRowDesktopRef} className="flex gap-4">
+                {recentlyViewed.map((item) => (
+                  <div
+                    key={`recent-d-${item.product.id}`}
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
+                  >
+                    <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
+      )}
 
-      {/* Mobile View */}
-      <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
-        <div className="flex gap-3">
-          {trendingProducts.map((product, index) => (
-            <div
-              key={`trending-m-${product.id}-${index}`}
-              className="snap-start shrink-0"
-              style={{ width: 'calc((100% - (2 * 12px)) / 3.5)' }}
-            >
-              <TrendingCard product={product} trendingRank={index + 1} />
+      {/* Trending Section - With Orange Background */}
+      {trendingProducts.length > 0 && (
+        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+          <div className="trending-section">
+            <div className="mb-6 lg:mb-8">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <div className="w-1 h-7 sm:h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-2.5 sm:mr-3"></div>
+                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
+                  🔥 What's Trending Among Students
+                </h3>
+              </div>
+              <div className="trending-live-indicator ml-7 mt-2 sm:mt-3">
+                <div className="flex items-center text-xs sm:text-sm text-student-orange">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
+                  <span className="font-medium">Live trending data • Updated every 5 minutes</span>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Tablet View */}
-      <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
-        <div className="flex gap-3">
-          {trendingProducts.map((product, index) => (
-            <div
-              key={`trending-t-${product.id}-${index}`}
-              className="snap-start shrink-0"
-              style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
-            >
-              <TrendingCard product={product} trendingRank={index + 1} />
+            {/* Mobile View */}
+            <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
+              <div className="flex gap-3">
+                {trendingProducts.map((product, index) => (
+                  <div
+                    key={`trending-m-${product.id}-${index}`}
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (2 * 12px)) / 3.5)' }}
+                  >
+                    <TrendingCard product={product} trendingRank={index + 1} />
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Desktop View */}
-      <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
-        <div ref={trendingRowDesktopRef} className="flex gap-4">
-          {trendingProducts.map((product, index) => (
-            <div
-              key={`trending-d-${product.id}-${index}`}
-              className="snap-start shrink-0"
-              style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
-            >
-              <TrendingCard product={product} trendingRank={index + 1} />
+            {/* Tablet View */}
+            <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
+              <div className="flex gap-3">
+                {trendingProducts.map((product, index) => (
+                  <div
+                    key={`trending-t-${product.id}-${index}`}
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
+                  >
+                    <TrendingCard product={product} trendingRank={index + 1} />
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  </section>
-)}
 
+            {/* Desktop View */}
+            <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
+              <div ref={trendingRowDesktopRef} className="flex gap-4">
+                {trendingProducts.map((product, index) => (
+                  <div
+                    key={`trending-d-${product.id}-${index}`}
+                    className="snap-start shrink-0"
+                    style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
+                  >
+                    <TrendingCard product={product} trendingRank={index + 1} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Category Section */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
