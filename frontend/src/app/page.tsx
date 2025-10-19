@@ -440,103 +440,159 @@ export default function HomePage() {
       )}
 
       {/* ✅ TOUCH-FRIENDLY Banner Section */}
-      <section className="banner-container relative max-w-7xl mx-auto">
-        <div className="relative" style={{ paddingBottom: '40px' }}>
-          <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
-            {banners.length > 0 ? (
-              <Slider {...bannerSettings}>
-                {banners.map((banner) => {
-                  // ✅ Check if link is internal or external
-                  const isInternalLink = banner.link_url.includes('studentstore-zeta.vercel.app') || 
-                                         banner.link_url.startsWith('/') ||
-                                         (typeof window !== 'undefined' && banner.link_url.startsWith(window.location.origin));
-                  
-                  // ✅ Extract relative path for internal links
-                  const getRelativePath = (url: string) => {
-                    try {
-                      if (url.startsWith('/')) return url;
-                      
-                      const urlObj = new URL(url);
-                      if (typeof window !== 'undefined' && 
-                          (urlObj.hostname === 'studentstore-zeta.vercel.app' || 
-                           urlObj.hostname === window.location.hostname)) {
-                        return urlObj.pathname + urlObj.search + urlObj.hash;
-                      }
-                      
-                      return url;
-                    } catch {
-                      return url;
-                    }
-                  };
+      {/* ✅ SMART Banner Section - Swipe vs Tap Detection */}
+<section className="banner-container relative max-w-7xl mx-auto">
+  <div className="relative" style={{ paddingBottom: '40px' }}>
+    <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
+      {banners.length > 0 ? (
+        <Slider {...bannerSettings}>
+          {banners.map((banner) => {
+            // ✅ Check if link is internal or external
+            const isInternalLink = banner.link_url.includes('studentstore-zeta.vercel.app') || 
+                                   banner.link_url.startsWith('/') ||
+                                   (typeof window !== 'undefined' && banner.link_url.startsWith(window.location.origin));
+            
+            // ✅ Extract relative path for internal links
+            const getRelativePath = (url: string) => {
+              try {
+                if (url.startsWith('/')) return url;
+                
+                const urlObj = new URL(url);
+                if (typeof window !== 'undefined' && 
+                    (urlObj.hostname === 'studentstore-zeta.vercel.app' || 
+                     urlObj.hostname === window.location.hostname)) {
+                  return urlObj.pathname + urlObj.search + urlObj.hash;
+                }
+                
+                return url;
+              } catch {
+                return url;
+              }
+            };
 
-                  const href = isInternalLink ? getRelativePath(banner.link_url) : banner.link_url;
+            const href = isInternalLink ? getRelativePath(banner.link_url) : banner.link_url;
 
-                  // ✅ Handle click for both internal and external links
-                  const handleBannerClick = (e: React.MouseEvent | React.TouchEvent) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    if (isInternalLink) {
-                      // Internal navigation
-                      window.location.href = href;
-                    } else {
-                      // External navigation
-                      window.open(href, '_blank', 'noopener,noreferrer');
-                    }
-                  };
+            // ✅ Track touch/mouse movement to detect swipe
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchStartTime = 0;
 
-                  return (
-                    <div key={banner.id} className="relative">
-                      <div
-                        onClick={handleBannerClick}
-                        onTouchEnd={handleBannerClick}
-                        className="block relative cursor-pointer"
-                        style={{ 
-                          WebkitTapHighlightColor: 'transparent',
-                          touchAction: 'manipulation'
-                        }}
-                      >
-                        {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
-                          <video 
-                            src={banner.media_url} 
-                            autoPlay 
-                            muted 
-                            loop 
-                            playsInline 
-                            className="banner-image"
-                            style={{ pointerEvents: 'none' }}
-                          />
-                        ) : (
-                          <img 
-                            src={getOptimizedBanner(banner.media_url)} 
-                            alt={banner.name} 
-                            className="banner-image" 
-                            loading="eager"
-                            decoding="async"
-                            width={1920}
-                            height={1080}
-                            draggable={false}
-                            style={{ pointerEvents: 'none' }}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </Slider>
-            ) : (
-              <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
-                <div className="text-center text-white px-4">
-                  <h2 className="banner-title">Welcome to StudentStore</h2>
-                  <p className="text-sm sm:text-base lg:text-lg opacity-90">
-                    Your personal shopping companion for student life
-                  </p>
+            const handleTouchStart = (e: React.TouchEvent) => {
+              const touch = e.touches[0];
+              touchStartX = touch.clientX;
+              touchStartY = touch.clientY;
+              touchStartTime = Date.now();
+            };
+
+            const handleMouseDown = (e: React.MouseEvent) => {
+              touchStartX = e.clientX;
+              touchStartY = e.clientY;
+              touchStartTime = Date.now();
+            };
+
+            const handleTouchEnd = (e: React.TouchEvent) => {
+              const touch = e.changedTouches[0];
+              const touchEndX = touch.clientX;
+              const touchEndY = touch.clientY;
+              const touchEndTime = Date.now();
+
+              const deltaX = Math.abs(touchEndX - touchStartX);
+              const deltaY = Math.abs(touchEndY - touchStartY);
+              const deltaTime = touchEndTime - touchStartTime;
+
+              // ✅ If movement is more than 10px or took longer than 300ms, it's a swipe
+              if (deltaX > 10 || deltaY > 10 || deltaTime > 300) {
+                return; // It's a swipe, don't navigate
+              }
+
+              // ✅ It's a tap, navigate
+              e.preventDefault();
+              e.stopPropagation();
+              
+              if (isInternalLink) {
+                window.location.href = href;
+              } else {
+                window.open(href, '_blank', 'noopener,noreferrer');
+              }
+            };
+
+            const handleClick = (e: React.MouseEvent) => {
+              const deltaX = Math.abs(e.clientX - touchStartX);
+              const deltaY = Math.abs(e.clientY - touchStartY);
+              const deltaTime = Date.now() - touchStartTime;
+
+              // ✅ If movement is more than 5px or took longer than 300ms, it's a drag
+              if (deltaX > 5 || deltaY > 5 || deltaTime > 300) {
+                e.preventDefault();
+                return; // It's a drag, don't navigate
+              }
+
+              // ✅ It's a click, navigate
+              e.preventDefault();
+              e.stopPropagation();
+              
+              if (isInternalLink) {
+                window.location.href = href;
+              } else {
+                window.open(href, '_blank', 'noopener,noreferrer');
+              }
+            };
+
+            return (
+              <div key={banner.id} className="relative">
+                <div
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                  onMouseDown={handleMouseDown}
+                  onClick={handleClick}
+                  className="block relative cursor-pointer"
+                  style={{ 
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'pan-x'  // Allow horizontal swipe
+                  }}
+                >
+                  {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
+                    <video 
+                      src={banner.media_url} 
+                      autoPlay 
+                      muted 
+                      loop 
+                      playsInline 
+                      className="banner-image"
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  ) : (
+                    <img 
+                      src={getOptimizedBanner(banner.media_url)} 
+                      alt={banner.name} 
+                      className="banner-image" 
+                      loading="eager"
+                      decoding="async"
+                      width={1920}
+                      height={1080}
+                      draggable={false}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  )}
                 </div>
               </div>
-            )}
+            );
+          })}
+        </Slider>
+      ) : (
+        <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
+          <div className="text-center text-white px-4">
+            <h2 className="banner-title">Welcome to StudentStore</h2>
+            <p className="text-sm sm:text-base lg:text-lg opacity-90">
+              Your personal shopping companion for student life
+            </p>
           </div>
         </div>
-      </section>
+      )}
+    </div>
+  </div>
+</section>
+
 
       {/* Recently Viewed Section - With Blue Background */}
       {recentlyViewed.length > 0 && (
