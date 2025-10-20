@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: '#6f8b66',
+    theme_color: '#3b82f6',
     orientation: 'portrait-primary',
     icons: [
       {
@@ -39,28 +39,28 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['shopping', 'education'],
     
     // ✅ App shortcuts (long-press app icon)
-    shortcuts: [
-      {
-        name: 'Browse Products',
-        short_name: 'Products',
-        description: 'Browse all student products',
-        url: '/',
-        icons: [{ src: '/favicon-96x96.png', sizes: '96x96' }],
-      },
-      {
-        name: 'My Wishlist',
-        short_name: 'Wishlist',
-        description: 'View saved products',
-        url: '/wishlist',
-        icons: [{ src: '/favicon-96x96.png', sizes: '96x96' }],
-      },
-      {
-        name: 'Search',
-        short_name: 'Search',
-        description: 'Search for products',
-        url: '/search',
-        icons: [{ src: '/favicon-96x96.png', sizes: '96x96' }],
-      },
-    ],
+    // shortcuts: [
+    //   {
+    //     name: 'Browse Products',
+    //     short_name: 'Products',
+    //     description: 'Browse all student products',
+    //     url: '/',
+    //     icons: [{ src: '/favicon-96x96.png', sizes: '96x96' }],
+    //   },
+    //   {
+    //     name: 'My Wishlist',
+    //     short_name: 'Wishlist',
+    //     description: 'View saved products',
+    //     url: '/wishlist',
+    //     icons: [{ src: '/favicon-96x96.png', sizes: '96x96' }],
+    //   },
+    //   {
+    //     name: 'Search',
+    //     short_name: 'Search',
+    //     description: 'Search for products',
+    //     url: '/search',
+    //     icons: [{ src: '/favicon-96x96.png', sizes: '96x96' }],
+    //   },
+    // ],
   }
 }
