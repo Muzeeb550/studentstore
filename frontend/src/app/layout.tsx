@@ -12,7 +12,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ✅ Viewport configuration for PWA
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -61,7 +60,7 @@ export const metadata: Metadata = {
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
-  manifest: '/manifest.json',
+  manifest: '/manifest.webmanifest', // ✅ Fixed: Next.js serves at this path
 };
 
 export default function RootLayout({
@@ -77,8 +76,8 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         
-        {/* PWA Manifest - Next.js will serve from manifest.ts */}
-        <link rel="manifest" href="/manifest.json" />
+        {/* ✅ Fixed: Next.js serves manifest.ts at /manifest.webmanifest */}
+        <link rel="manifest" href="/manifest.webmanifest" />
         
         {/* Theme Colors */}
         <meta name="theme-color" content="#3b82f6" />
@@ -93,27 +92,20 @@ export default function RootLayout({
         {/* Mobile Web App */}
         <meta name="mobile-web-app-capable" content="yes" />
         
-        {/* ✅ Service Worker Registration */}
+        {/* ✅ Simplified Service Worker Registration */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then((registration) => {
-                      console.log('✅ Service Worker registered successfully:', registration.scope);
-                      
-                      // Check for updates
-                      registration.addEventListener('updatefound', () => {
-                        console.log('🔄 Service Worker update found');
-                      });
+                  navigator.serviceWorker.register('/sw.js')
+                    .then((reg) => {
+                      console.log('✅ SW registered:', reg.scope);
                     })
-                    .catch((error) => {
-                      console.error('❌ Service Worker registration failed:', error);
+                    .catch((err) => {
+                      console.error('❌ SW registration failed:', err);
                     });
                 });
-              } else {
-                console.log('⚠️ Service Worker not supported in this browser');
               }
             `,
           }}
