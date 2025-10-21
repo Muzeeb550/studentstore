@@ -82,28 +82,6 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
-  // ✅ PWA Install event listener
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      console.log('🎉 beforeinstallprompt fired!');
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      console.log('✅ Already installed');
-      setShowInstallButton(false);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
   // ✅ IMPROVED: PWA Install event listener with mobile Chrome support
 useEffect(() => {
   const handleBeforeInstallPrompt = (e: any) => {
@@ -145,6 +123,73 @@ useEffect(() => {
     window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   };
 }, []);
+
+  // ✅ FIXED: Install handler with better mobile Chrome detection
+const handleInstallClick = async () => {
+  console.log('📲 Install clicked');
+  console.log('- Browser type:', browserType);
+  console.log('- Screen type:', isMobileScreen ? 'Mobile/Tablet' : 'Desktop');
+  console.log('- Has deferredPrompt:', !!deferredPrompt);
+
+  // DESKTOP (large screen) - Allow all browsers native install
+  if (!isMobileScreen && deferredPrompt) {
+    console.log('💻 Desktop: Using native install');
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
+    setDeferredPrompt(null);
+    setShowInstallButton(false);
+    return;
+  }
+
+  // MOBILE/TABLET Chrome - Try native first
+  if (isMobileScreen && browserType === 'chrome') {
+    if (deferredPrompt) {
+      console.log('📱 Mobile Chrome: Using native install');
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
+      setDeferredPrompt(null);
+      setShowInstallButton(false);
+    } else {
+      // ✅ FIX: Chrome mobile without prompt - wait a bit, then try browser's native "Add to Home Screen"
+      console.log('📱 Mobile Chrome: No prompt yet, trying browser native install');
+      
+      // Check if browser supports BeforeInstallPromptEvent
+      if ('BeforeInstallPromptEvent' in window) {
+        // Wait 500ms for prompt to fire
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
+          setDeferredPrompt(null);
+          setShowInstallButton(false);
+        } else {
+          // Still no prompt - Chrome mobile can install via browser menu
+          console.log('📱 Mobile Chrome: Use browser menu to install');
+          alert('Please tap the menu (⋮) and select "Add to Home Screen" or "Install app"');
+        }
+      } else {
+        // Shouldn't happen in Chrome, but fallback
+        setShowInstallModal(true);
+      }
+    }
+    return;
+  }
+
+  // MOBILE/TABLET Non-Chrome - Show modal
+  if (isMobileScreen && browserType !== 'chrome') {
+    console.log('📱 Mobile Non-Chrome: Showing modal');
+    setShowInstallModal(true);
+    return;
+  }
+
+  // Fallback: Show modal
+  console.log('⚠️ Fallback: Showing modal');
+  setShowInstallModal(true);
+};
 
 
   const fetchUserProfile = async () => {
