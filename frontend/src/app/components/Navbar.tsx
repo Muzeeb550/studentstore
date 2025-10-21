@@ -26,33 +26,36 @@ export default function Navbar() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [browserType, setBrowserType] = useState<'chrome' | 'other'>('chrome');
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
 
-  // ✅ Detect browser type (including Ulaa, Brave, and all Chromium browsers)
+  // ✅ NEW: Detect screen size (mobile/tablet vs desktop)
+  useEffect(() => {
+    const checkScreenSize = () => {
+      // Mobile/tablet: screen width <= 1024px (md breakpoint in Tailwind)
+      setIsMobileScreen(window.innerWidth <= 1024);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // ✅ Detect browser type - Only pure Chrome
   useEffect(() => {
     const detectBrowser = () => {
       const ua = navigator.userAgent.toLowerCase();
       
-      // List of Chromium-based browsers that support native PWA installation
-      const supportsNativeInstall = 
-        // Chrome
-        (/chrome/i.test(ua) && !/edg|opr|brave|samsung|ulaa/i.test(ua)) ||
-        // Brave
-        /brave/i.test(ua) ||
-        // Edge Chromium
-        (/edg/i.test(ua) && !/edga|edge/i.test(ua)) ||
-        // Opera
-        /opr|opera/i.test(ua) ||
-        // Samsung Internet 8.2+
-        /samsungbrowser/i.test(ua) ||
-        // ✅ Ulaa Browser (Indian browser by Zoho)
-        /ulaa/i.test(ua);
+      // Only pure Chrome (not Brave, Edge, Ulaa, etc.)
+      const isPureChrome = /chrome/i.test(ua) && 
+                           !/edg|opr|brave|samsung|ulaa|firefox|safari/i.test(ua);
       
-      setBrowserType(supportsNativeInstall ? 'chrome' : 'other');
+      setBrowserType(isPureChrome ? 'chrome' : 'other');
       
-      // Optional: Log detected browser for debugging
       if (process.env.NODE_ENV === 'development') {
-        console.log('🌐 Browser detected:', supportsNativeInstall ? 'Chromium-based (native PWA)' : 'Other (manual install)');
+        console.log('🌐 Browser:', isPureChrome ? 'Pure Chrome' : 'Other');
+        console.log('📱 Screen:', isMobileScreen ? 'Mobile/Tablet' : 'Desktop');
       }
     };
 
@@ -83,6 +86,7 @@ export default function Navbar() {
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
+      console.log('🎉 beforeinstallprompt fired!');
       setDeferredPrompt(e);
       setShowInstallButton(true);
     };
@@ -91,6 +95,7 @@ export default function Navbar() {
 
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('✅ Already installed');
       setShowInstallButton(false);
     }
 
@@ -99,21 +104,43 @@ export default function Navbar() {
     };
   }, []);
 
-  // ✅ PWA Install handler with browser detection
+  // ✅ UPDATED: Install handler with screen size detection
   const handleInstallClick = async () => {
-    // If Chromium-based browser - use standard install
-    if (deferredPrompt && browserType === 'chrome') {
+    console.log('📲 Install clicked');
+    console.log('- Browser type:', browserType);
+    console.log('- Screen type:', isMobileScreen ? 'Mobile/Tablet' : 'Desktop');
+    console.log('- Has deferredPrompt:', !!deferredPrompt);
+
+    // DESKTOP (large screen) - Allow all browsers native install
+    if (!isMobileScreen && deferredPrompt) {
+      console.log('💻 Desktop: Using native install for all browsers');
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-
-      console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
-
+      console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
       setDeferredPrompt(null);
       setShowInstallButton(false);
-    } else {
-      // For other browsers - show manual instructions
-      setShowInstallModal(true);
+      return;
     }
+
+    // MOBILE/TABLET - Only Chrome gets native, others get modal
+    if (isMobileScreen) {
+      if (browserType === 'chrome' && deferredPrompt) {
+        console.log('📱 Mobile Chrome: Using native install');
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
+        setDeferredPrompt(null);
+        setShowInstallButton(false);
+      } else {
+        console.log('📱 Mobile Non-Chrome: Showing modal with Chrome guidance');
+        setShowInstallModal(true);
+      }
+      return;
+    }
+
+    // Fallback: Show modal
+    console.log('⚠️ Fallback: Showing modal');
+    setShowInstallModal(true);
   };
 
   useEffect(() => {
@@ -196,7 +223,6 @@ export default function Navbar() {
     }
   };
 
-  // ✅ OLD: Full refresh (causes black/white flash)
   useEffect(() => {
     const handleWishlistChange = () => {
       if (user) {
@@ -210,7 +236,6 @@ export default function Navbar() {
     };
   }, [user]);
 
-  // ✅ NEW: Smooth count update (no API call, no refresh)
   useEffect(() => {
     const handleCountChange = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -675,10 +700,10 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ✅ Install Instructions Modal for Non-Chromium Browsers */}
+      {/* ✅ UPDATED: Chrome-Focused Install Modal */}
       {showInstallModal && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
           onClick={() => setShowInstallModal(false)}
         >
           <div 
@@ -703,51 +728,103 @@ export default function Navbar() {
             </div>
 
             <div className="space-y-4">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800 font-medium flex items-start">
-                  <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              {/* Main Message */}
+              <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-xl p-5 text-center">
+                <div className="flex justify-center mb-3">
+                  {/* Chrome Icon */}
+                  <svg className="w-16 h-16" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="22" fill="#FFF"/>
+                    <circle cx="24" cy="24" r="16" fill="#4285F4"/>
+                    <path d="M24,8 C15.163,8 8,15.163 8,24 L16,24 C16,19.582 19.582,16 24,16 L32,24 C32,28.418 28.418,32 24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 C32.837,40 40,32.837 40,24 C40,15.163 32.837,8 24,8 Z" fill="#EA4335"/>
+                    <path d="M24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 L24,32 Z" fill="#34A853"/>
+                    <path d="M24,32 L32,24 C32,28.418 28.418,32 24,32 Z" fill="#FBBC05"/>
                   </svg>
-                  For the best experience, we recommend using <strong className="ml-1">Chrome, Brave, Edge, or Ulaa browser</strong> for automatic installation.
-                </p>
+                </div>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">
+                  <span className="text-blue-600">INSTALLING</span> StudentStore from <span className="text-blue-600">Chrome</span> is the safest way.
+                </h4>
               </div>
 
-              <div className="bg-student-light rounded-lg p-4">
-                <h4 className="font-semibold text-student-primary mb-3">📲 Manual Installation Steps:</h4>
-                <ol className="space-y-3 text-sm text-student-secondary">
-                  <li className="flex items-start">
-                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">1</span>
-                    <span>Tap the browser's menu button (⋮ or ···)</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">2</span>
-                    <span>Select "<strong>Add to Home Screen</strong>" or "<strong>Install App</strong>"</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">3</span>
-                    <span>Name the app "<strong>StudentStore</strong>"</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">4</span>
-                    <span>Tap "<strong>Add</strong>" or "<strong>Install</strong>"</span>
-                  </li>
-                </ol>
-              </div>
+              {/* Quick Install Steps */}
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-5">
+                <h5 className="font-bold text-gray-900 mb-4 flex items-center text-base">
+                  <span className="text-xl mr-2">📋</span>
+                  Quick Install Steps
+                </h5>
 
-              <div className="bg-gradient-to-r from-student-blue/10 to-student-green/10 rounded-lg p-4 text-center">
-                <p className="text-xs text-student-secondary mb-2">✨ Once installed, you'll get:</p>
-                <div className="flex flex-wrap justify-center gap-2 text-xs">
-                  <span className="bg-white px-3 py-1 rounded-full font-medium">🚀 Faster Loading</span>
-                  <span className="bg-white px-3 py-1 rounded-full font-medium">📱 Native Feel</span>
-                  <span className="bg-white px-3 py-1 rounded-full font-medium">⚡ Offline Access</span>
+                <div className="space-y-4">
+                  {/* Step 1 */}
+                  <div className="flex items-start">
+                    <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      1
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900 mb-2">
+                        Copy this link
+                      </p>
+                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-300">
+                        <p className="text-xs text-gray-600 mb-2 font-medium">📎 App Link:</p>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value="studentstore-zeta.vercel.app"
+                            readOnly
+                            className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            onClick={(e) => (e.target as HTMLInputElement).select()}
+                          />
+                          <button
+                            onClick={(e) => {
+                              navigator.clipboard.writeText('https://studentstore-zeta.vercel.app/');
+                              const btn = e.currentTarget;
+                              const originalHTML = btn.innerHTML;
+                              btn.innerHTML = '✓';
+                              btn.classList.add('bg-green-600');
+                              setTimeout(() => {
+                                btn.innerHTML = originalHTML;
+                                btn.classList.remove('bg-green-600');
+                              }, 2000);
+                            }}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 active:scale-95 transition-all whitespace-nowrap"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex items-start">
+                    <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      2
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        Open <span className="text-blue-600 font-bold">CHROME</span> and paste the link
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="flex items-start">
+                    <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      3
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        Tap the <span className="text-green-600 font-bold">Install</span> button and get the app safely <span className="text-green-600 font-bold">INSTALLED</span>.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {/* Close Button */}
               <button
                 onClick={() => setShowInstallModal(false)}
-                className="w-full bg-gradient-to-r from-student-blue to-student-green text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
+                className="w-full bg-gradient-to-r from-blue-500 to-green-500 text-white py-3.5 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all duration-200 text-base"
               >
-                Got it, thanks!
+                Got it! 🚀
               </button>
             </div>
           </div>
