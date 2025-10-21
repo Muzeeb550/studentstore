@@ -26,24 +26,30 @@ export default function Navbar() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [browserType, setBrowserType] = useState<'chrome' | 'other'>('chrome');
+  const [isMobile, setIsMobile] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
 
-  // ✅ Browser detection - Only Chrome gets special treatment
+  // ✅ FIXED: Detect browser type AND mobile
   useEffect(() => {
     const detectBrowser = () => {
       const ua = navigator.userAgent.toLowerCase();
+      
+      // Detect if mobile
+      const mobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua);
+      setIsMobile(mobile);
+      
       // Only pure Chrome without any other browser identifiers
       const isPureChrome = /chrome/i.test(ua) && 
                            !/edg|opr|brave|samsung|ulaa|firefox|safari/i.test(ua);
       
       setBrowserType(isPureChrome ? 'chrome' : 'other');
       console.log('🌐 Browser:', isPureChrome ? 'Pure Chrome' : 'Other Browser');
+      console.log('📱 Mobile:', mobile);
     };
 
     detectBrowser();
   }, []);
 
-  // ✅ FIXED: User data and wishlist initialization
   useEffect(() => {
     const storedUser = localStorage.getItem('studentstore_user');
     if (storedUser) {
@@ -64,7 +70,7 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
-  // ✅ FIXED: PWA event listener with proper cleanup
+  // ✅ FIXED: PWA event listener with proper mobile handling
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -85,26 +91,32 @@ export default function Navbar() {
         setShowInstallButton(true);
       }, 2000);
       
-      // ✅ Cleanup both timer and event listener
       return () => {
         clearTimeout(timer);
         window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       };
     }
 
-    // ✅ Cleanup event listener if already installed
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
 
-  // ✅ FINAL INSTALL HANDLER - Chrome only for pure icon
+  // ✅ FIXED: Install handler with mobile Chrome support
   const handleInstallClick = async () => {
     console.log('📲 Install clicked');
     console.log('- Browser type:', browserType);
+    console.log('- Is mobile:', isMobile);
     console.log('- Has deferredPrompt:', !!deferredPrompt);
 
-    // Only Chrome with native prompt gets direct install
+    // Chrome on mobile - if no prompt, show modal (mobile Chrome often doesn't fire beforeinstallprompt)
+    if (browserType === 'chrome' && isMobile && !deferredPrompt) {
+      console.log('📱 Chrome Mobile but no prompt - showing modal');
+      setShowInstallModal(true);
+      return;
+    }
+
+    // Chrome with prompt (desktop or mobile) - use native
     if (browserType === 'chrome' && deferredPrompt) {
       console.log('✅ Chrome with native prompt - installing directly');
       deferredPrompt.prompt();
@@ -113,7 +125,7 @@ export default function Navbar() {
       setDeferredPrompt(null);
       setShowInstallButton(false);
     } else {
-      // Everyone else gets the modal (including Brave, Ulaa, Edge)
+      // Everyone else gets the modal
       console.log('⚠️ Non-Chrome or no prompt - showing modal');
       setShowInstallModal(true);
     }
