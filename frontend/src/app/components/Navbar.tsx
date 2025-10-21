@@ -22,17 +22,15 @@ export default function Navbar() {
   const [profilePicture, setProfilePicture] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ✅ PWA Install functionality
+  // ✅ PWA Install functionality - SIMPLIFIED (no browser detection needed)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
-  const [browserType, setBrowserType] = useState<'chrome' | 'other'>('chrome');
   const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
 
-  // ✅ NEW: Detect screen size (mobile/tablet vs desktop)
+  // ✅ Detect screen size
   useEffect(() => {
     const checkScreenSize = () => {
-      // Mobile/tablet: screen width <= 1024px (md breakpoint in Tailwind)
       setIsMobileScreen(window.innerWidth <= 1024);
     };
 
@@ -40,26 +38,6 @@ export default function Navbar() {
     window.addEventListener('resize', checkScreenSize);
     
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
-
-  // ✅ Detect browser type - Only pure Chrome
-  useEffect(() => {
-    const detectBrowser = () => {
-      const ua = navigator.userAgent.toLowerCase();
-      
-      // Only pure Chrome (not Brave, Edge, Ulaa, etc.)
-      const isPureChrome = /chrome/i.test(ua) && 
-                           !/edg|opr|brave|samsung|ulaa|firefox|safari/i.test(ua);
-      
-      setBrowserType(isPureChrome ? 'chrome' : 'other');
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🌐 Browser:', isPureChrome ? 'Pure Chrome' : 'Other');
-        console.log('📱 Screen:', isMobileScreen ? 'Mobile/Tablet' : 'Desktop');
-      }
-    };
-
-    detectBrowser();
   }, []);
 
   useEffect(() => {
@@ -82,7 +60,7 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
-  // ✅ PWA Install event listener
+  // ✅ FIXED: PWA Install event listener - Always show button after 2s
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -94,9 +72,22 @@ export default function Navbar() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+    
+    if (isInstalled) {
       console.log('✅ Already installed');
       setShowInstallButton(false);
+    } else {
+      // Show install button after 2 seconds regardless
+      const timer = setTimeout(() => {
+        console.log('📱 Showing install button');
+        setShowInstallButton(true);
+      }, 2000);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
     }
 
     return () => {
@@ -104,43 +95,44 @@ export default function Navbar() {
     };
   }, []);
 
-  // ✅ SIMPLEST FIX: Install handler
-const handleInstallClick = async () => {
-  console.log('📲 Install clicked');
-  console.log('- Browser type:', browserType);
-  console.log('- Screen type:', isMobileScreen ? 'Mobile/Tablet' : 'Desktop');
-  console.log('- Has deferredPrompt:', !!deferredPrompt);
+  // ✅ FINAL FIX: Simple logic - If prompt exists use it, else show modal
+  const handleInstallClick = async () => {
+    console.log('📲 Install clicked');
+    console.log('- Screen type:', isMobileScreen ? 'Mobile' : 'Desktop');
+    console.log('- Has deferredPrompt:', !!deferredPrompt);
 
-  // If we have the native prompt, use it (desktop or mobile)
-  if (deferredPrompt) {
-    console.log('✅ Using native prompt');
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
-    setDeferredPrompt(null);
-    setShowInstallButton(false);
-    return;
-  }
+    // DESKTOP - Always allow native install if available
+    if (!isMobileScreen) {
+      if (deferredPrompt) {
+        console.log('💻 Desktop: Native install');
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User ${outcome}`);
+        setDeferredPrompt(null);
+        setShowInstallButton(false);
+      } else {
+        console.log('💻 Desktop: Show modal');
+        setShowInstallModal(true);
+      }
+      return;
+    }
 
-  // Mobile Chrome without prompt - don't show modal, just alert
-  if (isMobileScreen && browserType === 'chrome') {
-    console.log('📱 Mobile Chrome: Guide to browser menu');
-    alert('Tap the menu (⋮) at the top right and select "Add to Home Screen" to install the app!');
-    return;
-  }
-
-  // Mobile Non-Chrome - Show modal
-  if (isMobileScreen && browserType !== 'chrome') {
-    console.log('📱 Mobile Non-Chrome: Showing Chrome recommendation modal');
-    setShowInstallModal(true);
-    return;
-  }
-
-  // Desktop without prompt - Show modal
-  console.log('💻 Desktop: Showing modal');
-  setShowInstallModal(true);
-};
-
+    // MOBILE - If prompt available, use it; otherwise show modal
+    if (isMobileScreen) {
+      if (deferredPrompt) {
+        console.log('📱 Mobile: Native install (prompt available)');
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User ${outcome}`);
+        setDeferredPrompt(null);
+        setShowInstallButton(false);
+      } else {
+        console.log('📱 Mobile: Show modal (no prompt)');
+        setShowInstallModal(true);
+      }
+      return;
+    }
+  };
 
   useEffect(() => {
     const handleProfileUpdate = () => {
@@ -551,7 +543,6 @@ const handleInstallClick = async () => {
                     </svg>
                   </button>
                 )}
-
                 {user && (
                   <a
                     href="/wishlist"
@@ -699,7 +690,7 @@ const handleInstallClick = async () => {
         </div>
       </nav>
 
-      {/* ✅ UPDATED: Chrome-Focused Install Modal */}
+      {/* ✅ FIXED: Chrome-Focused Install Modal */}
       {showInstallModal && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
