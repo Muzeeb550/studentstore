@@ -196,7 +196,6 @@ export default function Navbar() {
     }
   };
 
-  // ✅ OLD: Full refresh (causes black/white flash)
   useEffect(() => {
     const handleWishlistChange = () => {
       if (user) {
@@ -210,7 +209,6 @@ export default function Navbar() {
     };
   }, [user]);
 
-  // ✅ NEW: Smooth count update (no API call, no refresh)
   useEffect(() => {
     const handleCountChange = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -675,16 +673,17 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ✅ Install Instructions Modal for Non-Chromium Browsers */}
+      {/* ✅ Solution 1: Enhanced Install Modal with Chrome Recommendation & Copy URL */}
       {showInstallModal && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
           onClick={() => setShowInstallModal(false)}
         >
           <div 
-            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-student-primary flex items-center">
                 <svg className="w-6 h-6 mr-2 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -703,51 +702,140 @@ export default function Navbar() {
             </div>
 
             <div className="space-y-4">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800 font-medium flex items-start">
-                  <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  For the best experience, we recommend using <strong className="ml-1">Chrome, Brave, Edge, or Ulaa browser</strong> for automatic installation.
-                </p>
+              {/* ✅ Chrome Recommendation Banner */}
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 mt-1">
+                    {/* Chrome Icon */}
+                    <svg className="w-10 h-10" viewBox="0 0 48 48">
+                      <circle cx="24" cy="24" r="22" fill="#FFF"/>
+                      <circle cx="24" cy="24" r="16" fill="#4285F4"/>
+                      <path d="M24,8 C15.163,8 8,15.163 8,24 L16,24 C16,19.582 19.582,16 24,16 L32,24 C32,28.418 28.418,32 24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 C32.837,40 40,32.837 40,24 C40,15.163 32.837,8 24,8 Z" fill="#EA4335"/>
+                      <path d="M24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 L24,32 Z" fill="#34A853"/>
+                      <path d="M24,32 L32,24 C32,28.418 28.418,32 24,32 Z" fill="#FBBC05"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-blue-900 text-lg mb-1">
+                      🚀 Best Experience in Chrome
+                    </h4>
+                    <p className="text-sm text-blue-800 mb-3">
+                      For <strong>one-click installation</strong> with a <strong>pure app icon</strong> (no browser badge), 
+                      please use <strong>Chrome browser</strong>.
+                    </p>
+                    <div className="bg-white/80 rounded-lg p-3 border border-blue-200">
+                      <p className="text-xs font-semibold text-blue-900 mb-2">✨ Why Chrome?</p>
+                      <ul className="text-xs text-blue-800 space-y-1">
+                        <li>• ⚡ Native app installation</li>
+                        <li>• 🎨 Clean icon (no badge)</li>
+                        <li>• 🚀 Fastest performance</li>
+                        <li>• 📱 Full-screen experience</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-student-light rounded-lg p-4">
-                <h4 className="font-semibold text-student-primary mb-3">📲 Manual Installation Steps:</h4>
-                <ol className="space-y-3 text-sm text-student-secondary">
+              {/* ✅ Copy URL Section */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-300 rounded-xl p-4">
+                <h4 className="font-semibold text-green-900 mb-2 flex items-center text-base">
+                  <span className="text-xl mr-2">📋</span>
+                  Quick Install Steps
+                </h4>
+                <ol className="space-y-2 text-sm text-green-800 mb-3">
                   <li className="flex items-start">
-                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">1</span>
-                    <span>Tap the browser's menu button (⋮ or ···)</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">1</span>
+                    <span>Copy the link below</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">2</span>
-                    <span>Select "<strong>Add to Home Screen</strong>" or "<strong>Install App</strong>"</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">2</span>
+                    <span>Open <strong>Chrome browser</strong> on your phone</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">3</span>
-                    <span>Name the app "<strong>StudentStore</strong>"</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">3</span>
+                    <span>Paste and open the link</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">4</span>
-                    <span>Tap "<strong>Add</strong>" or "<strong>Install</strong>"</span>
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">4</span>
+                    <span>Tap the <strong>Install</strong> button</span>
+                  </li>
+                </ol>
+
+                {/* Copy URL Box */}
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <p className="text-xs text-gray-600 mb-2 font-medium">📎 App Link:</p>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value="https://studentstore-zeta.vercel.app/"
+                      readOnly
+                      className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-400"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={(e) => {
+                        navigator.clipboard.writeText('https://studentstore-zeta.vercel.app/');
+                        const btn = e.currentTarget;
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                        btn.classList.add('bg-green-600');
+                        setTimeout(() => {
+                          btn.innerHTML = originalHTML;
+                          btn.classList.remove('bg-green-600');
+                        }, 2000);
+                      }}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600 active:scale-95 transition-all whitespace-nowrap flex items-center space-x-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span>Copy</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ✅ OR Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t-2 border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="px-4 bg-white text-gray-500 font-bold text-sm">OR</span>
+                </div>
+              </div>
+
+              {/* ✅ Current Browser Install */}
+              <div className="bg-gray-50 border border-gray-300 rounded-xl p-4">
+                <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
+                  <span className="text-lg mr-2">📱</span>
+                  Install from Current Browser
+                </h4>
+                <p className="text-xs text-gray-600 mb-3">
+                  ⚠️ The app icon may show a small browser badge, but it will still work perfectly!
+                </p>
+                <ol className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 w-5 h-5 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">1</span>
+                    <span>Tap browser menu <strong>(⋮)</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 w-5 h-5 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">2</span>
+                    <span>Select <strong>"Add to Home screen"</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="flex-shrink-0 w-5 h-5 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">3</span>
+                    <span>Tap <strong>"Add"</strong> or <strong>"Install"</strong></span>
                   </li>
                 </ol>
               </div>
 
-              <div className="bg-gradient-to-r from-student-blue/10 to-student-green/10 rounded-lg p-4 text-center">
-                <p className="text-xs text-student-secondary mb-2">✨ Once installed, you'll get:</p>
-                <div className="flex flex-wrap justify-center gap-2 text-xs">
-                  <span className="bg-white px-3 py-1 rounded-full font-medium">🚀 Faster Loading</span>
-                  <span className="bg-white px-3 py-1 rounded-full font-medium">📱 Native Feel</span>
-                  <span className="bg-white px-3 py-1 rounded-full font-medium">⚡ Offline Access</span>
-                </div>
-              </div>
-
+              {/* ✅ Close Button */}
               <button
                 onClick={() => setShowInstallModal(false)}
-                className="w-full bg-gradient-to-r from-student-blue to-student-green text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
+                className="w-full bg-gradient-to-r from-student-blue to-student-green text-white py-3.5 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all duration-200 text-base"
               >
-                Got it, thanks!
+                Got it! 🚀
               </button>
             </div>
           </div>
