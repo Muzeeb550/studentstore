@@ -28,93 +28,69 @@ export default function Navbar() {
   const [browserType, setBrowserType] = useState<'chrome' | 'other'>('chrome');
   const [showInstallModal, setShowInstallModal] = useState(false);
 
-  // ✅ Detect browser type (including Ulaa, Brave, and all Chromium browsers)
-  useEffect(() => {
-    const detectBrowser = () => {
-      const ua = navigator.userAgent.toLowerCase();
-      
-      // List of Chromium-based browsers that support native PWA installation
-      const supportsNativeInstall = 
-        // Chrome
-        (/chrome/i.test(ua) && !/edg|opr|brave|samsung|ulaa/i.test(ua)) ||
-        // Brave
-        /brave/i.test(ua) ||
-        // Edge Chromium
-        (/edg/i.test(ua) && !/edga|edge/i.test(ua)) ||
-        // Opera
-        /opr|opera/i.test(ua) ||
-        // Samsung Internet 8.2+
-        /samsungbrowser/i.test(ua) ||
-        // ✅ Ulaa Browser (Indian browser by Zoho)
-        /ulaa/i.test(ua);
-      
-      setBrowserType(supportsNativeInstall ? 'chrome' : 'other');
-      
-      // Optional: Log detected browser for debugging
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🌐 Browser detected:', supportsNativeInstall ? 'Chromium-based (native PWA)' : 'Other (manual install)');
-      }
-    };
-
-    detectBrowser();
-  }, []);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('studentstore_user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser) as User;
-        setUser(parsedUser);
-        
-        if (parsedUser.profile_picture) {
-          setProfilePicture(parsedUser.profile_picture);
-        }
-        
-        fetchWishlistCount();
-        fetchUserProfile();
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  // ✅ PWA Install event listener
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallButton(false);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  // ✅ PWA Install handler with browser detection
-  const handleInstallClick = async () => {
-    // If Chromium-based browser - use standard install
-    if (deferredPrompt && browserType === 'chrome') {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-
-      console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
-
-      setDeferredPrompt(null);
-      setShowInstallButton(false);
-    } else {
-      // For other browsers - show manual instructions
-      setShowInstallModal(true);
-    }
+// ✅ Browser detection - Only Chrome gets special treatment
+useEffect(() => {
+  const detectBrowser = () => {
+    const ua = navigator.userAgent.toLowerCase();
+    // Only pure Chrome without any other browser identifiers
+    const isPureChrome = /chrome/i.test(ua) && 
+                         !/edg|opr|brave|samsung|ulaa|firefox|safari/i.test(ua);
+    
+    setBrowserType(isPureChrome ? 'chrome' : 'other');
+    console.log('🌐 Browser:', isPureChrome ? 'Pure Chrome' : 'Other Browser');
   };
+
+  detectBrowser();
+}, []);
+
+// ✅ PWA event listener
+useEffect(() => {
+  const handleBeforeInstallPrompt = (e: any) => {
+    e.preventDefault();
+    console.log('🎉 beforeinstallprompt fired!');
+    setDeferredPrompt(e);
+  };
+
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+  
+  if (isInstalled) {
+    console.log('✅ Already installed');
+    setShowInstallButton(false);
+  } else {
+    console.log('📱 Not installed, showing button');
+    setTimeout(() => {
+      setShowInstallButton(true);
+    }, 2000);
+  }
+
+  return () => {
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  };
+}, []);
+
+// ✅ FINAL INSTALL HANDLER - Chrome only for pure icon
+const handleInstallClick = async () => {
+  console.log('📲 Install clicked');
+  console.log('- Browser type:', browserType);
+  console.log('- Has deferredPrompt:', !!deferredPrompt);
+
+  // Only Chrome with native prompt gets direct install
+  if (browserType === 'chrome' && deferredPrompt) {
+    console.log('✅ Chrome with native prompt - installing directly');
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
+    setDeferredPrompt(null);
+    setShowInstallButton(false);
+  } else {
+    // Everyone else gets the modal (including Brave, Ulaa, Edge)
+    console.log('⚠️ Non-Chrome or no prompt - showing modal');
+    setShowInstallModal(true);
+  }
+};
+
 
   useEffect(() => {
     const handleProfileUpdate = () => {
@@ -673,103 +649,77 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ✅ Solution 1: Enhanced Install Modal with Chrome Recommendation & Copy URL */}
-      {showInstallModal && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+      {/* ✅ Simple Chrome-Only Install Modal */}
+{showInstallModal && (
+  <div 
+    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+    onClick={() => setShowInstallModal(false)}
+  >
+    <div 
+      className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-bold text-student-primary flex items-center">
+          <svg className="w-6 h-6 mr-2 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Install StudentStore
+        </h3>
+        <button
           onClick={() => setShowInstallModal(false)}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <div 
-            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-student-primary flex items-center">
-                <svg className="w-6 h-6 mr-2 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                Install StudentStore
-              </h3>
-              <button
-                onClick={() => setShowInstallModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-            <div className="space-y-4">
-              {/* ✅ Chrome Recommendation Banner */}
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-xl p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 mt-1">
-                    {/* Chrome Icon */}
-                    <svg className="w-10 h-10" viewBox="0 0 48 48">
-                      <circle cx="24" cy="24" r="22" fill="#FFF"/>
-                      <circle cx="24" cy="24" r="16" fill="#4285F4"/>
-                      <path d="M24,8 C15.163,8 8,15.163 8,24 L16,24 C16,19.582 19.582,16 24,16 L32,24 C32,28.418 28.418,32 24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 C32.837,40 40,32.837 40,24 C40,15.163 32.837,8 24,8 Z" fill="#EA4335"/>
-                      <path d="M24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 L24,32 Z" fill="#34A853"/>
-                      <path d="M24,32 L32,24 C32,28.418 28.418,32 24,32 Z" fill="#FBBC05"/>
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-blue-900 text-lg mb-1">
-                      🚀 Best Experience in Chrome
-                    </h4>
-                    <p className="text-sm text-blue-800 mb-3">
-                      For <strong>one-click installation</strong> with a <strong>pure app icon</strong> (no browser badge), 
-                      please use <strong>Chrome browser</strong>.
-                    </p>
-                    <div className="bg-white/80 rounded-lg p-3 border border-blue-200">
-                      <p className="text-xs font-semibold text-blue-900 mb-2">✨ Why Chrome?</p>
-                      <ul className="text-xs text-blue-800 space-y-1">
-                        <li>• ⚡ Native app installation</li>
-                        <li>• 🎨 Clean icon (no badge)</li>
-                        <li>• 🚀 Fastest performance</li>
-                        <li>• 📱 Full-screen experience</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <div className="space-y-4">
+        {/* Main Message */}
+        <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-xl p-5 text-center">
+          <div className="flex justify-center mb-3">
+            {/* Chrome Icon */}
+            <svg className="w-16 h-16" viewBox="0 0 48 48">
+              <circle cx="24" cy="24" r="22" fill="#FFF"/>
+              <circle cx="24" cy="24" r="16" fill="#4285F4"/>
+              <path d="M24,8 C15.163,8 8,15.163 8,24 L16,24 C16,19.582 19.582,16 24,16 L32,24 C32,28.418 28.418,32 24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 C32.837,40 40,32.837 40,24 C40,15.163 32.837,8 24,8 Z" fill="#EA4335"/>
+              <path d="M24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 L24,32 Z" fill="#34A853"/>
+              <path d="M24,32 L32,24 C32,28.418 28.418,32 24,32 Z" fill="#FBBC05"/>
+            </svg>
+          </div>
+          <h4 className="text-lg font-bold text-gray-900 mb-2">
+            <span className="text-blue-600">INSTALLING</span> StudentStore from <span className="text-blue-600">Chrome</span> is the safest way.
+          </h4>
+        </div>
 
-              {/* ✅ Copy URL Section */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-300 rounded-xl p-4">
-                <h4 className="font-semibold text-green-900 mb-2 flex items-center text-base">
-                  <span className="text-xl mr-2">📋</span>
-                  Quick Install Steps
-                </h4>
-                <ol className="space-y-2 text-sm text-green-800 mb-3">
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">1</span>
-                    <span>Copy the link below</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">2</span>
-                    <span>Open <strong>Chrome browser</strong> on your phone</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">3</span>
-                    <span>Paste and open the link</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">4</span>
-                    <span>Tap the <strong>Install</strong> button</span>
-                  </li>
-                </ol>
+        {/* Quick Install Steps */}
+        <div className="bg-white border-2 border-gray-200 rounded-xl p-5">
+          <h5 className="font-bold text-gray-900 mb-4 flex items-center text-base">
+            <span className="text-xl mr-2">📋</span>
+            Quick Install Steps
+          </h5>
 
-                {/* Copy URL Box */}
-                <div className="bg-white rounded-lg p-3 border border-green-200">
+          <div className="space-y-4">
+            {/* Step 1 */}
+            <div className="flex items-start">
+              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                1
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900 mb-2">
+                  Copy this link
+                </p>
+                <div className="bg-gray-50 rounded-lg p-3 border border-gray-300">
                   <p className="text-xs text-gray-600 mb-2 font-medium">📎 App Link:</p>
                   <div className="flex items-center space-x-2">
                     <input
                       type="text"
-                      value="https://studentstore-zeta.vercel.app/"
+                      value="studentstore-zeta.vercel.app"
                       readOnly
-                      className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-xs font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-400"
+                      className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                       onClick={(e) => (e.target as HTMLInputElement).select()}
                     />
                     <button
@@ -777,70 +727,59 @@ export default function Navbar() {
                         navigator.clipboard.writeText('https://studentstore-zeta.vercel.app/');
                         const btn = e.currentTarget;
                         const originalHTML = btn.innerHTML;
-                        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                        btn.innerHTML = '✓';
                         btn.classList.add('bg-green-600');
                         setTimeout(() => {
                           btn.innerHTML = originalHTML;
                           btn.classList.remove('bg-green-600');
                         }, 2000);
                       }}
-                      className="px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600 active:scale-95 transition-all whitespace-nowrap flex items-center space-x-1"
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 active:scale-95 transition-all whitespace-nowrap"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      <span>Copy</span>
+                      Copy
                     </button>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* ✅ OR Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t-2 border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="px-4 bg-white text-gray-500 font-bold text-sm">OR</span>
-                </div>
-              </div>
-
-              {/* ✅ Current Browser Install */}
-              <div className="bg-gray-50 border border-gray-300 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
-                  <span className="text-lg mr-2">📱</span>
-                  Install from Current Browser
-                </h4>
-                <p className="text-xs text-gray-600 mb-3">
-                  ⚠️ The app icon may show a small browser badge, but it will still work perfectly!
+            {/* Step 2 */}
+            <div className="flex items-start">
+              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                2
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">
+                  Open <span className="text-blue-600 font-bold">CHROME</span> and paste the link
                 </p>
-                <ol className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 w-5 h-5 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">1</span>
-                    <span>Tap browser menu <strong>(⋮)</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 w-5 h-5 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">2</span>
-                    <span>Select <strong>"Add to Home screen"</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="flex-shrink-0 w-5 h-5 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">3</span>
-                    <span>Tap <strong>"Add"</strong> or <strong>"Install"</strong></span>
-                  </li>
-                </ol>
               </div>
+            </div>
 
-              {/* ✅ Close Button */}
-              <button
-                onClick={() => setShowInstallModal(false)}
-                className="w-full bg-gradient-to-r from-student-blue to-student-green text-white py-3.5 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all duration-200 text-base"
-              >
-                Got it! 🚀
-              </button>
+            {/* Step 3 */}
+            <div className="flex items-start">
+              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                3
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">
+                  Tap the <span className="text-green-600 font-bold">Install</span> button and get the app safely <span className="text-green-600 font-bold">INSTALLED</span>.
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Close Button */}
+        <button
+          onClick={() => setShowInstallModal(false)}
+          className="w-full bg-gradient-to-r from-blue-500 to-green-500 text-white py-3.5 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all duration-200 text-base"
+        >
+          Got it! 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
 }
