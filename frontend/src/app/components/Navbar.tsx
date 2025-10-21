@@ -22,8 +22,42 @@ export default function Navbar() {
   const [profilePicture, setProfilePicture] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // ✅ PWA Install functionality
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
+  const [browserType, setBrowserType] = useState<'chrome' | 'other'>('chrome');
+  const [showInstallModal, setShowInstallModal] = useState(false);
+
+  // ✅ Detect browser type (including Ulaa, Brave, and all Chromium browsers)
+  useEffect(() => {
+    const detectBrowser = () => {
+      const ua = navigator.userAgent.toLowerCase();
+      
+      // List of Chromium-based browsers that support native PWA installation
+      const supportsNativeInstall = 
+        // Chrome
+        (/chrome/i.test(ua) && !/edg|opr|brave|samsung|ulaa/i.test(ua)) ||
+        // Brave
+        /brave/i.test(ua) ||
+        // Edge Chromium
+        (/edg/i.test(ua) && !/edga|edge/i.test(ua)) ||
+        // Opera
+        /opr|opera/i.test(ua) ||
+        // Samsung Internet 8.2+
+        /samsungbrowser/i.test(ua) ||
+        // ✅ Ulaa Browser (Indian browser by Zoho)
+        /ulaa/i.test(ua);
+      
+      setBrowserType(supportsNativeInstall ? 'chrome' : 'other');
+      
+      // Optional: Log detected browser for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🌐 Browser detected:', supportsNativeInstall ? 'Chromium-based (native PWA)' : 'Other (manual install)');
+      }
+    };
+
+    detectBrowser();
+  }, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('studentstore_user');
@@ -45,6 +79,7 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
+  // ✅ PWA Install event listener
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -54,6 +89,7 @@ export default function Navbar() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setShowInstallButton(false);
     }
@@ -63,16 +99,21 @@ export default function Navbar() {
     };
   }, []);
 
+  // ✅ PWA Install handler with browser detection
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    // If Chromium-based browser - use standard install
+    if (deferredPrompt && browserType === 'chrome') {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
 
-    console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
-
-    setDeferredPrompt(null);
-    setShowInstallButton(false);
+      setDeferredPrompt(null);
+      setShowInstallButton(false);
+    } else {
+      // For other browsers - show manual instructions
+      setShowInstallModal(true);
+    }
   };
 
   useEffect(() => {
@@ -277,208 +318,45 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white/95 backdrop-blur-md shadow-lg border-b border-border-light sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex justify-between items-center h-20">
-          <div className="flex items-center space-x-4">
-            <StudentStoreLogo />
-            <div className="hidden lg:block text-sm text-student-secondary font-medium">
-              By Students, For Students
-            </div>
-          </div>
-
-          <div className="flex-1 max-w-lg mx-8">
-            <SearchBar className="w-full" />
-          </div>
-
-          <div className="flex items-center space-x-6">
-            {user && (
-              <a
-                href="/wishlist"
-                className="relative group p-3 rounded-xl hover:bg-student-blue/10 transition-all duration-200 hover:shadow-md"
-                title="My Wishlist"
-              >
-                <svg 
-                  className="w-6 h-6 text-student-secondary group-hover:text-student-orange transition-colors duration-200" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
-                  />
-                </svg>
-                
-                {wishlistCount > 0 && (
-                  <div className="wishlist-badge">
-                    {wishlistCount > 99 ? '99+' : wishlistCount}
-                  </div>
-                )}
-              </a>
-            )}
-
-            {loading ? (
-              <div className="loading-shimmer w-12 h-12 rounded-full"></div>
-            ) : user ? (
-              <div className="flex items-center space-x-4">
-                <div className="navbar-dropdown-container" ref={dropdownRef}>
-                  <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="flex items-center space-x-4 bg-student-card hover:bg-student-light rounded-full py-3 px-5 border border-border-light transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-student-blue/30"
-                  >
-                    <ProfileAvatar />
-                    
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-student-primary">
-                        {getDisplayName()}
-                      </p>
-                      <p className="text-xs text-student-secondary capitalize font-medium">
-                        {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                      </p>
-                    </div>
-                    
-                    <svg 
-                      className={`w-5 h-5 text-student-secondary transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {dropdownOpen && (
-                    <div className="navbar-dropdown-menu" style={{ width: '16rem' }}>
-                      <div className="px-6 py-5 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
-                        <div className="flex items-center space-x-4">
-                          <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-student-primary truncate">{getDisplayName()}</p>
-                            <p className="text-sm text-student-secondary truncate">{user.email}</p>
-                            <p className="text-xs text-student-blue font-medium capitalize mt-1">
-                              {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="py-3">
-                        <button
-                          onClick={() => handleNavigation('/dashboard')}
-                          className="navbar-dropdown-item"
-                        >
-                          <div className="w-11 h-11 bg-student-light group-hover:bg-student-blue/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
-                            <svg className="w-5 h-5 text-student-secondary group-hover:text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                            </svg>
-                          </div>
-                          <div className="text-left">
-                            <p className="font-semibold">My Dashboard</p>
-                            <p className="text-xs text-student-secondary">Overview & stats</p>
-                          </div>
-                        </button>
-
-                        <button
-                          onClick={() => handleNavigation('/profile')}
-                          className="navbar-dropdown-item"
-                        >
-                          <div className="w-11 h-11 bg-student-light group-hover:bg-student-green/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
-                            <svg className="w-5 h-5 text-student-secondary group-hover:text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                          </div>
-                          <div className="text-left">
-                            <p className="font-semibold">My Profile</p>
-                            <p className="text-xs text-student-secondary">Settings & preferences</p>
-                          </div>
-                        </button>
-
-                        {user.role === 'admin' && (
-                          <button
-                            onClick={() => handleNavigation('/admin')}
-                            className="navbar-dropdown-item"
-                          >
-                            <div className="w-11 h-11 bg-student-light group-hover:bg-student-orange/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
-                              <svg className="w-5 h-5 text-student-secondary group-hover:text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              </svg>
-                            </div>
-                            <div className="text-left">
-                              <p className="font-semibold">Admin Panel</p>
-                              <p className="text-xs text-student-secondary">Manage platform</p>
-                            </div>
-                          </button>
-                        )}
-
-                        <button
-                          onClick={handleLogout}
-                          className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
-                        >
-                          <div className="w-11 h-11 bg-student-light group-hover:bg-red-100 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
-                            <svg className="w-5 h-5 text-student-secondary group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                          </div>
-                          <div className="text-left">
-                            <p className="font-semibold">Sign Out</p>
-                            <p className="text-xs text-student-secondary">Logout from account</p>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+    <>
+      <nav className="bg-white/95 backdrop-blur-md shadow-lg border-b border-border-light sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex justify-between items-center h-20">
+            <div className="flex items-center space-x-4">
+              <StudentStoreLogo />
+              <div className="hidden lg:block text-sm text-student-secondary font-medium">
+                By Students, For Students
               </div>
-            ) : (
-              <button 
-                onClick={() => {
-                  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-                  window.location.href = `${apiUrl}/auth/google`;
-                }}
-                className="bg-gradient-to-r from-student-orange to-student-blue hover:from-student-orange/90 hover:to-student-blue/90 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-2"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span>Join StudentStore</span>
-              </button>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Mobile Navigation */}
-        <div className="md:hidden">
-          <div className="flex justify-between items-start h-auto py-4">
-            <StudentStoreLogo mobile={true} />
+            <div className="flex-1 max-w-lg mx-8">
+              <SearchBar className="w-full" />
+            </div>
 
-            <div className="flex items-center space-x-3 mt-1">
+            <div className="flex items-center space-x-6">
+              {/* ✅ Desktop PWA Install Button */}
               {showInstallButton && (
                 <button
                   onClick={handleInstallClick}
-                  className="p-2 rounded-xl bg-student-blue/10 hover:bg-student-blue/20 active:bg-student-blue/30 transition-all duration-200"
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-student-blue to-student-green text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium text-sm"
                   title="Install StudentStore App"
                 >
-                  <svg className="w-5 h-5 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
+                  <span>Install App</span>
                 </button>
               )}
 
               {user && (
                 <a
                   href="/wishlist"
-                  className="relative p-2 rounded-xl hover:bg-student-blue/10 active:bg-student-blue/20 transition-all duration-200"
+                  className="relative group p-3 rounded-xl hover:bg-student-blue/10 transition-all duration-200 hover:shadow-md"
                   title="My Wishlist"
                 >
                   <svg 
-                    className="w-6 h-6 text-student-secondary hover:text-student-orange active:text-student-orange transition-colors duration-200" 
+                    className="w-6 h-6 text-student-secondary group-hover:text-student-orange transition-colors duration-200" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -492,110 +370,124 @@ export default function Navbar() {
                   </svg>
                   
                   {wishlistCount > 0 && (
-                    <div className="wishlist-badge" style={{ width: '1.25rem', height: '1.25rem', fontSize: '0.625rem' }}>
-                      {wishlistCount > 9 ? '9+' : wishlistCount}
+                    <div className="wishlist-badge">
+                      {wishlistCount > 99 ? '99+' : wishlistCount}
                     </div>
                   )}
                 </a>
               )}
 
               {loading ? (
-                <div className="loading-shimmer w-10 h-10 rounded-full"></div>
+                <div className="loading-shimmer w-12 h-12 rounded-full"></div>
               ) : user ? (
-                <div className="navbar-dropdown-container" ref={dropdownRef}>
-                  <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="p-1 rounded-full hover:bg-student-light active:bg-student-light transition-all duration-200"
-                  >
-                    <ProfileAvatar mobile={true} />
-                  </button>
-
-                  {dropdownOpen && (
-                    <div 
-                      className="navbar-dropdown-menu" 
-                      style={{ width: '14rem' }}
-                      onClick={(e) => e.stopPropagation()}
+                <div className="flex items-center space-x-4">
+                  <div className="navbar-dropdown-container" ref={dropdownRef}>
+                    <button
+                      onClick={() => setDropdownOpen(!dropdownOpen)}
+                      className="flex items-center space-x-4 bg-student-card hover:bg-student-light rounded-full py-3 px-5 border border-border-light transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-student-blue/30"
                     >
-                      <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
-                        <div className="flex items-center space-x-3">
-                          <ProfileAvatar size="w-12 h-12" textSize="text-base" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
-                            <p className="text-xs text-student-secondary truncate">{user.email}</p>
-                            <p className="text-xs text-student-blue font-medium capitalize mt-1">
-                              {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                            </p>
+                      <ProfileAvatar />
+                      
+                      <div className="text-left">
+                        <p className="text-sm font-semibold text-student-primary">
+                          {getDisplayName()}
+                        </p>
+                        <p className="text-xs text-student-secondary capitalize font-medium">
+                          {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
+                        </p>
+                      </div>
+                      
+                      <svg 
+                        className={`w-5 h-5 text-student-secondary transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {dropdownOpen && (
+                      <div className="navbar-dropdown-menu" style={{ width: '16rem' }}>
+                        <div className="px-6 py-5 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
+                          <div className="flex items-center space-x-4">
+                            <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-student-primary truncate">{getDisplayName()}</p>
+                              <p className="text-sm text-student-secondary truncate">{user.email}</p>
+                              <p className="text-xs text-student-blue font-medium capitalize mt-1">
+                                {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="py-2">
-                        <button
-                          onClick={() => handleNavigation('/profile')}
-                          onTouchEnd={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleNavigation('/profile');
-                          }}
-                          className="navbar-dropdown-item"
-                        >
-                          <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className="font-medium">My Profile</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleNavigation('/dashboard')}
-                          onTouchEnd={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleNavigation('/dashboard');
-                          }}
-                          className="navbar-dropdown-item"
-                        >
-                          <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                          </svg>
-                          <span className="font-medium">Dashboard</span>
-                        </button>
-
-                        {user.role === 'admin' && (
+                        <div className="py-3">
                           <button
-                            onClick={() => handleNavigation('/admin')}
-                            onTouchEnd={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleNavigation('/admin');
-                            }}
+                            onClick={() => handleNavigation('/dashboard')}
                             className="navbar-dropdown-item"
                           >
-                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            </svg>
-                            <span className="font-medium">Admin Panel</span>
+                            <div className="w-11 h-11 bg-student-light group-hover:bg-student-blue/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
+                              <svg className="w-5 h-5 text-student-secondary group-hover:text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                              </svg>
+                            </div>
+                            <div className="text-left">
+                              <p className="font-semibold">My Dashboard</p>
+                              <p className="text-xs text-student-secondary">Overview & stats</p>
+                            </div>
                           </button>
-                        )}
 
-                        <div className="border-t border-border-light mt-2 pt-2">
+                          <button
+                            onClick={() => handleNavigation('/profile')}
+                            className="navbar-dropdown-item"
+                          >
+                            <div className="w-11 h-11 bg-student-light group-hover:bg-student-green/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
+                              <svg className="w-5 h-5 text-student-secondary group-hover:text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                            <div className="text-left">
+                              <p className="font-semibold">My Profile</p>
+                              <p className="text-xs text-student-secondary">Settings & preferences</p>
+                            </div>
+                          </button>
+
+                          {user.role === 'admin' && (
+                            <button
+                              onClick={() => handleNavigation('/admin')}
+                              className="navbar-dropdown-item"
+                            >
+                              <div className="w-11 h-11 bg-student-light group-hover:bg-student-orange/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
+                                <svg className="w-5 h-5 text-student-secondary group-hover:text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                </svg>
+                              </div>
+                              <div className="text-left">
+                                <p className="font-semibold">Admin Panel</p>
+                                <p className="text-xs text-student-secondary">Manage platform</p>
+                              </div>
+                            </button>
+                          )}
+
                           <button
                             onClick={handleLogout}
-                            onTouchEnd={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleLogout();
-                            }}
                             className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
                           >
-                            <svg className="w-5 h-5 text-student-secondary hover:text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            <span className="font-medium">Sign Out</span>
+                            <div className="w-11 h-11 bg-student-light group-hover:bg-red-100 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
+                              <svg className="w-5 h-5 text-student-secondary group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                              </svg>
+                            </div>
+                            <div className="text-left">
+                              <p className="font-semibold">Sign Out</p>
+                              <p className="text-xs text-student-secondary">Logout from account</p>
+                            </div>
                           </button>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ) : (
                 <button 
@@ -603,19 +495,264 @@ export default function Navbar() {
                     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
                     window.location.href = `${apiUrl}/auth/google`;
                   }}
-                  className="bg-gradient-to-r from-student-orange to-student-blue text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-lg transform hover:scale-105 active:scale-95"
+                  className="bg-gradient-to-r from-student-orange to-student-blue hover:from-student-orange/90 hover:to-student-blue/90 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-2"
                 >
-                  Join
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  <span>Join StudentStore</span>
                 </button>
               )}
             </div>
           </div>
 
-          <div className="pb-4">
-            <SearchBar className="w-full" />
+          {/* Mobile Navigation */}
+          <div className="md:hidden">
+            <div className="flex justify-between items-start h-auto py-4">
+              <StudentStoreLogo mobile={true} />
+
+              <div className="flex items-center space-x-3 mt-1">
+                {/* ✅ Mobile PWA Install Button */}
+                {showInstallButton && (
+                  <button
+                    onClick={handleInstallClick}
+                    className="p-2 rounded-xl bg-student-blue/10 hover:bg-student-blue/20 active:bg-student-blue/30 transition-all duration-200"
+                    title="Install StudentStore App"
+                  >
+                    <svg className="w-5 h-5 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </button>
+                )}
+
+                {user && (
+                  <a
+                    href="/wishlist"
+                    className="relative p-2 rounded-xl hover:bg-student-blue/10 active:bg-student-blue/20 transition-all duration-200"
+                    title="My Wishlist"
+                  >
+                    <svg 
+                      className="w-6 h-6 text-student-secondary hover:text-student-orange active:text-student-orange transition-colors duration-200" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                      />
+                    </svg>
+                    
+                    {wishlistCount > 0 && (
+                      <div className="wishlist-badge" style={{ width: '1.25rem', height: '1.25rem', fontSize: '0.625rem' }}>
+                        {wishlistCount > 9 ? '9+' : wishlistCount}
+                      </div>
+                    )}
+                  </a>
+                )}
+
+                {loading ? (
+                  <div className="loading-shimmer w-10 h-10 rounded-full"></div>
+                ) : user ? (
+                  <div className="navbar-dropdown-container" ref={dropdownRef}>
+                    <button
+                      onClick={() => setDropdownOpen(!dropdownOpen)}
+                      className="p-1 rounded-full hover:bg-student-light active:bg-student-light transition-all duration-200"
+                    >
+                      <ProfileAvatar mobile={true} />
+                    </button>
+
+                    {dropdownOpen && (
+                      <div 
+                        className="navbar-dropdown-menu" 
+                        style={{ width: '14rem' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
+                          <div className="flex items-center space-x-3">
+                            <ProfileAvatar size="w-12 h-12" textSize="text-base" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
+                              <p className="text-xs text-student-secondary truncate">{user.email}</p>
+                              <p className="text-xs text-student-blue font-medium capitalize mt-1">
+                                {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="py-2">
+                          <button
+                            onClick={() => handleNavigation('/profile')}
+                            onTouchEnd={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleNavigation('/profile');
+                            }}
+                            className="navbar-dropdown-item"
+                          >
+                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span className="font-medium">My Profile</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleNavigation('/dashboard')}
+                            onTouchEnd={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleNavigation('/dashboard');
+                            }}
+                            className="navbar-dropdown-item"
+                          >
+                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                            </svg>
+                            <span className="font-medium">Dashboard</span>
+                          </button>
+
+                          {user.role === 'admin' && (
+                            <button
+                              onClick={() => handleNavigation('/admin')}
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleNavigation('/admin');
+                              }}
+                              className="navbar-dropdown-item"
+                            >
+                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              </svg>
+                              <span className="font-medium">Admin Panel</span>
+                            </button>
+                          )}
+
+                          <div className="border-t border-border-light mt-2 pt-2">
+                            <button
+                              onClick={handleLogout}
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleLogout();
+                              }}
+                              className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
+                            >
+                              <svg className="w-5 h-5 text-student-secondary hover:text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                              </svg>
+                              <span className="font-medium">Sign Out</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+                      window.location.href = `${apiUrl}/auth/google`;
+                    }}
+                    className="bg-gradient-to-r from-student-orange to-student-blue text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl active:shadow-lg transform hover:scale-105 active:scale-95"
+                  >
+                    Join
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="pb-4">
+              <SearchBar className="w-full" />
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* ✅ Install Instructions Modal for Non-Chromium Browsers */}
+      {showInstallModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          onClick={() => setShowInstallModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-student-primary flex items-center">
+                <svg className="w-6 h-6 mr-2 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Install StudentStore
+              </h3>
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800 font-medium flex items-start">
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  For the best experience, we recommend using <strong className="ml-1">Chrome, Brave, Edge, or Ulaa browser</strong> for automatic installation.
+                </p>
+              </div>
+
+              <div className="bg-student-light rounded-lg p-4">
+                <h4 className="font-semibold text-student-primary mb-3">📲 Manual Installation Steps:</h4>
+                <ol className="space-y-3 text-sm text-student-secondary">
+                  <li className="flex items-start">
+                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">1</span>
+                    <span>Tap the browser's menu button (⋮ or ···)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">2</span>
+                    <span>Select "<strong>Add to Home Screen</strong>" or "<strong>Install App</strong>"</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">3</span>
+                    <span>Name the app "<strong>StudentStore</strong>"</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="bg-student-blue text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 mt-0.5">4</span>
+                    <span>Tap "<strong>Add</strong>" or "<strong>Install</strong>"</span>
+                  </li>
+                </ol>
+              </div>
+
+              <div className="bg-gradient-to-r from-student-blue/10 to-student-green/10 rounded-lg p-4 text-center">
+                <p className="text-xs text-student-secondary mb-2">✨ Once installed, you'll get:</p>
+                <div className="flex flex-wrap justify-center gap-2 text-xs">
+                  <span className="bg-white px-3 py-1 rounded-full font-medium">🚀 Faster Loading</span>
+                  <span className="bg-white px-3 py-1 rounded-full font-medium">📱 Native Feel</span>
+                  <span className="bg-white px-3 py-1 rounded-full font-medium">⚡ Offline Access</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="w-full bg-gradient-to-r from-student-blue to-student-green text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
+              >
+                Got it, thanks!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
