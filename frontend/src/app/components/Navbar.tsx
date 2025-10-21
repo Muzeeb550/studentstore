@@ -82,49 +82,29 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
-  // ✅ IMPROVED: PWA Install event listener with mobile Chrome support
-useEffect(() => {
-  const handleBeforeInstallPrompt = (e: any) => {
-    e.preventDefault();
-    console.log('🎉 beforeinstallprompt fired!');
-    setDeferredPrompt(e);
-    setShowInstallButton(true);
-  };
+  // ✅ PWA Install event listener
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      console.log('🎉 beforeinstallprompt fired!');
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
 
-  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-  // Check if already installed
-  const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
-  
-  if (isInstalled) {
-    console.log('✅ Already installed');
-    setShowInstallButton(false);
-  } else {
-    // ✅ FIX: On mobile Chrome, show button even if event doesn't fire yet
-    const checkMobile = window.innerWidth <= 1024;
-    const ua = navigator.userAgent.toLowerCase();
-    const isChrome = /chrome/i.test(ua) && !/edg|opr|brave|samsung|ulaa|firefox|safari/i.test(ua);
-    
-    if (checkMobile && isChrome) {
-      // Always show install button on mobile Chrome after 2 seconds
-      const timer = setTimeout(() => {
-        console.log('📱 Mobile Chrome: Showing install button (event may not have fired)');
-        setShowInstallButton(true);
-      }, 2000);
-      
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      };
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('✅ Already installed');
+      setShowInstallButton(false);
     }
-  }
 
-  return () => {
-    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  };
-}, []);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
-// ✅ SIMPLEST FIX: Install handler
+  // ✅ SIMPLEST FIX: Install handler
 const handleInstallClick = async () => {
   console.log('📲 Install clicked');
   console.log('- Browser type:', browserType);
@@ -161,6 +141,18 @@ const handleInstallClick = async () => {
   setShowInstallModal(true);
 };
 
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log('📸 Profile updated event received in navbar');
+      fetchUserProfile();
+    };
+
+    window.addEventListener('profile-updated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profile-updated', handleProfileUpdate);
+    };
+  }, []);
 
   const fetchUserProfile = async () => {
     try {
