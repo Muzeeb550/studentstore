@@ -28,69 +28,96 @@ export default function Navbar() {
   const [browserType, setBrowserType] = useState<'chrome' | 'other'>('chrome');
   const [showInstallModal, setShowInstallModal] = useState(false);
 
-// ✅ Browser detection - Only Chrome gets special treatment
-useEffect(() => {
-  const detectBrowser = () => {
-    const ua = navigator.userAgent.toLowerCase();
-    // Only pure Chrome without any other browser identifiers
-    const isPureChrome = /chrome/i.test(ua) && 
-                         !/edg|opr|brave|samsung|ulaa|firefox|safari/i.test(ua);
+  // ✅ Browser detection - Only Chrome gets special treatment
+  useEffect(() => {
+    const detectBrowser = () => {
+      const ua = navigator.userAgent.toLowerCase();
+      // Only pure Chrome without any other browser identifiers
+      const isPureChrome = /chrome/i.test(ua) && 
+                           !/edg|opr|brave|samsung|ulaa|firefox|safari/i.test(ua);
+      
+      setBrowserType(isPureChrome ? 'chrome' : 'other');
+      console.log('🌐 Browser:', isPureChrome ? 'Pure Chrome' : 'Other Browser');
+    };
+
+    detectBrowser();
+  }, []);
+
+  // ✅ FIXED: User data and wishlist initialization
+  useEffect(() => {
+    const storedUser = localStorage.getItem('studentstore_user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser) as User;
+        setUser(parsedUser);
+        
+        if (parsedUser.profile_picture) {
+          setProfilePicture(parsedUser.profile_picture);
+        }
+        
+        fetchWishlistCount();
+        fetchUserProfile();
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  // ✅ FIXED: PWA event listener with proper cleanup
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      console.log('🎉 beforeinstallprompt fired!');
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
     
-    setBrowserType(isPureChrome ? 'chrome' : 'other');
-    console.log('🌐 Browser:', isPureChrome ? 'Pure Chrome' : 'Other Browser');
+    if (isInstalled) {
+      console.log('✅ Already installed');
+      setShowInstallButton(false);
+    } else {
+      console.log('📱 Not installed, showing button');
+      const timer = setTimeout(() => {
+        setShowInstallButton(true);
+      }, 2000);
+      
+      // ✅ Cleanup both timer and event listener
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
+    }
+
+    // ✅ Cleanup event listener if already installed
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // ✅ FINAL INSTALL HANDLER - Chrome only for pure icon
+  const handleInstallClick = async () => {
+    console.log('📲 Install clicked');
+    console.log('- Browser type:', browserType);
+    console.log('- Has deferredPrompt:', !!deferredPrompt);
+
+    // Only Chrome with native prompt gets direct install
+    if (browserType === 'chrome' && deferredPrompt) {
+      console.log('✅ Chrome with native prompt - installing directly');
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
+      setDeferredPrompt(null);
+      setShowInstallButton(false);
+    } else {
+      // Everyone else gets the modal (including Brave, Ulaa, Edge)
+      console.log('⚠️ Non-Chrome or no prompt - showing modal');
+      setShowInstallModal(true);
+    }
   };
-
-  detectBrowser();
-}, []);
-
-// ✅ PWA event listener
-useEffect(() => {
-  const handleBeforeInstallPrompt = (e: any) => {
-    e.preventDefault();
-    console.log('🎉 beforeinstallprompt fired!');
-    setDeferredPrompt(e);
-  };
-
-  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-  const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
-  
-  if (isInstalled) {
-    console.log('✅ Already installed');
-    setShowInstallButton(false);
-  } else {
-    console.log('📱 Not installed, showing button');
-    setTimeout(() => {
-      setShowInstallButton(true);
-    }, 2000);
-  }
-
-  return () => {
-    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  };
-}, []);
-
-// ✅ FINAL INSTALL HANDLER - Chrome only for pure icon
-const handleInstallClick = async () => {
-  console.log('📲 Install clicked');
-  console.log('- Browser type:', browserType);
-  console.log('- Has deferredPrompt:', !!deferredPrompt);
-
-  // Only Chrome with native prompt gets direct install
-  if (browserType === 'chrome' && deferredPrompt) {
-    console.log('✅ Chrome with native prompt - installing directly');
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User ${outcome === 'accepted' ? 'accepted' : 'dismissed'}`);
-    setDeferredPrompt(null);
-    setShowInstallButton(false);
-  } else {
-    // Everyone else gets the modal (including Brave, Ulaa, Edge)
-    console.log('⚠️ Non-Chrome or no prompt - showing modal');
-    setShowInstallModal(true);
-  }
-};
-
 
   useEffect(() => {
     const handleProfileUpdate = () => {
@@ -650,136 +677,136 @@ const handleInstallClick = async () => {
       </nav>
 
       {/* ✅ Simple Chrome-Only Install Modal */}
-{showInstallModal && (
-  <div 
-    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-    onClick={() => setShowInstallModal(false)}
-  >
-    <div 
-      className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-student-primary flex items-center">
-          <svg className="w-6 h-6 mr-2 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-          Install StudentStore
-        </h3>
-        <button
+      {showInstallModal && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
           onClick={() => setShowInstallModal(false)}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-student-primary flex items-center">
+                <svg className="w-6 h-6 mr-2 text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Install StudentStore
+              </h3>
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-      <div className="space-y-4">
-        {/* Main Message */}
-        <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-xl p-5 text-center">
-          <div className="flex justify-center mb-3">
-            {/* Chrome Icon */}
-            <svg className="w-16 h-16" viewBox="0 0 48 48">
-              <circle cx="24" cy="24" r="22" fill="#FFF"/>
-              <circle cx="24" cy="24" r="16" fill="#4285F4"/>
-              <path d="M24,8 C15.163,8 8,15.163 8,24 L16,24 C16,19.582 19.582,16 24,16 L32,24 C32,28.418 28.418,32 24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 C32.837,40 40,32.837 40,24 C40,15.163 32.837,8 24,8 Z" fill="#EA4335"/>
-              <path d="M24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 L24,32 Z" fill="#34A853"/>
-              <path d="M24,32 L32,24 C32,28.418 28.418,32 24,32 Z" fill="#FBBC05"/>
-            </svg>
-          </div>
-          <h4 className="text-lg font-bold text-gray-900 mb-2">
-            <span className="text-blue-600">INSTALLING</span> StudentStore from <span className="text-blue-600">Chrome</span> is the safest way.
-          </h4>
-        </div>
+            <div className="space-y-4">
+              {/* Main Message */}
+              <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-xl p-5 text-center">
+                <div className="flex justify-center mb-3">
+                  {/* Chrome Icon */}
+                  <svg className="w-16 h-16" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="22" fill="#FFF"/>
+                    <circle cx="24" cy="24" r="16" fill="#4285F4"/>
+                    <path d="M24,8 C15.163,8 8,15.163 8,24 L16,24 C16,19.582 19.582,16 24,16 L32,24 C32,28.418 28.418,32 24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 C32.837,40 40,32.837 40,24 C40,15.163 32.837,8 24,8 Z" fill="#EA4335"/>
+                    <path d="M24,32 C19.582,32 16,28.418 16,24 L8,24 C8,32.837 15.163,40 24,40 L24,32 Z" fill="#34A853"/>
+                    <path d="M24,32 L32,24 C32,28.418 28.418,32 24,32 Z" fill="#FBBC05"/>
+                  </svg>
+                </div>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">
+                  <span className="text-blue-600">INSTALLING</span> StudentStore from <span className="text-blue-600">Chrome</span> is the safest way.
+                </h4>
+              </div>
 
-        {/* Quick Install Steps */}
-        <div className="bg-white border-2 border-gray-200 rounded-xl p-5">
-          <h5 className="font-bold text-gray-900 mb-4 flex items-center text-base">
-            <span className="text-xl mr-2">📋</span>
-            Quick Install Steps
-          </h5>
+              {/* Quick Install Steps */}
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-5">
+                <h5 className="font-bold text-gray-900 mb-4 flex items-center text-base">
+                  <span className="text-xl mr-2">📋</span>
+                  Quick Install Steps
+                </h5>
 
-          <div className="space-y-4">
-            {/* Step 1 */}
-            <div className="flex items-start">
-              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
-                1
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900 mb-2">
-                  Copy this link
-                </p>
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-300">
-                  <p className="text-xs text-gray-600 mb-2 font-medium">📎 App Link:</p>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value="studentstore-zeta.vercel.app"
-                      readOnly
-                      className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                    />
-                    <button
-                      onClick={(e) => {
-                        navigator.clipboard.writeText('https://studentstore-zeta.vercel.app/');
-                        const btn = e.currentTarget;
-                        const originalHTML = btn.innerHTML;
-                        btn.innerHTML = '✓';
-                        btn.classList.add('bg-green-600');
-                        setTimeout(() => {
-                          btn.innerHTML = originalHTML;
-                          btn.classList.remove('bg-green-600');
-                        }, 2000);
-                      }}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 active:scale-95 transition-all whitespace-nowrap"
-                    >
-                      Copy
-                    </button>
+                <div className="space-y-4">
+                  {/* Step 1 */}
+                  <div className="flex items-start">
+                    <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      1
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900 mb-2">
+                        Copy this link
+                      </p>
+                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-300">
+                        <p className="text-xs text-gray-600 mb-2 font-medium">📎 App Link:</p>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value="studentstore-zeta.vercel.app"
+                            readOnly
+                            className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            onClick={(e) => (e.target as HTMLInputElement).select()}
+                          />
+                          <button
+                            onClick={(e) => {
+                              navigator.clipboard.writeText('https://studentstore-zeta.vercel.app/');
+                              const btn = e.currentTarget;
+                              const originalHTML = btn.innerHTML;
+                              btn.innerHTML = '✓';
+                              btn.classList.add('bg-green-600');
+                              setTimeout(() => {
+                                btn.innerHTML = originalHTML;
+                                btn.classList.remove('bg-green-600');
+                              }, 2000);
+                            }}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 active:scale-95 transition-all whitespace-nowrap"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex items-start">
+                    <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      2
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        Open <span className="text-blue-600 font-bold">CHROME</span> and paste the link
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="flex items-start">
+                    <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      3
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        Tap the <span className="text-green-600 font-bold">Install</span> button and get the app safely <span className="text-green-600 font-bold">INSTALLED</span>.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Step 2 */}
-            <div className="flex items-start">
-              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
-                2
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">
-                  Open <span className="text-blue-600 font-bold">CHROME</span> and paste the link
-                </p>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex items-start">
-              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
-                3
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">
-                  Tap the <span className="text-green-600 font-bold">Install</span> button and get the app safely <span className="text-green-600 font-bold">INSTALLED</span>.
-                </p>
-              </div>
+              {/* Close Button */}
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="w-full bg-gradient-to-r from-blue-500 to-green-500 text-white py-3.5 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all duration-200 text-base"
+              >
+                Got it! 🚀
+              </button>
             </div>
           </div>
         </div>
-
-        {/* Close Button */}
-        <button
-          onClick={() => setShowInstallModal(false)}
-          className="w-full bg-gradient-to-r from-blue-500 to-green-500 text-white py-3.5 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all duration-200 text-base"
-        >
-          Got it! 🚀
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </>
   );
 }
