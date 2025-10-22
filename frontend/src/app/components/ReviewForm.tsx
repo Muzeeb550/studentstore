@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import StarRating from './StarRating';
+import imageCompression from 'browser-image-compression';
 
 interface ReviewFormProps {
   productId: number;
@@ -31,9 +32,10 @@ export default function ReviewForm({
   const [imageUploading, setImageUploading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   
-  // 🚀 NEW: Enhanced loading states
+  // 🚀 ENHANCED: Loading states with compression tracking
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [compressionStatus, setCompressionStatus] = useState<string>('');
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -54,7 +56,7 @@ export default function ReviewForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  // 🚀 NEW: Cache invalidation helper
+  // 🚀 Cache invalidation helper
   const invalidateProductCaches = useCallback((productId: number) => {
     console.log(`🔄 Invalidating caches for product ${productId}`);
     
@@ -79,7 +81,7 @@ export default function ReviewForm({
     console.log(`✅ Cleared ${keys.length + 3} cache entries for product ${productId}`);
   }, []);
 
-  // 🚀 NEW: Dispatch cache invalidation events
+  // 🚀 Dispatch cache invalidation events
   const dispatchCacheInvalidation = useCallback((productId: number, type: 'create' | 'update' | 'delete') => {
     // Dispatch admin update event for other components
     window.dispatchEvent(new CustomEvent('adminUpdate', {
@@ -103,7 +105,7 @@ export default function ReviewForm({
     console.log(`📢 Dispatched ${type} review events for product ${productId}`);
   }, []);
 
-  // 🚀 ENHANCED: Handle form submission with cache invalidation
+  // 🚀 Handle form submission with cache invalidation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -124,18 +126,16 @@ export default function ReviewForm({
       // Submit the review
       await onSubmit(reviewData);
       
-      // 🚀 NEW: Immediate cache invalidation
+      // Immediate cache invalidation
       invalidateProductCaches(productId);
       
-      // 🚀 NEW: Dispatch events for real-time updates
+      // Dispatch events for real-time updates
       dispatchCacheInvalidation(productId, existingReview ? 'update' : 'create');
       
-      // 🚀 NEW: Add optimistic success feedback
       console.log(`✅ Review ${existingReview ? 'updated' : 'submitted'} successfully with cache invalidation`);
       
-      // Show success notification (you can customize this)
+      // Show success notification
       if (typeof window !== 'undefined') {
-        // Optional: Show a toast notification
         const event = new CustomEvent('showToast', {
           detail: {
             type: 'success',
@@ -165,207 +165,301 @@ export default function ReviewForm({
     }
   };
 
-  // 🚀 ENHANCED: Image upload with FIXED metadata handling
-const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  const files = event.target.files;
-  if (!files || files.length === 0) return;
+  // 🚀 UPDATED: Image upload with 10MB LIMIT and CLIENT-SIDE COMPRESSION
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-  // Limit to 3 images max
-  if (reviewImages.length + files.length > 3) {
-    alert('Maximum 3 images allowed per review');
-    return;
-  }
+    // Limit to 3 images max
+    if (reviewImages.length + files.length > 3) {
+      alert('Maximum 3 images allowed per review');
+      return;
+    }
 
-  setImageUploading(true);
-  setUploadProgress(0);
+    setImageUploading(true);
+    setUploadProgress(0);
+    setCompressionStatus('');
 
-  try {
-    const token = localStorage.getItem('studentstore_token');
-    const totalFiles = files.length;
-    
-    for (let i = 0; i < totalFiles; i++) {
-      const file = files[i];
+    try {
+      const token = localStorage.getItem('studentstore_token');
+      const totalFiles = files.length;
       
-      // Update progress
-      const progress = Math.round(((i) / totalFiles) * 100);
-      setUploadProgress(progress);
+      for (let i = 0; i < totalFiles; i++) {
+        const file = files[i];
+        
+        // Update progress for compression phase (0-40%)
+        const compressionProgress = Math.round(((i) / totalFiles) * 40);
+        setUploadProgress(compressionProgress);
+        setCompressionStatus(`Processing image ${i + 1} of ${totalFiles}...`);
 
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Invalid file type. Please select JPG, PNG, GIF, or WebP images.');
-        continue;
-      }
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+          alert('Invalid file type. Please select JPG, PNG, GIF, or WebP images.');
+          continue;
+        }
 
-      // Validate file size (5MB max)
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        alert(`File ${file.name} is too large. Please select images smaller than 5MB.`);
-        continue;
-      }
+        // 🔥 NEW: Check if file is absurdly large (> 50MB) - reject before compression
+        if (file.size > 50 * 1024 * 1024) {
+          alert(
+            `⚠️ File Too Large\n\n` +
+            `${file.name} is ${(file.size / 1024 / 1024).toFixed(1)} MB.\n\n` +
+            `Maximum file size: 50 MB\n\n` +
+            `Please use a smaller image or compress it first.`
+          );
+          continue;
+        }
 
-      // 🚀 ENHANCED: Retry logic with exponential backoff
-      let authResult;
-      let retryCount = 0;
-      const maxRetries = 3;
+        // 🔥 NEW: Warn about very large files (15-50MB)
+        if (file.size > 15 * 1024 * 1024) {
+          setCompressionStatus(`⏳ Large file detected, compression may take 10-15 seconds...`);
+        }
 
-      while (retryCount < maxRetries) {
-        try {
-          console.log(`📤 Uploading image ${i + 1}/${totalFiles} (attempt ${retryCount + 1})`);
-          
-          // Updated auth endpoint for review images
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-          const authResponse = await fetch(`${apiUrl}/api/users/imagekit-auth?usage=review&priority=high`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
+        // Log original file info
+        console.log(`📸 Original image: ${file.name}`);
+        console.log(`   Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+        console.log(`   Type: ${file.type}`);
 
-          if (authResponse.status === 429) {
-            const retryAfter = authResponse.headers.get('Retry-After') || '60';
-            const waitTime = Math.min(parseInt(retryAfter) * 1000, 10000); // Max 10 seconds
+        // 🚀 CLIENT-SIDE COMPRESSION
+        let compressedFile = file;
+        
+        // Only compress if file is larger than 1MB
+        if (file.size > 1024 * 1024) {
+          try {
+            setCompressionStatus(`Compressing ${file.name}...`);
             
-            if (retryCount === maxRetries - 1) {
-              throw new Error(`Review image upload limit reached. Please wait a few minutes and try again.`);
+            // 🔥 ENHANCED: More aggressive compression for very large files (>10MB)
+            const compressionOptions = {
+              maxSizeMB: file.size > 10 * 1024 * 1024 ? 1.5 : 2,  // 1.5MB for huge files, 2MB otherwise
+              maxWidthOrHeight: file.size > 10 * 1024 * 1024 ? 1600 : 1920, // Smaller resolution for huge files
+              useWebWorker: true,        // Non-blocking compression
+              initialQuality: file.size > 10 * 1024 * 1024 ? 0.75 : 0.85, // Lower quality for huge files
+              fileType: file.type        // Preserve original format
+            };
+
+            console.log(`🔄 Compressing ${file.name}...`);
+            
+            compressedFile = await imageCompression(file, compressionOptions);
+            
+            const originalSizeMB = (file.size / 1024 / 1024).toFixed(2);
+            const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
+            const savingsPercent = (((file.size - compressedFile.size) / file.size) * 100).toFixed(1);
+            
+            console.log(`✅ Compression successful!`);
+            console.log(`   Original: ${originalSizeMB} MB`);
+            console.log(`   Compressed: ${compressedSizeMB} MB`);
+            console.log(`   Savings: ${savingsPercent}%`);
+            
+            setCompressionStatus(`Compressed: ${originalSizeMB}MB → ${compressedSizeMB}MB (${savingsPercent}% saved)`);
+            
+          } catch (compressionError) {
+            console.warn(`⚠️ Compression failed for ${file.name}, using original:`, compressionError);
+            setCompressionStatus(`Compression failed, checking size...`);
+            compressedFile = file;
+          }
+        } else {
+          console.log(`✅ Image is already small (${(file.size / 1024 / 1024).toFixed(2)} MB), skipping compression`);
+          setCompressionStatus(`Image already optimized`);
+        }
+
+        // 🔥 UPDATED: Validate compressed file size - NOW 10MB LIMIT!
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (compressedFile.size > maxSize) {
+          const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
+          const originalSizeMB = (file.size / 1024 / 1024).toFixed(2);
+          
+          alert(
+            `⚠️ Unable to compress ${file.name} enough\n\n` +
+            `Original size: ${originalSizeMB} MB\n` +
+            `Compressed size: ${compressedSizeMB} MB\n` +
+            `Maximum allowed: 10 MB\n\n` +
+            `Please choose a smaller image or try a different photo.`
+          );
+          continue;
+        }
+
+        // ✅ Size is good! Log it
+        console.log(`✅ Compressed file size OK: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB (within 10MB limit)`);
+
+        // Update progress for authentication phase (40-60%)
+        const authStartProgress = 40 + Math.round(((i) / totalFiles) * 20);
+        setUploadProgress(authStartProgress);
+        setCompressionStatus(`Authenticating upload ${i + 1}...`);
+
+        // 🚀 Retry logic with exponential backoff
+        let authResult;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (retryCount < maxRetries) {
+          try {
+            console.log(`📤 Authenticating upload ${i + 1}/${totalFiles} (attempt ${retryCount + 1})`);
+            
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const authResponse = await fetch(`${apiUrl}/api/users/imagekit-auth?usage=review&priority=high`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            if (authResponse.status === 429) {
+              const retryAfter = authResponse.headers.get('Retry-After') || '60';
+              const waitTime = Math.min(parseInt(retryAfter) * 1000, 10000);
+              
+              if (retryCount === maxRetries - 1) {
+                throw new Error(`Review image upload limit reached. Please wait a few minutes and try again.`);
+              }
+              
+              console.log(`⏳ Rate limited, waiting ${waitTime/1000} seconds...`);
+              setCompressionStatus(`Rate limited, waiting ${waitTime/1000}s...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              retryCount++;
+              continue;
+            }
+
+            if (!authResponse.ok) {
+              throw new Error(`Authentication failed: ${authResponse.status}`);
+            }
+
+            authResult = await authResponse.json();
+            console.log(`✅ ImageKit auth successful for review image ${i + 1}`);
+            break;
+
+          } catch (error) {
+            retryCount++;
+            if (retryCount >= maxRetries) {
+              throw error;
             }
             
-            console.log(`⏳ Rate limited, waiting ${waitTime/1000} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            retryCount++;
-            continue;
+            const backoffTime = Math.pow(2, retryCount) * 1000;
+            console.log(`⏳ Auth attempt ${retryCount} failed, retrying in ${backoffTime/1000}s...`);
+            setCompressionStatus(`Retry ${retryCount}/${maxRetries}...`);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
           }
+        }
 
-          if (!authResponse.ok) {
-            throw new Error(`Authentication failed: ${authResponse.status}`);
-          }
+        const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
+        if (!publicKey) {
+          throw new Error('Upload configuration missing. Please contact support.');
+        }
 
-          authResult = await authResponse.json();
-          console.log(`✅ ImageKit auth successful for review image ${i + 1}`);
-          break;
+        // Update progress for upload phase (60-100%)
+        const uploadStartProgress = 60 + Math.round(((i) / totalFiles) * 30);
+        setUploadProgress(uploadStartProgress);
+        setCompressionStatus(`Uploading image ${i + 1}...`);
 
-        } catch (error) {
-          retryCount++;
-          if (retryCount >= maxRetries) {
-            throw error;
+        // Upload compressed file
+        const uploadData = new FormData();
+        const timestamp = Date.now();
+        const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        
+        uploadData.append('file', compressedFile);
+        uploadData.append('fileName', `review_${productId}_${timestamp}_${sanitizedFileName}`);
+        uploadData.append('folder', '/studentstore/reviews');
+        uploadData.append('token', authResult.token);
+        uploadData.append('signature', authResult.signature);
+        uploadData.append('expire', authResult.expire.toString());
+        uploadData.append('publicKey', publicKey);
+        
+        // Enhanced tags with compression info
+        const compressionTag = compressedFile.size < file.size ? 'compressed' : 'original';
+        uploadData.append('tags', `product_${productId},review_image,user_upload,uploaded_${timestamp},${compressionTag}`);
+        
+        uploadData.append('responseFields', 'tags,url,thumbnailUrl,fileId,name,size,filePath');
+
+        console.log(`📤 Uploading to ImageKit: ${sanitizedFileName} (${(compressedFile.size / 1024 / 1024).toFixed(2)} MB)`);
+
+        const uploadResponse = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+          method: 'POST',
+          body: uploadData
+        });
+
+        let uploadResult;
+        try {
+          uploadResult = await uploadResponse.json();
+        } catch (parseError) {
+          console.error('❌ Failed to parse ImageKit response:', parseError);
+          throw new Error('Invalid response from image upload service');
+        }
+
+        // Enhanced error handling
+        if (uploadResponse.ok && uploadResult.url) {
+          setReviewImages(prev => [...prev, uploadResult.url]);
+          console.log(`✅ Image ${i + 1}/${totalFiles} uploaded successfully:`, {
+            url: uploadResult.url,
+            fileId: uploadResult.fileId,
+            name: uploadResult.name,
+            finalSize: `${(uploadResult.size / 1024).toFixed(0)} KB`
+          });
+          setCompressionStatus(`Upload ${i + 1} complete!`);
+        } else {
+          console.error('❌ ImageKit upload failed:', {
+            status: uploadResponse.status,
+            statusText: uploadResponse.statusText,
+            result: uploadResult
+          });
+          
+          let errorMessage = 'Upload to ImageKit failed';
+          if (uploadResult?.message) {
+            errorMessage = uploadResult.message;
+          } else if (uploadResult?.error) {
+            errorMessage = uploadResult.error;
+          } else if (!uploadResponse.ok) {
+            errorMessage = `Upload failed with status ${uploadResponse.status}`;
           }
           
-          // Exponential backoff: 2s, 4s, 8s
-          const backoffTime = Math.pow(2, retryCount) * 1000;
-          console.log(`⏳ Auth attempt ${retryCount} failed, retrying in ${backoffTime/1000}s...`);
-          await new Promise(resolve => setTimeout(resolve, backoffTime));
+          throw new Error(errorMessage);
+        }
+
+        // Update final progress for this file
+        const finalProgress = Math.round(((i + 1) / totalFiles) * 100);
+        setUploadProgress(finalProgress);
+
+        // Small delay between uploads
+        if (i < totalFiles - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 
-      const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
-      if (!publicKey) {
-        throw new Error('Upload configuration missing. Please contact support.');
+      console.log(`🎉 All ${totalFiles} review images compressed and uploaded successfully! (10MB max per image)`);
+      setCompressionStatus('All images uploaded successfully! ✅');
+
+    } catch (error) {
+      console.error('❌ Image upload error:', error);
+      
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       }
 
-      // 🚀 FIXED: Upload with corrected metadata handling
-      const uploadData = new FormData();
-      const timestamp = Date.now();
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      
-      uploadData.append('file', file);
-      uploadData.append('fileName', `review_${productId}_${timestamp}_${sanitizedFileName}`);
-      uploadData.append('folder', '/studentstore/reviews');
-      uploadData.append('token', authResult.token);
-      uploadData.append('signature', authResult.signature);
-      uploadData.append('expire', authResult.expire.toString());
-      uploadData.append('publicKey', publicKey);
-      
-      // 🚀 FIXED: Enhanced tags with metadata (this works unlike customMetadata)
-      uploadData.append('tags', `product_${productId},review_image,user_upload,uploaded_${timestamp}`);
-      
-      // 🚀 FIXED: Use responseFields instead of customMetadata
-      uploadData.append('responseFields', 'tags,url,thumbnailUrl,fileId,name,size,filePath');
-
-      console.log(`📤 Uploading to ImageKit: ${sanitizedFileName}`);
-
-      const uploadResponse = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
-        method: 'POST',
-        body: uploadData
-      });
-
-      let uploadResult;
-      try {
-        uploadResult = await uploadResponse.json();
-      } catch (parseError) {
-        console.error('❌ Failed to parse ImageKit response:', parseError);
-        throw new Error('Invalid response from image upload service');
-      }
-
-      // 🚀 ENHANCED: Better error handling
-      if (uploadResponse.ok && uploadResult.url) {
-        setReviewImages(prev => [...prev, uploadResult.url]);
-        console.log(`✅ Image ${i + 1}/${totalFiles} uploaded successfully:`, {
-          url: uploadResult.url,
-          fileId: uploadResult.fileId,
-          name: uploadResult.name
-        });
+      // Enhanced error handling with user-friendly messages
+      if (errorMessage.includes('Invalid custom metadata')) {
+        alert('📸 Image upload configuration error. Please try again or contact support.');
+      } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+        alert(`📸 Upload limit reached!\n\nPlease wait a few minutes before uploading more review images.\n\nNote: Review images have a generous limit of 30 uploads per hour.`);
+      } else if (errorMessage.includes('Authentication failed')) {
+        alert('🔒 Authentication failed. Please try signing in again.');
+      } else if (errorMessage.includes('Upload configuration missing')) {
+        alert('⚙️ Upload system configuration error. Please contact support.');
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        alert('🌐 Network error. Please check your internet connection and try again.');
+      } else if (errorMessage.includes('Invalid response from image upload')) {
+        alert('🔧 Image upload service returned invalid response. Please try again.');
+      } else if (errorMessage.includes('too large after compression') || errorMessage.includes('Unable to compress')) {
+        alert(`📸 The selected image is too large even after compression.\n\nPlease choose a smaller photo or try a different image.`);
       } else {
-        console.error('❌ ImageKit upload failed:', {
-          status: uploadResponse.status,
-          statusText: uploadResponse.statusText,
-          result: uploadResult
-        });
-        
-        // Better error message based on ImageKit response
-        let errorMessage = 'Upload to ImageKit failed';
-        if (uploadResult?.message) {
-          errorMessage = uploadResult.message;
-        } else if (uploadResult?.error) {
-          errorMessage = uploadResult.error;
-        } else if (!uploadResponse.ok) {
-          errorMessage = `Upload failed with status ${uploadResponse.status}`;
-        }
-        
-        throw new Error(errorMessage);
+        alert(`❌ Failed to upload images: ${errorMessage}`);
       }
-
-      // Update progress
-      const newProgress = Math.round(((i + 1) / totalFiles) * 100);
-      setUploadProgress(newProgress);
-
-      // Small delay between uploads to prevent overwhelming
-      if (i < totalFiles - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      
+      setCompressionStatus('Upload failed ❌');
+    } finally {
+      setImageUploading(false);
+      setUploadProgress(0);
+      // Keep compression status visible for 3 seconds
+      setTimeout(() => setCompressionStatus(''), 3000);
     }
-
-    console.log(`🎉 All ${totalFiles} review images uploaded successfully!`);
-
-  } catch (error) {
-    console.error('❌ Image upload error:', error);
-    
-    let errorMessage = 'Unknown error occurred';
-    
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    }
-
-    // 🚀 ENHANCED: Better error handling with user-friendly messages
-    if (errorMessage.includes('Invalid custom metadata')) {
-      alert('📸 Image upload configuration error. Please try again or contact support.');
-    } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      alert(`📸 Upload limit reached!\n\nPlease wait a few minutes before uploading more review images.\n\nNote: Review images have a generous limit of 30 uploads per hour.`);
-    } else if (errorMessage.includes('Authentication failed')) {
-      alert('🔒 Authentication failed. Please try signing in again.');
-    } else if (errorMessage.includes('Upload configuration missing')) {
-      alert('⚙️ Upload system configuration error. Please contact support.');
-    } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-      alert('🌐 Network error. Please check your internet connection and try again.');
-    } else if (errorMessage.includes('Invalid response from image upload')) {
-      alert('🔧 Image upload service returned invalid response. Please try again.');
-    } else {
-      alert(`❌ Failed to upload images: ${errorMessage}`);
-    }
-  } finally {
-    setImageUploading(false);
-    setUploadProgress(0);
-  }
-};
-
+  };
 
   const removeImage = (indexToRemove: number) => {
     setReviewImages(prev => prev.filter((_, index) => index !== indexToRemove));
@@ -377,13 +471,18 @@ const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => 
     return 'text-gray-500';
   };
 
-  // 🚀 NEW: Enhanced progress indicator
+  // 🚀 Enhanced progress indicator with compression status
   const ProgressIndicator = () => (
-    <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-      <div 
-        className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-        style={{ width: `${uploadProgress}%` }}
-      />
+    <div className="space-y-2">
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div 
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+          style={{ width: `${uploadProgress}%` }}
+        />
+      </div>
+      {compressionStatus && (
+        <p className="text-xs text-gray-600 text-center">{compressionStatus}</p>
+      )}
     </div>
   );
 
@@ -398,7 +497,7 @@ const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => 
           Share your experience with <span className="font-semibold text-indigo-600">{productName}</span>
         </p>
         
-        {/* 🚀 NEW: Real-time feedback indicator */}
+        {/* Real-time feedback indicator */}
         <div className="mt-2 flex items-center text-sm text-green-600">
           <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -459,18 +558,18 @@ const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => 
           )}
         </div>
 
-        {/* Image Upload - Enhanced */}
+        {/* Image Upload - Enhanced with 10MB Compression */}
         <div>
           <label className="block text-sm font-semibold text-gray-900 mb-3">
             📸 Add Photos (Optional)
           </label>
           
-          {/* Upload Progress */}
+          {/* Upload Progress with Compression Status */}
           {imageUploading && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-indigo-600">
-                  Uploading images... {uploadProgress}%
+                  Processing images... {uploadProgress}%
                 </span>
                 <span className="text-sm text-gray-500">Please wait</span>
               </div>
@@ -524,7 +623,7 @@ const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => 
                 {imageUploading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-indigo-600 border-t-transparent mr-2"></div>
-                    Uploading... {uploadProgress}%
+                    Processing... {uploadProgress}%
                   </>
                 ) : (
                   <>
@@ -536,14 +635,14 @@ const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => 
                 )}
               </label>
               <p className="text-sm text-gray-500 mt-2">
-                <span className="font-medium">Supported:</span> JPG, PNG, GIF, WebP up to 5MB each. Max 3 photos.<br/>
-                <span className="text-indigo-600 font-medium">✨ Tip:</span> Photos help other students see the product better!
+                <span className="font-medium">Supported:</span> JPG, PNG, GIF, WebP up to 50MB. Max 3 photos.<br/>
+                <span className="text-indigo-600 font-medium">✨ Smart Compression:</span> Large images automatically compressed to under 10MB!
               </p>
             </div>
           )}
         </div>
 
-        {/* Action Buttons - Enhanced */}
+        {/* Action Buttons */}
         <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-100">
           <button
             type="button"

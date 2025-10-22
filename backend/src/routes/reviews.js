@@ -6,7 +6,6 @@ const { addDefaultTransformations } = require('../utils/imagekitHelper'); // ✅
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
-
 // Rate limiting for review operations
 const reviewLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -21,6 +20,9 @@ const reviewLimit = rateLimit({
     legacyHeaders: false
 });
 
+// 🔥 NEW: Image size validation constants
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_IMAGES_PER_REVIEW = 3;
 
 // Get reviews for a specific product (public route)
 router.get('/product/:productId', async (req, res) => {
@@ -31,14 +33,12 @@ router.get('/product/:productId', async (req, res) => {
         const sortBy = req.query.sort || 'newest';
         const offset = (page - 1) * limit;
 
-
         if (!productId || Number.isNaN(productId)) {
             return res.status(400).json({
                 status: 'error',
                 message: 'Invalid product ID'
             });
         }
-
 
         // Build sort order
         let orderBy;
@@ -49,7 +49,6 @@ router.get('/product/:productId', async (req, res) => {
             case 'helpful': orderBy = 'r.helpfulness_score DESC, r.created_at DESC'; break;
             default: orderBy = 'r.created_at DESC';
         }
-
 
         const reviewsQuery = `
             SELECT 
@@ -66,14 +65,12 @@ router.get('/product/:productId', async (req, res) => {
         `;
         const reviewsResult = await pool.query(reviewsQuery, [productId, offset, limit]);
 
-
         const countResult = await pool.query(
             'SELECT COUNT(*) as total FROM Reviews WHERE product_id = $1',
             [productId]
         );
         const total = parseInt(countResult.rows[0].total, 10);
         const totalPages = Math.ceil(total / limit);
-
 
         const ratingDistResult = await pool.query(`
             SELECT rating, COUNT(*) as count
@@ -82,7 +79,6 @@ router.get('/product/:productId', async (req, res) => {
             GROUP BY rating
             ORDER BY rating DESC
         `, [productId]);
-
 
         res.json({
             status: 'success',
@@ -111,13 +107,11 @@ router.get('/product/:productId', async (req, res) => {
     }
 });
 
-
-// ✅ UPDATED: Create a new review with image optimization
+// ✅ UPDATED: Create a new review with image optimization and 10MB limit
 router.post('/', authenticateToken, reviewLimit, async (req, res) => {
     try {
         const userId = req.user.id;
         const { product_id, rating, review_text, review_images } = req.body;
-
 
         if (!product_id || !rating) {
             return res.status(400).json({
@@ -126,7 +120,6 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-
         if (rating < 1 || rating > 5) {
             return res.status(400).json({
                 status: 'error',
@@ -134,12 +127,30 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
+        // 🔥 NEW: Validate review images
+        if (review_images && Array.isArray(review_images)) {
+            if (review_images.length > MAX_IMAGES_PER_REVIEW) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Maximum ${MAX_IMAGES_PER_REVIEW} images allowed per review`
+                });
+            }
+
+            // Note: Image size validation happens on frontend before upload to ImageKit
+            // Backend validates the array structure and count only
+            const invalidImages = review_images.filter(url => !url || typeof url !== 'string' || !url.includes('imagekit.io'));
+            if (invalidImages.length > 0) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Invalid image URLs detected. Images must be uploaded to ImageKit first.'
+                });
+            }
+        }
 
         const productCheck = await pool.query(
             'SELECT id, name, category_id FROM Products WHERE id = $1',
             [product_id]
         );
-
 
         if (productCheck.rows.length === 0) {
             return res.status(404).json({
@@ -148,19 +159,17 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-
         const productInfo = productCheck.rows[0];
 
-        // ✅ NEW: Optimize review images before storing
+        // ✅ Optimize review images before storing
         let optimizedReviewImages = [];
         if (Array.isArray(review_images) && review_images.length > 0) {
             optimizedReviewImages = review_images
                 .filter(url => url && url.trim() !== '')
                 .map(url => addDefaultTransformations(url, 'review'));
             
-            console.log(`🎨 Optimized ${optimizedReviewImages.length} review images`);
+            console.log(`🎨 Optimized ${optimizedReviewImages.length} review images (10MB max per image)`);
         }
-
 
         const result = await pool.query(`
             INSERT INTO Reviews (user_id, product_id, rating, review_text, review_images, created_at, updated_at)
@@ -168,10 +177,8 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
             RETURNING *
         `, [userId, product_id, rating, review_text || null, JSON.stringify(optimizedReviewImages)]);
 
-
         // Update product rating statistics
         await updateProductRatingStats(product_id);
-
 
         // Cache invalidation
         try {
@@ -188,13 +195,13 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
             console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
         }
 
-
         res.status(201).json({
             status: 'success',
-            message: 'Review created successfully with optimized images',
+            message: 'Review created successfully with optimized images (10MB max)',
             data: {
                 ...result.rows[0],
-                product_name: productInfo.name
+                product_name: productInfo.name,
+                max_image_size: '10MB'
             },
             cacheCleared: true
         });
@@ -208,14 +215,12 @@ router.post('/', authenticateToken, reviewLimit, async (req, res) => {
     }
 });
 
-
-// ✅ UPDATED: Update user's review with image optimization
+// ✅ UPDATED: Update user's review with image optimization and 10MB limit
 router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
     try {
         const userId = req.user.id;
         const reviewId = parseInt(req.params.reviewId, 10);
         const { rating, review_text, review_images } = req.body;
-
 
         if (!reviewId || Number.isNaN(reviewId)) {
             return res.status(400).json({
@@ -224,7 +229,6 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-
         if (rating && (rating < 1 || rating > 5)) {
             return res.status(400).json({
                 status: 'error',
@@ -232,6 +236,23 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
+        // 🔥 NEW: Validate review images
+        if (review_images && Array.isArray(review_images)) {
+            if (review_images.length > MAX_IMAGES_PER_REVIEW) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Maximum ${MAX_IMAGES_PER_REVIEW} images allowed per review`
+                });
+            }
+
+            const invalidImages = review_images.filter(url => !url || typeof url !== 'string' || !url.includes('imagekit.io'));
+            if (invalidImages.length > 0) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Invalid image URLs detected. Images must be uploaded to ImageKit first.'
+                });
+            }
+        }
 
         const reviewCheck = await pool.query(`
             SELECT r.id, r.product_id, r.rating as old_rating, 
@@ -241,7 +262,6 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             WHERE r.id = $1 AND r.user_id = $2
         `, [reviewId, userId]);
 
-
         if (reviewCheck.rows.length === 0) {
             return res.status(404).json({
                 status: 'error',
@@ -249,28 +269,25 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-
         const reviewInfo = reviewCheck.rows[0];
         const productId = reviewInfo.product_id;
         const oldRating = reviewInfo.old_rating;
 
-        // ✅ NEW: Optimize review images before storing
+        // ✅ Optimize review images before storing
         let optimizedReviewImages = [];
         if (Array.isArray(review_images) && review_images.length > 0) {
             optimizedReviewImages = review_images
                 .filter(url => url && url.trim() !== '')
                 .map(url => addDefaultTransformations(url, 'review'));
             
-            console.log(`🎨 Optimized ${optimizedReviewImages.length} review images for update`);
+            console.log(`🎨 Optimized ${optimizedReviewImages.length} review images for update (10MB max)`);
         }
-
 
         const result = await pool.query(`
             UPDATE Reviews 
             SET rating = $1, review_text = $2, review_images = $3, updated_at = NOW()
             WHERE id = $4
         `, [rating, review_text || null, JSON.stringify(optimizedReviewImages), reviewId]);
-
 
         if (result.rowCount === 0) {
             return res.status(404).json({
@@ -279,9 +296,7 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             });
         }
 
-
         await updateProductRatingStats(productId);
-
 
         // Cache invalidation
         try {
@@ -302,15 +317,15 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
             console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
         }
 
-
         res.json({
             status: 'success',
-            message: 'Review updated successfully with optimized images',
+            message: 'Review updated successfully with optimized images (10MB max)',
             data: {
                 reviewId,
                 productName: reviewInfo.product_name,
                 oldRating,
-                newRating: rating
+                newRating: rating,
+                max_image_size: '10MB'
             },
             cacheCleared: true
         });
@@ -324,13 +339,11 @@ router.put('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
     }
 });
 
-
 // Delete user's review with intelligent cache invalidation
 router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => {
     try {
         const userId = req.user.id;
         const reviewId = parseInt(req.params.reviewId, 10);
-
 
         if (!reviewId || Number.isNaN(reviewId)) {
             return res.status(400).json({
@@ -338,7 +351,6 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
                 message: 'Invalid review ID'
             });
         }
-
 
         const reviewCheck = await pool.query(`
             SELECT r.id, r.product_id, r.rating, 
@@ -348,7 +360,6 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
             WHERE r.id = $1 AND r.user_id = $2
         `, [reviewId, userId]);
 
-
         if (reviewCheck.rows.length === 0) {
             return res.status(404).json({
                 status: 'error',
@@ -356,15 +367,12 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
             });
         }
 
-
         const reviewInfo = reviewCheck.rows[0];
         const productId = reviewInfo.product_id;
         const deletedRating = reviewInfo.rating;
         const isLastReview = reviewInfo.review_count <= 1;
 
-
         const result = await pool.query('DELETE FROM Reviews WHERE id = $1', [reviewId]);
-
 
         if (result.rowCount === 0) {
             return res.status(404).json({
@@ -373,9 +381,7 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
             });
         }
 
-
         await updateProductRatingStats(productId);
-
 
         // Cache invalidation
         try {
@@ -395,7 +401,6 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
         } catch (cacheError) {
             console.error('⚠️ Cache invalidation failed (non-critical):', cacheError.message);
         }
-
 
         res.json({
             status: 'success',
@@ -418,7 +423,6 @@ router.delete('/:reviewId', authenticateToken, reviewLimit, async (req, res) => 
     }
 });
 
-
 // Get user's reviews (authenticated users only)
 router.get('/my-reviews', authenticateToken, async (req, res) => {
     try {
@@ -426,7 +430,6 @@ router.get('/my-reviews', authenticateToken, async (req, res) => {
         const page = parseInt(req.query.page || '1', 10);
         const limit = parseInt(req.query.limit || '10', 10);
         const offset = (page - 1) * limit;
-
 
         const result = await pool.query(`
         SELECT 
@@ -442,14 +445,12 @@ router.get('/my-reviews', authenticateToken, async (req, res) => {
         `, [userId, offset, limit]);
 
 
-
         const countResult = await pool.query(
             'SELECT COUNT(*) as total FROM Reviews WHERE user_id = $1',
             [userId]
         );
         const total = parseInt(countResult.rows[0].total, 10);
         const totalPages = Math.ceil(total / limit);
-
 
         res.json({
             status: 'success',
@@ -475,7 +476,6 @@ router.get('/my-reviews', authenticateToken, async (req, res) => {
         });
     }
 });
-
 
 // Helper function to update product rating stats
 async function updateProductRatingStats(productId) {
@@ -511,7 +511,6 @@ async function updateProductRatingStats(productId) {
     }
 }
 
-
 // Admin route to recalculate all product ratings (maintenance)
 router.post('/admin/recalculate-ratings', authenticateToken, async (req, res) => {
     try {
@@ -522,9 +521,7 @@ router.post('/admin/recalculate-ratings', authenticateToken, async (req, res) =>
             });
         }
 
-
         const startTime = Date.now();
-
 
         await pool.query(`
             UPDATE Products 
@@ -544,10 +541,8 @@ router.post('/admin/recalculate-ratings', authenticateToken, async (req, res) =>
                 updated_at = NOW()
         `);
 
-
         await invalidateCache.products();
         await invalidateCache.search();
-
 
         const duration = Date.now() - startTime;
         
@@ -569,14 +564,12 @@ router.post('/admin/recalculate-ratings', authenticateToken, async (req, res) =>
     }
 });
 
-
 // Vote on review helpfulness
 router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const reviewId = parseInt(req.params.reviewId, 10);
         const { voteType } = req.body;
-
 
         if (!reviewId || Number.isNaN(reviewId)) {
             return res.status(400).json({
@@ -585,7 +578,6 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
             });
         }
 
-
         if (!voteType || !['helpful', 'not_helpful'].includes(voteType)) {
             return res.status(400).json({
                 status: 'error',
@@ -593,13 +585,11 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
             });
         }
 
-
         // Check if review exists
         const reviewCheck = await pool.query(
             'SELECT id, product_id, user_id FROM reviews WHERE id = $1',
             [reviewId]
         );
-
 
         if (reviewCheck.rows.length === 0) {
             return res.status(404).json({
@@ -608,9 +598,7 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
             });
         }
 
-
         const review = reviewCheck.rows[0];
-
 
         // Prevent users from voting on their own reviews
         if (review.user_id === userId) {
@@ -620,22 +608,18 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
             });
         }
 
-
         // Check if user already voted
         const existingVote = await pool.query(
             'SELECT id, vote_type FROM review_votes WHERE review_id = $1 AND user_id = $2',
             [reviewId, userId]
         );
 
-
         if (existingVote.rows.length > 0) {
             const oldVoteType = existingVote.rows[0].vote_type;
-
 
             // If same vote, remove it (toggle off)
             if (oldVoteType === voteType) {
                 await pool.query('DELETE FROM review_votes WHERE review_id = $1 AND user_id = $2', [reviewId, userId]);
-
 
                 // Decrement the count
                 const column = voteType === 'helpful' ? 'helpful_count' : 'not_helpful_count';
@@ -643,7 +627,6 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
                     `UPDATE reviews SET ${column} = GREATEST(${column} - 1, 0) WHERE id = $1`,
                     [reviewId]
                 );
-
 
                 return res.json({
                     status: 'success',
@@ -657,7 +640,6 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
                     [voteType, reviewId, userId]
                 );
 
-
                 // Update counts: decrement old, increment new
                 const oldColumn = oldVoteType === 'helpful' ? 'helpful_count' : 'not_helpful_count';
                 const newColumn = voteType === 'helpful' ? 'helpful_count' : 'not_helpful_count';
@@ -669,7 +651,6 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
                      WHERE id = $1`,
                     [reviewId]
                 );
-
 
                 return res.json({
                     status: 'success',
@@ -684,7 +665,6 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
                 [reviewId, userId, voteType]
             );
 
-
             // Increment the count
             const column = voteType === 'helpful' ? 'helpful_count' : 'not_helpful_count';
             await pool.query(
@@ -692,14 +672,12 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
                 [reviewId]
             );
 
-
             return res.json({
                 status: 'success',
                 message: 'Vote recorded',
                 data: { action: 'added', voteType }
             });
         }
-
 
     } catch (error) {
         console.error('Vote review error:', error);
@@ -711,20 +689,17 @@ router.post('/:reviewId/vote', authenticateToken, async (req, res) => {
     }
 });
 
-
 // Get user's votes for reviews
 router.get('/votes/my-votes', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const productId = req.query.productId ? parseInt(req.query.productId.toString(), 10) : null;
 
-
         let query = `
             SELECT rv.review_id, rv.vote_type, rv.created_at
             FROM review_votes rv
         `;
         const params = [userId];
-
 
         if (productId) {
             query += `
@@ -736,16 +711,13 @@ router.get('/votes/my-votes', authenticateToken, async (req, res) => {
             query += ` WHERE rv.user_id = $1`;
         }
 
-
         const result = await pool.query(query, params);
-
 
         res.json({
             status: 'success',
             message: 'User votes retrieved successfully',
             data: { votes: result.rows }
         });
-
 
     } catch (error) {
         console.error('Get user votes error:', error);
@@ -756,7 +728,5 @@ router.get('/votes/my-votes', authenticateToken, async (req, res) => {
         });
     }
 });
-
-
 
 module.exports = router;
