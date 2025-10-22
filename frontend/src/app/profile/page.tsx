@@ -404,7 +404,7 @@ export default function ProfilePage() {
           remaining: Math.max(0, prev.remaining - 1)
         }));
         
-        alert('Profile picture uploaded successfully! 🎉\n\nYour image was compressed for faster loading.');
+        alert('Profile picture uploaded successfully! 🎉');
       } else {
         console.error('Upload failed:', uploadResult);
         throw new Error(uploadResult.message || 'Upload to ImageKit failed');
