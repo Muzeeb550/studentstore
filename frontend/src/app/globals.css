@@ -968,11 +968,11 @@ border: 1px solid #93C5FD; / blue-300 */
 }
 
 /* ===========================================
-   5. NAVIGATION COMPONENTS - FIXED
+   5. NAVIGATION COMPONENTS
    Used by: Navbar.tsx
    =========================================== */
 
-/* Logo Gradient */
+/* Logo Gradient - EXTRACTED FROM INLINE STYLE */
 .logo-gradient {
   background: linear-gradient(135deg, #f97316, #2563eb);
   -webkit-background-clip: text;
@@ -983,36 +983,48 @@ border: 1px solid #93C5FD; / blue-300 */
   transition: all 0.3s ease;
 }
 
-/* ✅ CRITICAL FIX: Navbar Dropdown Container */
+/* Navbar Dropdown - FIXED Z-INDEX BUG */
 .navbar-dropdown-container {
   position: relative;
-  z-index: 9999 !important; /* Force highest z-index on all devices */
-  isolation: isolate; /* Create new stacking context */
+  z-index: 100;
 }
 
-/* ✅ CRITICAL FIX: Navbar Dropdown Menu */
+/* Mobile specific fix */
+@media (max-width: 768px) {
+  .navbar-dropdown-container {
+    z-index: 9999; /* ✅ Super high on mobile */
+  }
+  
+  .navbar-dropdown-menu {
+    z-index: 10000; /* ✅ Even higher */
+    pointer-events: auto !important; /* ✅ Force clickability */
+    touch-action: auto !important; /* ✅ Enable touch */
+  }
+  
+  .navbar-dropdown-item {
+    pointer-events: auto !important; /* ✅ Force items clickable */
+    touch-action: manipulation !important; /* ✅ Better touch response */
+    -webkit-tap-highlight-color: rgba(79, 70, 229, 0.1); /* ✅ Visual feedback */
+  }
+}
+
 .navbar-dropdown-menu {
   position: absolute;
   right: 0;
   margin-top: 0.75rem;
+  width: 16rem;
   background: var(--bg-card);
   border-radius: 1rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   border: 1px solid var(--border-light);
   overflow: hidden;
+  z-index: 1000;
   
-  /* ✅ FORCE CLICKABILITY - Works on all devices */
-  z-index: 10000 !important;
-  pointer-events: auto !important;
-  touch-action: auto !important;
+  /* CRITICAL FIX: Ensure clickability */
+  pointer-events: auto;
   
   /* Animation */
   animation: slideDown 0.2s ease-out;
-  
-  /* Ensure it's above everything */
-  will-change: transform, opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
 
 @keyframes slideDown {
@@ -1026,7 +1038,7 @@ border: 1px solid #93C5FD; / blue-300 */
   }
 }
 
-/* ✅ CRITICAL FIX: Navbar Dropdown Items */
+/* Navbar Dropdown Items */
 .navbar-dropdown-item {
   display: flex;
   align-items: center;
@@ -1038,13 +1050,6 @@ border: 1px solid #93C5FD; / blue-300 */
   background: transparent;
   border: none;
   text-align: left;
-  
-  /* ✅ FORCE CLICKABILITY */
-  pointer-events: auto !important;
-  touch-action: manipulation !important;
-  -webkit-tap-highlight-color: rgba(79, 70, 229, 0.1);
-  position: relative;
-  z-index: 1;
 }
 
 .navbar-dropdown-item:hover {
@@ -1054,7 +1059,6 @@ border: 1px solid #93C5FD; / blue-300 */
 
 .navbar-dropdown-item:active {
   background-color: rgba(79, 70, 229, 0.15);
-  transform: scale(0.98);
 }
 
 /* Profile Avatar */
@@ -1113,7 +1117,6 @@ border: 1px solid #93C5FD; / blue-300 */
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
   min-width: 1.5rem;
   padding: 0 0.25rem;
-  z-index: 10;
 }
 
 /* Mobile Navbar Adjustments */
@@ -1134,7 +1137,6 @@ border: 1px solid #93C5FD; / blue-300 */
     font-size: 0.625rem;
   }
 }
-
 
 /* ===========================================
    6. BANNER & CAROUSEL SYSTEMS
