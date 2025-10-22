@@ -12,7 +12,12 @@
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
   },
-  "keywords": ["studentstore", "backend", "api", "express"],
+  "keywords": [
+    "studentstore",
+    "backend",
+    "api",
+    "express"
+  ],
   "author": "",
   "license": "ISC",
   "description": "StudentStore Backend API - Student-focused product discovery platform",
@@ -20,6 +25,7 @@
     "@upstash/redis": "^1.35.3",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
+    "connect-redis": "^7.1.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
