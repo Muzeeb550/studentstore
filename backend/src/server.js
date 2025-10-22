@@ -5,12 +5,10 @@ const morgan = require('morgan');
 const compression = require('compression');
 const session = require('express-session');
 const passport = require('./config/passport');
-const { connectRedis } = require('./config/redis');
+const { connectRedis, getRedisClient } = require('./config/redis');
 const adminRoutes = require('./routes/admin');
 const wishlistRoutes = require('./routes/wishlist');
 const reviewRoutes = require('./routes/reviews');
-
-
 
 require('dotenv').config();
 
@@ -24,12 +22,7 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// CORS Configuration
-// Needs to be (for multiple domains)
-// CORS Configuration - FIXED for production
 // CORS Configuration - Industry Standard (Environment-Based)
-// CORS Configuration - FIXED for trailing slashes
-// CORS Configuration - FINAL FIX
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -98,16 +91,49 @@ app.use(cors({
     optionsSuccessStatus: 204
 }));
 
-// Session Configuration
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+// Session Configuration - Redis-backed for production (FIXED)
+const setupSession = () => {
+    const sessionConfig = {
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        }
+    };
+
+    // Try to use Redis store if available
+    try {
+        const redisClient = getRedisClient();
+        
+        if (redisClient && redisClient.isOpen) {
+            const RedisStore = require('connect-redis').default;
+            sessionConfig.store = new RedisStore({
+                client: redisClient,
+                prefix: 'studentstore:sess:',
+                ttl: 7 * 24 * 60 * 60 // 7 days in seconds
+            });
+            console.log('✅ Using Redis for session storage (production-ready)');
+        } else {
+            if (process.env.NODE_ENV === 'production') {
+                console.warn('⚠️ Redis not available, using MemoryStore (not recommended for production)');
+            } else {
+                console.log('ℹ️ Using MemoryStore for development');
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not setup Redis session store:', error.message);
+        if (process.env.NODE_ENV === 'production') {
+            console.warn('⚠️ Falling back to MemoryStore');
+        }
     }
-}));
+
+    return session(sessionConfig);
+};
+
+app.use(setupSession());
 
 // Passport Configuration
 app.use(passport.initialize());
@@ -163,7 +189,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const productRoutes = require('./routes/products');
 const databaseRoutes = require('./routes/database');
-const publicRoutes = require('./routes/public'); // ADD THIS LINE
+const publicRoutes = require('./routes/public');
 
 // Use routes
 app.use('/auth', authRoutes);
@@ -174,8 +200,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes); 
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
-
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -202,7 +226,6 @@ app.get('/clear-cache', async (req, res) => {
     await clearAllCache();
     res.json({ message: 'Cache cleared' });
 });
-
 
 // Start server
 const startServer = async () => {

@@ -34,6 +34,11 @@ const connectRedis = async () => {
     }
 };
 
+// 🆕 Get Redis client for session store
+const getRedisClient = () => {
+    return client && isConnected ? client : null;
+};
+
 // Enhanced cache helper functions - PRODUCTION GRADE
 const setCache = async (key, value, expireTime = 3600) => {
     if (client && isConnected) {
@@ -361,6 +366,7 @@ const getCacheHealth = async () => {
 module.exports = { 
     // Core functions
     connectRedis,
+    getRedisClient, // 🆕 Added for session store
     setCache,
     getCache,
     deleteCache,
@@ -371,4 +377,5 @@ module.exports = {
     invalidateCache,
     warmCache,
     getCacheHealth
+
 };
