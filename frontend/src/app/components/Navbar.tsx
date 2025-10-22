@@ -423,85 +423,229 @@ export default function Navbar() {
                       </svg>
                     </button>
 
+                    {/* ✅ FIXED: Desktop Dropdown with Inline Styles */}
                     {dropdownOpen && (
-                      <div className="navbar-dropdown-menu" style={{ width: '16rem' }}>
-                        <div className="px-6 py-5 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
-                          <div className="flex items-center space-x-4">
-                            <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-student-primary truncate">{getDisplayName()}</p>
-                              <p className="text-sm text-student-secondary truncate">{user.email}</p>
-                              <p className="text-xs text-student-blue font-medium capitalize mt-1">
-                                {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
-                              </p>
+                      <>
+                        {/* Backdrop */}
+                        <div
+                          style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 99998,
+                            background: 'transparent',
+                            cursor: 'default'
+                          }}
+                          onClick={() => setDropdownOpen(false)}
+                        />
+                        
+                        {/* Dropdown menu */}
+                        <div 
+                          style={{
+                            position: 'fixed',
+                            top: '80px',
+                            right: '20px',
+                            width: '16rem',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '1rem',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            border: '1px solid #E2E8F0',
+                            overflow: 'hidden',
+                            zIndex: 99999,
+                            pointerEvents: 'auto',
+                            cursor: 'default'
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* Profile header */}
+                          <div style={{
+                            padding: '1.25rem 1.5rem',
+                            background: 'linear-gradient(to right, rgba(79, 70, 229, 0.1), rgba(16, 185, 129, 0.1), rgba(249, 115, 22, 0.1))',
+                            borderBottom: '1px solid #E2E8F0'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                              <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontWeight: 700, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {getDisplayName()}
+                                </p>
+                                <p style={{ fontSize: '0.875rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {user.email}
+                                </p>
+                                <p style={{ fontSize: '0.75rem', color: '#4F46E5', fontWeight: 500, marginTop: '0.25rem', textTransform: 'capitalize' }}>
+                                  {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="py-3">
-                          <button
-                            onClick={() => handleNavigation('/dashboard')}
-                            className="navbar-dropdown-item"
-                          >
-                            <div className="w-11 h-11 bg-student-light group-hover:bg-student-blue/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
-                              <svg className="w-5 h-5 text-student-secondary group-hover:text-student-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                              </svg>
-                            </div>
-                            <div className="text-left">
-                              <p className="font-semibold">My Dashboard</p>
-                              <p className="text-xs text-student-secondary">Overview & stats</p>
-                            </div>
-                          </button>
-
-                          <button
-                            onClick={() => handleNavigation('/profile')}
-                            className="navbar-dropdown-item"
-                          >
-                            <div className="w-11 h-11 bg-student-light group-hover:bg-student-green/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
-                              <svg className="w-5 h-5 text-student-secondary group-hover:text-student-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                            </div>
-                            <div className="text-left">
-                              <p className="font-semibold">My Profile</p>
-                              <p className="text-xs text-student-secondary">Settings & preferences</p>
-                            </div>
-                          </button>
-
-                          {user.role === 'admin' && (
-                            <button
-                              onClick={() => handleNavigation('/admin')}
-                              className="navbar-dropdown-item"
+                          {/* Menu items */}
+                          <div style={{ padding: '0.75rem 0' }}>
+                            {/* Dashboard Link */}
+                            <a
+                              href="/dashboard"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                width: '100%',
+                                padding: '0.75rem 1.5rem',
+                                color: '#1E293B',
+                                textDecoration: 'none',
+                                transition: 'background-color 0.2s',
+                                cursor: 'pointer',
+                                pointerEvents: 'auto'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                              <div className="w-11 h-11 bg-student-light group-hover:bg-student-orange/20 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
-                                <svg className="w-5 h-5 text-student-secondary group-hover:text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <div style={{
+                                width: '2.75rem',
+                                height: '2.75rem',
+                                backgroundColor: '#F1F5F9',
+                                borderRadius: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: '1rem',
+                                transition: 'background-color 0.2s'
+                              }}>
+                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                                 </svg>
                               </div>
-                              <div className="text-left">
-                                <p className="font-semibold">Admin Panel</p>
-                                <p className="text-xs text-student-secondary">Manage platform</p>
+                              <div style={{ textAlign: 'left' }}>
+                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Dashboard</p>
+                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Overview & stats</p>
+                              </div>
+                            </a>
+
+                            {/* Profile Link */}
+                            <a
+                              href="/profile"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                width: '100%',
+                                padding: '0.75rem 1.5rem',
+                                color: '#1E293B',
+                                textDecoration: 'none',
+                                transition: 'background-color 0.2s',
+                                cursor: 'pointer',
+                                pointerEvents: 'auto'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              <div style={{
+                                width: '2.75rem',
+                                height: '2.75rem',
+                                backgroundColor: '#F1F5F9',
+                                borderRadius: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: '1rem',
+                                transition: 'background-color 0.2s'
+                              }}>
+                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                              </div>
+                              <div style={{ textAlign: 'left' }}>
+                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Profile</p>
+                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Settings & preferences</p>
+                              </div>
+                            </a>
+
+                            {/* Admin Panel Link (conditional) */}
+                            {user.role === 'admin' && (
+                              <a
+                                href="/admin"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  width: '100%',
+                                  padding: '0.75rem 1.5rem',
+                                  color: '#1E293B',
+                                  textDecoration: 'none',
+                                  transition: 'background-color 0.2s',
+                                  cursor: 'pointer',
+                                  pointerEvents: 'auto'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(249, 115, 22, 0.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                <div style={{
+                                  width: '2.75rem',
+                                  height: '2.75rem',
+                                  backgroundColor: '#F1F5F9',
+                                  borderRadius: '0.75rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginRight: '1rem',
+                                  transition: 'background-color 0.2s'
+                                }}>
+                                  <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                  </svg>
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                  <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Admin Panel</p>
+                                  <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Manage platform</p>
+                                </div>
+                              </a>
+                            )}
+
+                            {/* Sign Out Button */}
+                            <button
+                              onClick={handleLogout}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                width: '100%',
+                                padding: '0.75rem 1.5rem',
+                                color: '#1E293B',
+                                textDecoration: 'none',
+                                transition: 'all 0.2s',
+                                cursor: 'pointer',
+                                pointerEvents: 'auto',
+                                border: 'none',
+                                background: 'transparent',
+                                textAlign: 'left',
+                                fontFamily: 'inherit'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                                e.currentTarget.style.color = '#DC2626';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.color = '#1E293B';
+                              }}
+                            >
+                              <div style={{
+                                width: '2.75rem',
+                                height: '2.75rem',
+                                backgroundColor: '#F1F5F9',
+                                borderRadius: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: '1rem',
+                                transition: 'background-color 0.2s'
+                              }}>
+                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                              </div>
+                              <div style={{ textAlign: 'left' }}>
+                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Sign Out</p>
+                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Logout from account</p>
                               </div>
                             </button>
-                          )}
-
-                          <button
-                            onClick={handleLogout}
-                            className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
-                          >
-                            <div className="w-11 h-11 bg-student-light group-hover:bg-red-100 rounded-xl flex items-center justify-center mr-4 transition-colors duration-200">
-                              <svg className="w-5 h-5 text-student-secondary group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                              </svg>
-                            </div>
-                            <div className="text-left">
-                              <p className="font-semibold">Sign Out</p>
-                              <p className="text-xs text-student-secondary">Logout from account</p>
-                            </div>
-                          </button>
+                          </div>
                         </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -525,13 +669,12 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Mobile Navigation */}
+          {/* Mobile Navigation - UNCHANGED */}
           <div className="md:hidden">
             <div className="flex justify-between items-start h-auto py-4">
               <StudentStoreLogo mobile={true} />
 
               <div className="flex items-center space-x-3 mt-1">
-                {/* ✅ Mobile PWA Install Button */}
                 {showInstallButton && (
                   <button
                     onClick={handleInstallClick}
@@ -690,7 +833,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ✅ FIXED: Chrome-Focused Install Modal */}
+      {/* PWA Install Modal - UNCHANGED */}
       {showInstallModal && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
@@ -718,10 +861,8 @@ export default function Navbar() {
             </div>
 
             <div className="space-y-4">
-              {/* Main Message */}
               <div className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 rounded-xl p-5 text-center">
                 <div className="flex justify-center mb-3">
-                  {/* Chrome Icon */}
                   <svg className="w-16 h-16" viewBox="0 0 48 48">
                     <circle cx="24" cy="24" r="22" fill="#FFF"/>
                     <circle cx="24" cy="24" r="16" fill="#4285F4"/>
@@ -735,7 +876,6 @@ export default function Navbar() {
                 </h4>
               </div>
 
-              {/* Quick Install Steps */}
               <div className="bg-white border-2 border-gray-200 rounded-xl p-5">
                 <h5 className="font-bold text-gray-900 mb-4 flex items-center text-base">
                   <span className="text-xl mr-2">📋</span>
@@ -743,7 +883,6 @@ export default function Navbar() {
                 </h5>
 
                 <div className="space-y-4">
-                  {/* Step 1 */}
                   <div className="flex items-start">
                     <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
                       1
@@ -783,7 +922,6 @@ export default function Navbar() {
                     </div>
                   </div>
 
-                  {/* Step 2 */}
                   <div className="flex items-start">
                     <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
                       2
@@ -795,7 +933,6 @@ export default function Navbar() {
                     </div>
                   </div>
 
-                  {/* Step 3 */}
                   <div className="flex items-start">
                     <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
                       3
@@ -809,7 +946,6 @@ export default function Navbar() {
                 </div>
               </div>
 
-              {/* Close Button */}
               <button
                 onClick={() => setShowInstallModal(false)}
                 className="w-full bg-gradient-to-r from-blue-500 to-green-500 text-white py-3.5 rounded-xl font-bold hover:shadow-lg active:scale-95 transition-all duration-200 text-base"
