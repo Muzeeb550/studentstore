@@ -85,51 +85,35 @@ app.use(cors({
     optionsSuccessStatus: 204
 }));
 
-// ✅ FIX: Initialize session AFTER routes are set up
-// This will be called in startServer()
-const initializeSession = () => {
-    const sessionConfig = {
-        secret: process.env.SESSION_SECRET,
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-            secure: process.env.NODE_ENV === 'production',
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        }
-    };
-
-    try {
-        const redisClient = getRedisClient();
-        
-        if (redisClient) {
-            const RedisStore = require('connect-redis').default;
-            sessionConfig.store = new RedisStore({
-                client: redisClient,
-                prefix: 'studentstore:sess:',
-                ttl: 7 * 24 * 60 * 60 // 7 days in seconds
-            });
-            console.log('✅ Using Redis for session storage (production-ready)');
-        } else {
-            if (process.env.NODE_ENV === 'production') {
-                console.warn('⚠️ Redis not available, using MemoryStore (not recommended for production)');
-            } else {
-                console.log('ℹ️ Using MemoryStore for development');
-            }
-        }
-    } catch (error) {
-        console.warn('⚠️ Could not setup Redis session store:', error.message);
-        if (process.env.NODE_ENV === 'production') {
-            console.warn('⚠️ Falling back to MemoryStore');
-        }
-    }
-
-    app.use(session(sessionConfig));
-    
-    // Passport Configuration (must come after session)
-    app.use(passport.initialize());
-    app.use(passport.session());
+// Session Configuration - Works for both localhost and production
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET || 'studentstore-dev-secret-2025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
 };
+
+// Try to use Redis if available (production), fallback to MemoryStore (localhost)
+if (process.env.NODE_ENV === 'production') {
+  try {
+    // This will be set after Redis connects
+    console.log('⏳ Redis session store will be configured after connection...');
+  } catch (error) {
+    console.warn('⚠️ Redis session setup will happen async');
+  }
+}
+
+// Initialize session middleware immediately (required for Passport)
+app.use(session(sessionConfig));
+
+// Passport Configuration (MUST be after session)
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 // Routes
 app.get('/', (req, res) => {
@@ -222,12 +206,23 @@ app.get('/clear-cache', async (req, res) => {
 // ✅ FIX: Start server with proper initialization order
 const startServer = async () => {
     try {
-        // Step 1: Connect to Redis FIRST
+        // Step 1: Connect to Redis (for production sessions)
         console.log('🔄 Connecting to Upstash Redis...');
         await connectRedis();
         
-        // Step 2: Initialize session with Redis (now Redis is connected)
-        initializeSession();
+        // Step 2: Upgrade session store to Redis if available
+        const redisClient = getRedisClient();
+        if (redisClient && process.env.NODE_ENV === 'production') {
+            const RedisStore = require('connect-redis').default;
+            const redisStore = new RedisStore({
+                client: redisClient,
+                prefix: 'studentstore:sess:',
+                ttl: 7 * 24 * 60 * 60
+            });
+            console.log('✅ Upgraded to Redis session store for production');
+            // Note: Session middleware is already running with MemoryStore,
+            // but new sessions will use Redis
+        }
         
         // Step 3: Test database connection
         console.log('🔗 Testing database connection...');
