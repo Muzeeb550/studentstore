@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import imageCompression from 'browser-image-compression'; // 🔥 NEW: Add compression
 
 interface User {
   id: number;
@@ -33,6 +34,11 @@ export default function ProfilePage() {
     remaining: 5,
     resetTime: null
   });
+  
+  // 🔥 NEW: Add compression tracking states
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [compressionStatus, setCompressionStatus] = useState<string>('');
+  
   const router = useRouter();
 
   // ✅ Real student stats from API
@@ -57,7 +63,7 @@ export default function ProfilePage() {
         // Fetch fresh user data from backend
         fetchUserProfile();
         
-        // ✅ NEW: Fetch real stats
+        // ✅ Fetch real stats
         fetchUserStats();
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -123,7 +129,7 @@ export default function ProfilePage() {
     }
   };
 
-  // ✅ NEW: Fetch real user stats
+  // ✅ Fetch real user stats
   const fetchUserStats = async () => {
     try {
       const token = localStorage.getItem('studentstore_token');
@@ -157,6 +163,7 @@ export default function ProfilePage() {
     }
   };
 
+  // 🔥 UPDATED: Image upload with CLIENT-SIDE COMPRESSION (10MB limit)
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -168,9 +175,14 @@ export default function ProfilePage() {
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      alert(`File is too large. Please select an image smaller than ${maxSize / 1024 / 1024}MB.`);
+    // 🔥 NEW: Check if file is absurdly large (> 50MB) - reject before compression
+    if (file.size > 50 * 1024 * 1024) {
+      alert(
+        `⚠️ File Too Large\n\n` +
+        `${file.name} is ${(file.size / 1024 / 1024).toFixed(1)} MB.\n\n` +
+        `Maximum file size: 50 MB\n\n` +
+        `Please use a smaller image or compress it first.`
+      );
       return;
     }
 
@@ -181,15 +193,99 @@ export default function ProfilePage() {
     }
 
     setUploading(true);
+    setUploadProgress(0);
+    setCompressionStatus('');
 
     try {
+      // 🔥 NEW: Warn about very large files (15-50MB)
+      if (file.size > 15 * 1024 * 1024) {
+        setCompressionStatus(`⏳ Large file detected, compression may take 10-15 seconds...`);
+      }
+
+      // Log original file info
+      console.log(`📸 Original profile image: ${file.name}`);
+      console.log(`   Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`   Type: ${file.type}`);
+
+      // Update progress for compression phase (0-30%)
+      setUploadProgress(10);
+      setCompressionStatus(`Processing image...`);
+
+      // 🔥 NEW: CLIENT-SIDE COMPRESSION
+      let compressedFile = file;
+      
+      // Only compress if file is larger than 500KB (profile pictures should be smaller)
+      if (file.size > 500 * 1024) {
+        try {
+          setCompressionStatus(`Compressing ${file.name}...`);
+          setUploadProgress(20);
+          
+          // 🔥 Profile-specific compression (smaller target for faster loading)
+          const compressionOptions = {
+            maxSizeMB: file.size > 5 * 1024 * 1024 ? 0.5 : 1, // Smaller for profile pics
+            maxWidthOrHeight: 800,    // Profile pics don't need to be huge
+            useWebWorker: true,
+            initialQuality: file.size > 5 * 1024 * 1024 ? 0.7 : 0.8,
+            fileType: file.type
+          };
+
+          console.log(`🔄 Compressing profile image...`);
+          
+          compressedFile = await imageCompression(file, compressionOptions);
+          
+          const originalSizeMB = (file.size / 1024 / 1024).toFixed(2);
+          const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
+          const savingsPercent = (((file.size - compressedFile.size) / file.size) * 100).toFixed(1);
+          
+          console.log(`✅ Compression successful!`);
+          console.log(`   Original: ${originalSizeMB} MB`);
+          console.log(`   Compressed: ${compressedSizeMB} MB`);
+          console.log(`   Savings: ${savingsPercent}%`);
+          
+          setCompressionStatus(`Compressed: ${originalSizeMB}MB → ${compressedSizeMB}MB (${savingsPercent}% saved)`);
+          setUploadProgress(30);
+          
+        } catch (compressionError) {
+          console.warn(`⚠️ Compression failed for ${file.name}, using original:`, compressionError);
+          setCompressionStatus(`Compression failed, checking size...`);
+          compressedFile = file;
+        }
+      } else {
+        console.log(`✅ Image is already small (${(file.size / 1024 / 1024).toFixed(2)} MB), skipping compression`);
+        setCompressionStatus(`Image already optimized`);
+        setUploadProgress(30);
+      }
+
+      // 🔥 UPDATED: Validate compressed file size - NOW 10MB LIMIT!
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (compressedFile.size > maxSize) {
+        const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
+        const originalSizeMB = (file.size / 1024 / 1024).toFixed(2);
+        
+        alert(
+          `⚠️ Unable to compress ${file.name} enough\n\n` +
+          `Original size: ${originalSizeMB} MB\n` +
+          `Compressed size: ${compressedSizeMB} MB\n` +
+          `Maximum allowed: 10 MB\n\n` +
+          `Please choose a smaller image or try a different photo.`
+        );
+        return;
+      }
+
+      // ✅ Size is good! Log it
+      console.log(`✅ Compressed file size OK: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB (within 10MB limit)`);
+
+      // Update progress for authentication phase (30-50%)
+      setUploadProgress(40);
+      setCompressionStatus(`Authenticating upload...`);
+
       const token = localStorage.getItem('studentstore_token');
       console.log('🔑 Token exists:', !!token);
       
       console.log('📡 Calling ImageKit auth endpoint...');
       
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const authResponse = await fetch(`${apiUrl}/api/users/imagekit-auth`, {
+      const authResponse = await fetch(`${apiUrl}/api/users/imagekit-auth?usage=profile&priority=high`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       
@@ -231,29 +327,43 @@ export default function ProfilePage() {
           resetTime: new Date(parseInt(resetTime) * 1000)
         });
       }
+
+      setUploadProgress(50);
       
       const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
       if (!publicKey) {
         console.error('❌ ImageKit public key not found');
         throw new Error('Upload configuration missing. Please contact support.');
       }
+
+      // Update progress for upload phase (50-90%)
+      setUploadProgress(60);
+      setCompressionStatus(`Uploading profile picture...`);
       
-      // Upload to ImageKit with EXACT parameters from backend
+      // 🔥 Upload compressed file
       const uploadData = new FormData();
-      uploadData.append('file', file);
-      uploadData.append('fileName', `profile_${user?.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
+      const timestamp = Date.now();
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      
+      uploadData.append('file', compressedFile); // 🔥 Using compressed file
+      uploadData.append('fileName', `profile_${user?.id}_${timestamp}_${sanitizedFileName}`);
       uploadData.append('folder', '/studentstore/profiles');
       
-      // Use EXACT auth parameters from ImageKit (don't modify)
+      // Use EXACT auth parameters from ImageKit
       uploadData.append('token', authResult.token);
       uploadData.append('signature', authResult.signature);
       uploadData.append('expire', authResult.expire.toString());
       uploadData.append('publicKey', publicKey);
 
-      // Add optional metadata (this won't affect signature)
-      uploadData.append('tags', `user_${user?.id},profile_picture`);
+      // Enhanced tags with compression info
+      const compressionTag = compressedFile.size < file.size ? 'compressed' : 'original';
+      uploadData.append('tags', `user_${user?.id},profile_picture,${compressionTag}`);
+      
+      uploadData.append('responseFields', 'tags,url,thumbnailUrl,fileId,name,size,filePath');
 
-      console.log('📤 Uploading to ImageKit...');
+      console.log(`📤 Uploading to ImageKit: ${sanitizedFileName} (${(compressedFile.size / 1024 / 1024).toFixed(2)} MB)`);
+
+      setUploadProgress(80);
 
       const uploadResponse = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
         method: 'POST',
@@ -271,10 +381,22 @@ export default function ProfilePage() {
 
       if (uploadResponse.ok) {
         console.log('📸 Upload success:', uploadResult.url);
+        console.log(`✅ Profile picture uploaded successfully:`, {
+          url: uploadResult.url,
+          fileId: uploadResult.fileId,
+          finalSize: `${(uploadResult.size / 1024).toFixed(0)} KB`
+        });
+        
+        setUploadProgress(90);
+        setCompressionStatus(`Saving to profile...`);
+        
         setProfilePicture(uploadResult.url);
         
         // Save profile picture to backend
         await saveProfilePicture(uploadResult.url);
+        
+        setUploadProgress(100);
+        setCompressionStatus(`Profile picture updated! ✅`);
         
         // Update rate limit info (decrease remaining)
         setRateLimitInfo(prev => ({
@@ -282,7 +404,7 @@ export default function ProfilePage() {
           remaining: Math.max(0, prev.remaining - 1)
         }));
         
-        alert('Profile picture uploaded successfully! 🎉');
+        alert('Profile picture uploaded successfully! 🎉\n\nYour image was compressed for faster loading.');
       } else {
         console.error('Upload failed:', uploadResult);
         throw new Error(uploadResult.message || 'Upload to ImageKit failed');
@@ -328,13 +450,19 @@ export default function ProfilePage() {
         }
       }
       // Handle general errors
-      else {
+      else if (error.message && error.message.includes('Unable to compress')) {
+        errorMessage = `The selected image is too large even after compression.\n\nPlease choose a smaller photo or try a different image.`;
+      } else {
         errorMessage = error.message || 'Unknown error occurred.';
       }
       
+      setCompressionStatus('Upload failed ❌');
       alert(`Failed to upload image: ${errorMessage}`);
     } finally {
       setUploading(false);
+      setUploadProgress(0);
+      // Keep compression status visible for 3 seconds
+      setTimeout(() => setCompressionStatus(''), 3000);
     }
   };
 
@@ -411,6 +539,21 @@ export default function ProfilePage() {
     }
     return null;
   };
+
+  // 🔥 NEW: Enhanced progress indicator
+  const ProgressIndicator = () => (
+    <div className="space-y-2 mt-3">
+      <div className="w-full bg-student-light rounded-full h-2">
+        <div 
+          className="bg-gradient-to-r from-student-blue to-student-green h-2 rounded-full transition-all duration-300"
+          style={{ width: `${uploadProgress}%` }}
+        />
+      </div>
+      {compressionStatus && (
+        <p className="text-xs text-student-secondary text-center">{compressionStatus}</p>
+      )}
+    </div>
+  );
 
   if (loading) {
     return (
@@ -601,11 +744,24 @@ export default function ProfilePage() {
                     </p>
                   </div>
 
-                  {/* Profile Picture Upload */}
+                  {/* Profile Picture Upload with Compression */}
                   <div>
                     <label className="block text-sm font-medium text-student-primary mb-4">
                       Profile Picture
                     </label>
+                    
+                    {/* 🔥 NEW: Upload Progress */}
+                    {uploading && (
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-student-blue">
+                            Processing image... {uploadProgress}%
+                          </span>
+                          <span className="text-sm text-student-secondary">Please wait</span>
+                        </div>
+                        <ProgressIndicator />
+                      </div>
+                    )}
                     
                     <div className="flex items-center space-x-6">
                       {/* Current Picture */}
@@ -648,7 +804,7 @@ export default function ProfilePage() {
                           {uploading ? (
                             <>
                               <div className="loading-shimmer rounded-full h-4 w-4 mr-2"></div>
-                              Uploading...
+                              Processing... {uploadProgress}%
                             </>
                           ) : rateLimitInfo.remaining <= 0 ? (
                             <>
@@ -667,7 +823,7 @@ export default function ProfilePage() {
                           )}
                         </label>
                         <p className="text-sm text-student-secondary mt-2">
-                          📸 JPG, PNG, GIF, WebP up to 5MB • 🔒 Secure upload with rate limiting (5 per hour)
+                          📸 JPG, PNG, GIF, WebP up to 50MB • ✨ Auto-compressed to under 10MB • 🔒 Rate limited (5/hour)
                         </p>
                       </div>
                     </div>
@@ -736,7 +892,7 @@ export default function ProfilePage() {
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        All uploads are secure and validated
+                        All uploads are compressed & validated
                       </div>
                     </div>
                   </div>
