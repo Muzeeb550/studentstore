@@ -22,20 +22,16 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// CORS Configuration - Industry Standard (Environment-Based)
+// CORS Configuration (keep your existing CORS code here - don't change)
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
-
-// ✅ FIX: Only strict when VERCEL_ENV=production (true production deployment)
 const isStrictProduction = isProduction && process.env.VERCEL_ENV === 'production';
 
-// Exact production domains (most secure)
 const allowedOrigins = [
     'https://studentstore-zeta.vercel.app',
     'https://studentstore-zeta.vercel.app/',
 ];
 
-// Development-only origins
 if (isDevelopment) {
     allowedOrigins.push('http://localhost:3000');
     allowedOrigins.push('http://localhost:3000/');
@@ -43,7 +39,6 @@ if (isDevelopment) {
     allowedOrigins.push('http://localhost:5173/');
 }
 
-// ✅ FIX: Allow patterns unless in strict production
 const allowedOriginPatterns = isStrictProduction
     ? []
     : [
@@ -74,7 +69,6 @@ app.use(cors({
             }
         }
         
-        // ✅ FIX: Better error message
         console.log(`🚨 CORS blocked: ${origin}`);
         console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
         console.log(`   VERCEL_ENV: ${process.env.VERCEL_ENV || 'not set'}`);
@@ -91,8 +85,9 @@ app.use(cors({
     optionsSuccessStatus: 204
 }));
 
-// Session Configuration - Redis-backed for production (FIXED)
-const setupSession = () => {
+// ✅ FIX: Initialize session AFTER routes are set up
+// This will be called in startServer()
+const initializeSession = () => {
     const sessionConfig = {
         secret: process.env.SESSION_SECRET,
         resave: false,
@@ -104,11 +99,10 @@ const setupSession = () => {
         }
     };
 
-    // Try to use Redis store if available
     try {
         const redisClient = getRedisClient();
         
-        if (redisClient && redisClient.isOpen) {
+        if (redisClient) {
             const RedisStore = require('connect-redis').default;
             sessionConfig.store = new RedisStore({
                 client: redisClient,
@@ -130,14 +124,12 @@ const setupSession = () => {
         }
     }
 
-    return session(sessionConfig);
+    app.use(session(sessionConfig));
+    
+    // Passport Configuration (must come after session)
+    app.use(passport.initialize());
+    app.use(passport.session());
 };
-
-app.use(setupSession());
-
-// Passport Configuration
-app.use(passport.initialize());
-app.use(passport.session());
 
 // Routes
 app.get('/', (req, res) => {
@@ -227,13 +219,17 @@ app.get('/clear-cache', async (req, res) => {
     res.json({ message: 'Cache cleared' });
 });
 
-// Start server
+// ✅ FIX: Start server with proper initialization order
 const startServer = async () => {
     try {
-        // Connect to Redis (with fallback)
+        // Step 1: Connect to Redis FIRST
+        console.log('🔄 Connecting to Upstash Redis...');
         await connectRedis();
         
-        // Test database connection on startup
+        // Step 2: Initialize session with Redis (now Redis is connected)
+        initializeSession();
+        
+        // Step 3: Test database connection
         console.log('🔗 Testing database connection...');
         const { testConnection } = require('./config/database');
         const dbConnected = await testConnection();
@@ -242,6 +238,7 @@ const startServer = async () => {
             console.log('⚠️ Database connection failed, but server will continue...');
         }
         
+        // Step 4: Start server
         app.listen(PORT, () => {
            console.log(`
         🚀 StudentStore Backend Server Running!
