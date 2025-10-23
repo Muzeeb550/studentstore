@@ -1,9 +1,24 @@
 'use client';
 
 import Script from 'next/script';
+import { useEffect } from 'react';
+import { analytics } from '@/lib/analytics';
 
 export default function GoogleAnalytics() {
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
+  useEffect(() => {
+    // Track PWA vs Browser session
+    analytics.pwa.trackSessionType();
+    
+    // Track PWA launch
+    analytics.pwa.appLaunched();
+    
+    // Listen for PWA install
+    window.addEventListener('appinstalled', () => {
+      analytics.pwa.installCompleted();
+    });
+  }, []);
 
   if (!measurementId) {
     return null;
