@@ -2,6 +2,7 @@ const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/adminAuth');
 const { deleteCache } = require('../config/redis');  // ✅ ADDED
+const logger = require('../utils/logger');
 const router = express.Router();
 
 // Add product to wishlist
@@ -51,7 +52,7 @@ router.post('/add', authenticateToken, async (req, res) => {
             await deleteCache(`profile:user:${user_id}`);
             await deleteCache(`dashboard:user:${user_id}`);
             await deleteCache(`stats:user:${user_id}`);
-            console.log(`🔄 Cache cleared for user ${user_id} after adding product ${product_id} to wishlist`);
+            logger.debug('Wishlist cache cleared after adding product'); // Removed IDs for security
         } catch (cacheError) {
             console.error('⚠️ Cache clearing failed (non-critical):', cacheError.message);
         }
@@ -100,7 +101,7 @@ router.delete('/remove/:productId', authenticateToken, async (req, res) => {
             await deleteCache(`profile:user:${user_id}`);
             await deleteCache(`dashboard:user:${user_id}`);
             await deleteCache(`stats:user:${user_id}`);
-            console.log(`🔄 Cache cleared for user ${user_id} after removing product ${product_id} from wishlist`);
+            logger.debug('Wishlist cache cleared after removing product'); // Removed IDs for security
         } catch (cacheError) {
             console.error('⚠️ Cache clearing failed (non-critical):', cacheError.message);
         }

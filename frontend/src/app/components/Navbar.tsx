@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import SearchBar from './SearchBar';
+import logger from '../utils/logger';
 
 interface User {
   id: number;
@@ -107,7 +108,7 @@ export default function Navbar() {
         console.log('💻 Desktop: Native install');
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User ${outcome}`);
+        logger.debug(`Install prompt outcome: ${outcome}`);
         setDeferredPrompt(null);
         setShowInstallButton(false);
       } else {
@@ -123,7 +124,7 @@ export default function Navbar() {
         console.log('📱 Mobile: Native install (prompt available)');
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User ${outcome}`);
+        logger.debug(`Install prompt outcome: ${outcome}`);
         setDeferredPrompt(null);
         setShowInstallButton(false);
       } else {

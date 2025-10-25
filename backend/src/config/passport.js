@@ -1,6 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { pool } = require('./database');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 passport.use(new GoogleStrategy({
@@ -30,7 +31,7 @@ passport.use(new GoogleStrategy({
                 [user.id]
             );
             
-            console.log('✅ Existing user logged in:', user.name);
+            logger.debug('User logged in'); // Removed user.name for security
             return done(null, user);
         } else {
             // Create new user with unique display name
@@ -68,7 +69,7 @@ passport.use(new GoogleStrategy({
             ]);
             
             const newUser = newUserResult.rows[0];
-            console.log('🎉 New student registered:', newUser.display_name);
+            logger.debug('New student registered'); // Removed display_name for security
             return done(null, newUser);
         }
     } catch (error) {

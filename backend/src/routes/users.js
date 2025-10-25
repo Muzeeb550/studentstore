@@ -6,6 +6,7 @@ const imagekit = require('../config/imagekit');
 const { createCacheMiddleware } = require('../middleware/cache');
 const { addDefaultTransformations } = require('../utils/imagekitHelper'); // ✅ NEW IMPORT
 const router = express.Router();
+const logger = require('../utils/logger');
 
 
 // Profile upload rate limiting - ONLY for profile pictures (5 per hour)
@@ -108,7 +109,8 @@ router.get('/', generalApiLimit, async (req, res) => {
 // ImageKit authentication endpoint
 router.get('/imagekit-auth', authenticateToken, async (req, res) => {
     try {
-        console.log(`🔑 ImageKit auth request from user ${req.user.id}`);
+        logger.debug('ImageKit auth request'); // Removed user ID for security
+
         
         const usage = req.query.usage || req.headers['x-upload-type'] || 'review';
         
@@ -196,7 +198,8 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         const userId = req.user.id;
         const { profile_picture } = req.body;
         
-        console.log(`📸 Profile picture update request from user ${userId}`);
+        logger.debug('Profile picture update request'); // Removed user ID for security
+
         
         if (!profile_picture) {
             return res.status(400).json({
@@ -219,7 +222,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         const isValidImageExtension = allowedExtensions.some(ext => urlLower.includes(ext));
         
         if (!isValidImageExtension) {
-            console.log(`❌ Invalid file type attempt from user ${userId}: ${profile_picture}`);
+            logger.warn('Invalid file type attempt'); // Removed user ID for security
             return res.status(400).json({
                 status: 'error',
                 message: 'Invalid file type. Only JPG, PNG, GIF, and WebP images are allowed.',
@@ -229,7 +232,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         }
         
         if (!profile_picture.includes('ik.imagekit.io')) {
-            console.log(`❌ Invalid image source attempt from user ${userId}: ${profile_picture}`);
+            logger.warn('Invalid image source attempt'); // Removed user ID for security
             return res.status(400).json({
                 status: 'error',
                 message: 'Invalid image source. Images must be uploaded through the official upload system.',
@@ -266,7 +269,8 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
 
         // ✅ NEW: Optimize profile picture URL before storing
         const optimizedProfilePicture = addDefaultTransformations(profile_picture, 'profile');
-        console.log(`🎨 Optimized profile picture for user ${userId}`);
+        logger.debug('Profile picture optimized'); // Removed user ID for security
+
         
         const result = await pool.query(`
             UPDATE Users 
@@ -281,7 +285,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        console.log(`✅ Profile picture updated successfully for user ${userId}`);
+        logger.debug('Profile picture updated successfully'); // Removed user ID for security
         
         // Clear user's cached data
         const { deleteCache } = require('../config/redis');
@@ -360,7 +364,8 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
     try {
         const userId = req.user.id;
         
-        console.log(`🔍 DEBUG - Dashboard stats for user ${userId}`);
+        logger.debug('Dashboard stats fetched'); // Removed user ID for security
+
         
         const userResult = await pool.query(`
             SELECT id, name, display_name, email, profile_picture, 

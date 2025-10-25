@@ -16,11 +16,13 @@ out/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+*.log
 
 # OS files
 .DS_Store
+Thumbs.db
 
-# Vscode
+# VScode
 .vscode/
 
 # Uploads (optional: only if you don't want to push files in uploads)
@@ -30,3 +32,31 @@ uploads/
 *.lnk
 *.ini
 
+# 🆕 ADD THESE:
+# Backup files
+*.bak
+*.backup
+*.sql
+*.dump
+
+# Security audit reports (if you generate them)
+audit-report.txt
+security-scan-*.txt
+
+# Package manager lock files (if you want to ignore them)
+# package-lock.json  # Uncomment if needed
+# yarn.lock
+
+# Temporary test files
+test-*.js
+test-*.ts
+scratch.*
+
+# Security audit files (don't commit)
+security-audit.js
+security-audit*.txt
+replace-logs.js
+
+# Any other audit/test files
+audit-*.txt
+*-audit-*.txt

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ReviewForm from './ReviewForm';
+import logger from '../utils/logger';
 
 interface ReviewManagerProps {
   productId: number;
@@ -58,7 +59,8 @@ export default function ReviewManager({ productId, productName, onReviewSubmitte
           (review: any) => review.product_id === productId
         );
         
-        console.log(`User has ${productReviews.length} reviews for this product`);
+        logger.debug(`Product has ${productReviews.length} reviews`); // Removed user reference
+
         
         // Don't set userReview anymore - users can write multiple reviews
         // Always allow new reviews to be written

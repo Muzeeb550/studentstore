@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import imageCompression from 'browser-image-compression'; // 🔥 NEW: Add compression
+import imageCompression from 'browser-image-compression'; // 🔥 NEW: Add 
+import logger from '../utils/logger';
 
 interface User {
   id: number;
@@ -52,7 +53,7 @@ export default function ProfilePage() {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
-        console.log('👤 Current user data:', parsedUser);
+        logger.debug('User data loaded'); // Removed user object for security
         setUser(parsedUser);
         
         // Set existing profile picture if available
@@ -94,7 +95,7 @@ export default function ProfilePage() {
         const result = await response.json();
         if (result.status === 'success') {
           const userData = result.data;
-          console.log('📋 Fetched user data:', userData);
+          logger.debug('User profile fetched'); // Removed user data for security
           
           if (user) {
             setUser({
@@ -147,8 +148,8 @@ export default function ProfilePage() {
         const result = await response.json();
         if (result.status === 'success') {
           const stats = result.data.stats;
-          console.log('📊 Fetched user stats:', stats);
-          
+          logger.debug('User stats fetched'); // Removed stats for security
+
           // Update with real data
           setStudentStats({
             wishlistItems: stats.wishlist_count || 0,
@@ -280,7 +281,8 @@ export default function ProfilePage() {
       setCompressionStatus(`Authenticating upload...`);
 
       const token = localStorage.getItem('studentstore_token');
-      console.log('🔑 Token exists:', !!token);
+      logger.debug('Token validation'); // Removed token check for security
+
       
       console.log('📡 Calling ImageKit auth endpoint...');
       

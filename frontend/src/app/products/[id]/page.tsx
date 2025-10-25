@@ -13,6 +13,7 @@ import ReviewManager from '../../components/ReviewManager';
 import { addToRecentlyViewed } from '../../utils/recentlyViewed';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { useWishlist } from '../../context/WishlistContext'; // ✅ ADD THIS LINE
+import logger from '../../utils/logger';
 
 interface Product {
   id: number;
@@ -349,7 +350,7 @@ export default function ProductPage() {
         ];
         
         if (allProductIds.length > 0) {
-          console.log(`🔄 Batch checking wishlist for ${allProductIds.length} products (detail page)`);
+          logger.debug(`Batch checking wishlist for ${allProductIds.length} products (detail page)`);
           await checkMultipleProducts(allProductIds);
         }
       } else {

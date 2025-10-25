@@ -1,4 +1,5 @@
 const { Redis } = require('@upstash/redis');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 let client = null;
@@ -261,10 +262,10 @@ const invalidateCache = {
     user: async (userId) => {
         try {
             const deleted = await deleteCachePattern(`user:${userId}:*`);
-            console.log(`👤 CACHE INVALIDATED: User ${userId} data (${deleted} keys cleared)`);
+            logger.debug(`User cache invalidated (${deleted} keys cleared)`); // Removed user ID for security
             return deleted;
         } catch (error) {
-            console.log('❌ User cache invalidation failed:', error.message);
+            logger.error('User cache invalidation failed:', error.message);
             return 0;
         }
     },

@@ -14,6 +14,7 @@ import { optimizeBannerImage, optimizeProductImage, getFirstImageOrPlaceholder }
 import { useWishlist } from './context/WishlistContext'; // ✅ ADDED
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import logger from './utils/logger';
 
 
 interface Banner {
@@ -278,7 +279,7 @@ export default function HomePage() {
       const uniqueProductIds = [...new Set(allProductIds)];
       
       if (uniqueProductIds.length > 0) {
-        console.log(`🔄 Batch checking wishlist status for ${uniqueProductIds.length} products`);
+        logger.debug(`Batch checking wishlist status for ${uniqueProductIds.length} products`);
         await checkMultipleProducts(uniqueProductIds);
       }
 
