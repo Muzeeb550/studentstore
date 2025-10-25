@@ -1,17 +1,21 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import GoogleAnalytics from "./components/GoogleAnalytics"; // ✅ CORRECT
+import GoogleAnalytics from "./components/GoogleAnalytics";
+import { WishlistProvider } from "./context/WishlistContext"; // ✅ ADDED
 import "./globals.css";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
+
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono", 
   subsets: ["latin"],
 });
+
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -21,6 +25,7 @@ export const viewport: Viewport = {
   themeColor: '#3b82f6',
   colorScheme: 'light',
 }
+
 
 export const metadata: Metadata = {
   title: "StudentStore - Smart Shopping for Students",
@@ -61,8 +66,9 @@ export const metadata: Metadata = {
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
-  manifest: '/manifest.webmanifest', // ✅ Fixed: Next.js serves at this path
+  manifest: '/manifest.webmanifest',
 };
+
 
 export default function RootLayout({
   children,
@@ -115,8 +121,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <GoogleAnalytics /> {/* Add this line */}
-        {children}
+        <GoogleAnalytics />
+        {/* ✅ WRAP CHILDREN WITH WISHLIST PROVIDER */}
+        <WishlistProvider>
+          {children}
+        </WishlistProvider>
       </body>
     </html>
   );

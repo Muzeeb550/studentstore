@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useWishlist } from '../context/WishlistContext'; // ✅ ADDED
 
 interface User {
   id: number;
@@ -21,10 +22,14 @@ export default function WishlistButton({
   size = 'md',
   onWishlistChange 
 }: WishlistButtonProps) {
-  const [isInWishlist, setIsInWishlist] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  // ✅ USE CONTEXT INSTEAD OF LOCAL STATE
+  const { isInWishlist: checkIsInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  
+  const isInWishlist = checkIsInWishlist(productId); // ✅ Get from context
 
   // Size configurations
   const sizeConfig = {
@@ -40,39 +45,15 @@ export default function WishlistButton({
       try {
         const parsedUser = JSON.parse(storedUser) as User;
         setUser(parsedUser);
-        checkWishlistStatus();
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
     }
-  }, [productId]);
+  }, []);
 
-  const checkWishlistStatus = async () => {
-    try {
-      const token = localStorage.getItem('studentstore_token');
-      if (!token) return;
+  // ✅ REMOVED: checkWishlistStatus function (no longer needed - context handles it!)
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/wishlist/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ product_ids: [productId] })
-      });
-
-      const result = await response.json();
-      if (result.status === 'success') {
-        const status = result.data[productId] || false;
-        setIsInWishlist(status);
-      }
-    } catch (error) {
-      console.error('Error checking wishlist status:', error);
-    }
-  };
-
-const handleWishlistToggle = async () => {
+  const handleWishlistToggle = async () => {
     // Check if user is logged in
     if (!user) {
       setShowLoginPrompt(true);
@@ -83,70 +64,31 @@ const handleWishlistToggle = async () => {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('studentstore_token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       if (isInWishlist) {
-        // Remove from wishlist
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-        const response = await fetch(`${apiUrl}/api/wishlist/remove/${productId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const result = await response.json();
-        if (result.status === 'success') {
-          setIsInWishlist(false);
-          if (onWishlistChange) {
-            onWishlistChange(false);
-          }
-          // ✨ ADDED: Dispatch event to update navbar count
-          window.dispatchEvent(new CustomEvent('wishlist-updated'));
-        } else {
-          console.error('Remove from wishlist failed:', result.message);
+        // ✅ Use context method
+        await removeFromWishlist(productId);
+        if (onWishlistChange) {
+          onWishlistChange(false);
         }
       } else {
-        // Add to wishlist
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-        const response = await fetch(`${apiUrl}/api/wishlist/add`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ product_id: productId })
-        });
-
-        const result = await response.json();
-        if (result.status === 'success') {
-          setIsInWishlist(true);
-          if (onWishlistChange) {
-            onWishlistChange(true);
-          }
-          // ✨ ADDED: Dispatch event to update navbar count
-          window.dispatchEvent(new CustomEvent('wishlist-updated'));
-        } else {
-          console.error('Add to wishlist failed:', result.message);
+        // ✅ Use context method
+        await addToWishlist(productId);
+        if (onWishlistChange) {
+          onWishlistChange(true);
         }
       }
     } catch (error) {
       console.error('Error toggling wishlist:', error);
+      // You can add user-friendly error notification here
     } finally {
       setIsLoading(false);
     }
   };
 
-
-
-const handleLoginRedirect = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  window.location.href = `${apiUrl}/auth/google`;
-};
+  const handleLoginRedirect = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    window.location.href = `${apiUrl}/auth/google`;
+  };
 
   return (
     <div className="relative">

@@ -12,6 +12,7 @@ import ReviewList from '../../components/ReviewList';
 import ReviewManager from '../../components/ReviewManager';
 import { addToRecentlyViewed } from '../../utils/recentlyViewed';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { useWishlist } from '../../context/WishlistContext'; // ✅ ADD THIS LINE
 
 interface Product {
   id: number;
@@ -68,6 +69,8 @@ export default function ProductPage() {
   const [images, setImages] = useState<string[]>([]);
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
   const [userName, setUserName] = useState<string>('Student'); // ✅ ADDED
+  const { checkMultipleProducts } = useWishlist(); // ✅ ADD THIS LINE
+
   
   const [loadingStates, setLoadingStates] = useState({
     initial: true,
@@ -338,6 +341,17 @@ export default function ProductPage() {
         setError('');
         saveToCache(productData);
         console.log(`🔄 Product ${productId} updated from API`);
+        
+        // ✅ BATCH CHECK WISHLIST FOR PRODUCT + RELATED PRODUCTS
+        const allProductIds = [
+          productData.product.id,
+          ...(productData.related_products?.map((p: RelatedProduct) => p.id) || [])
+        ];
+        
+        if (allProductIds.length > 0) {
+          console.log(`🔄 Batch checking wishlist for ${allProductIds.length} products (detail page)`);
+          await checkMultipleProducts(allProductIds);
+        }
       } else {
         setError(result.message || 'Failed to load product details');
       }

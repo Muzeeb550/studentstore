@@ -11,8 +11,10 @@ import RecentlyViewedCard from './components/RecentlyViewedCard';
 import TrendingCard from './components/TrendingCard';
 import Link from 'next/link';
 import { optimizeBannerImage, optimizeProductImage, getFirstImageOrPlaceholder } from './utils/imageOptimizer';
+import { useWishlist } from './context/WishlistContext'; // ✅ ADDED
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+
 
 interface Banner {
   id: number;
@@ -22,6 +24,7 @@ interface Banner {
   display_order: number;
 }
 
+
 interface Category {
   id: number;
   name: string;
@@ -29,6 +32,7 @@ interface Category {
   icon_url: string;
   product_count?: number;
 }
+
 
 interface Product {
   id: number;
@@ -43,14 +47,17 @@ interface Product {
   views_count?: number;
 }
 
+
 interface RecentlyViewed {
   product: Product;
   viewedAt: number;
 }
 
+
 const MAX_RECENTLY_VIEWED = 10;
 const MAX_TRENDING_PRODUCTS = 10;
 const MAX_FEATURED_PRODUCTS = 12;
+
 
 // ✅ Cache configuration - optimized intervals
 const CACHE_CONFIG = {
@@ -60,8 +67,10 @@ const CACHE_CONFIG = {
   trending: 5 * 60 * 1000,     // 5 minutes
 };
 
+
 // ✅ Cache check interval - reduced to 2 minutes
 const CACHE_CHECK_INTERVAL = 2 * 60 * 1000;
+
 
 export default function HomePage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -73,9 +82,12 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<number>(0);
 
+  const { checkMultipleProducts } = useWishlist(); // ✅ ADDED
+
   const categorySliderRef = useRef<any>(null);
   const recentRowDesktopRef = useRef<HTMLDivElement>(null);
   const trendingRowDesktopRef = useRef<HTMLDivElement>(null);
+
 
   // ✅ Get optimized banner based on screen size
   const getOptimizedBanner = useCallback((url: string) => {
@@ -87,17 +99,20 @@ export default function HomePage() {
     return optimizeBannerImage(url, 'desktop');
   }, []);
 
+
   // ✅ Get optimized product image
   const getProductImage = useCallback((imageUrls: string) => {
     const firstImage = getFirstImageOrPlaceholder(imageUrls, '/placeholder-product.jpg');
     return optimizeProductImage(firstImage, 'small');
   }, []);
 
+
   // ✅ Initialize homepage
   useEffect(() => {
     initializeHomepage();
     loadRecentlyViewed();
   }, []);
+
 
   // ✅ Background cache refresh
   useEffect(() => {
@@ -109,6 +124,7 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
+
   // ✅ Listen for admin updates
   useEffect(() => {
     const handleAdminUpdate = () => {
@@ -118,6 +134,7 @@ export default function HomePage() {
     window.addEventListener('adminUpdate' as any, handleAdminUpdate);
     return () => window.removeEventListener('adminUpdate' as any, handleAdminUpdate);
   }, []);
+
 
   const initializeHomepage = async () => {
     try {
@@ -135,6 +152,7 @@ export default function HomePage() {
     }
   };
 
+
   const loadFromLocalCache = useCallback(() => {
     try {
       const now = Date.now();
@@ -146,11 +164,13 @@ export default function HomePage() {
         hasValidCache: false
       };
 
+
       const bannersCache = localStorage.getItem('studentstore_cache_banners');
       if (bannersCache) {
         const { data, timestamp } = JSON.parse(bannersCache);
         if (now - timestamp < CACHE_CONFIG.banners) cached.banners = data;
       }
+
 
       const categoriesCache = localStorage.getItem('studentstore_cache_categories');
       if (categoriesCache) {
@@ -158,11 +178,13 @@ export default function HomePage() {
         if (now - timestamp < CACHE_CONFIG.categories) cached.categories = data;
       }
 
+
       const productsCache = localStorage.getItem('studentstore_cache_products');
       if (productsCache) {
         const { data, timestamp } = JSON.parse(productsCache);
         if (now - timestamp < CACHE_CONFIG.products) cached.products = data;
       }
+
 
       const trendingCache = localStorage.getItem('studentstore_cache_trending');
       if (trendingCache) {
@@ -170,12 +192,14 @@ export default function HomePage() {
         if (now - timestamp < CACHE_CONFIG.trending) cached.trending = data;
       }
 
+
       cached.hasValidCache = !!(cached.banners && cached.categories && cached.products);
       return cached;
     } catch {
       return { hasValidCache: false, banners: null, categories: null, products: null, trending: null };
     }
   }, []);
+
 
   const saveToLocalCache = useCallback((key: string, data: any) => {
     try {
@@ -185,6 +209,7 @@ export default function HomePage() {
     }
   }, []);
 
+
   const fetchAndUpdateData = async (showLoading: boolean = false) => {
     if (showLoading) setLoading(true);
     setError(null);
@@ -193,6 +218,7 @@ export default function HomePage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const now = Date.now();
       const cacheBuster = `t=${now}`;
+
 
       const [bannerRes, categoryRes, productsRes, trendingRes] = await Promise.all([
         fetch(`${apiUrl}/api/public/banners?${cacheBuster}`, { 
@@ -213,11 +239,13 @@ export default function HomePage() {
         })
       ]);
 
+
       const bannerData = await bannerRes.json();
       if (bannerData.status === 'success') {
         setBanners(bannerData.data);
         saveToLocalCache('banners', bannerData.data);
       }
+
 
       const categoryData = await categoryRes.json();
       if (categoryData.status === 'success') {
@@ -225,17 +253,33 @@ export default function HomePage() {
         saveToLocalCache('categories', categoryData.data);
       }
 
+
       const productsData = await productsRes.json();
       if (productsData.status === 'success') {
         setProducts(productsData.data.products);
         saveToLocalCache('products', productsData.data.products);
       }
 
+
       const trendingData = await trendingRes.json();
       if (trendingData.status === 'success') {
         const trendingList = trendingData.data.products?.slice(0, MAX_TRENDING_PRODUCTS) || [];
         setTrendingProducts(trendingList);
         saveToLocalCache('trending', trendingList);
+      }
+
+      // ✅ BATCH CHECK WISHLIST STATUS FOR ALL PRODUCTS (ONE API CALL!)
+      const allProductIds = [
+        ...(productsData.status === 'success' ? productsData.data.products.map((p: Product) => p.id) : []),
+        ...(trendingData.status === 'success' ? (trendingData.data.products?.slice(0, MAX_TRENDING_PRODUCTS).map((p: Product) => p.id) || []) : []),
+      ];
+      
+      // Remove duplicates
+      const uniqueProductIds = [...new Set(allProductIds)];
+      
+      if (uniqueProductIds.length > 0) {
+        console.log(`🔄 Batch checking wishlist status for ${uniqueProductIds.length} products`);
+        await checkMultipleProducts(uniqueProductIds);
       }
 
       setLastRefresh(now);
@@ -258,9 +302,11 @@ export default function HomePage() {
     }
   };
 
+
   const checkAndRefreshExpiredCache = useCallback(async () => {
     const now = Date.now();
     let needsRefresh = false;
+
 
     Object.keys(CACHE_CONFIG).forEach((key) => {
       const cached = localStorage.getItem(`studentstore_cache_${key}`);
@@ -276,10 +322,12 @@ export default function HomePage() {
       }
     });
 
+
     if (needsRefresh) {
       await fetchAndUpdateData(false);
     }
   }, []);
+
 
   const forceRefresh = useCallback(async () => {
     ['banners', 'categories', 'products', 'trending'].forEach(key => {
@@ -288,10 +336,12 @@ export default function HomePage() {
     await fetchAndUpdateData(false);
   }, []);
 
+
   const loadRecentlyViewed = useCallback(() => {
     const recentProducts = getRecentlyViewed();
     setRecentlyViewed(recentProducts.slice(0, MAX_RECENTLY_VIEWED));
   }, []);
+
 
   // ✅ Memoized banner settings
   const bannerSettings = useMemo(() => ({
@@ -334,6 +384,7 @@ export default function HomePage() {
     ]
   }), [banners.length]);
 
+
   // ✅ Memoized category settings
   const categoryDesktopSettings = useMemo(() => ({
     dots: false,
@@ -353,6 +404,7 @@ export default function HomePage() {
     useTransform: true,
     waitForAnimate: false,
   }), []);
+
 
   const categoryRowSettings = useMemo(() => ({
     dots: false,
@@ -378,6 +430,7 @@ export default function HomePage() {
     ],
   }), []);
 
+
   // ✅ Split categories into two rows
   const { topRowCategories, bottomRowCategories } = useMemo(() => {
     const mid = Math.ceil(categories.length / 2);
@@ -386,6 +439,7 @@ export default function HomePage() {
       bottomRowCategories: categories.slice(mid),
     };
   }, [categories]);
+
 
   const LoadingSection = () => (
     <div className="animate-pulse">
@@ -397,6 +451,7 @@ export default function HomePage() {
       </div>
     </div>
   );
+
 
   if (loading) {
     return (
@@ -410,9 +465,11 @@ export default function HomePage() {
     );
   }
 
+
   return (
     <div className="min-h-screen bg-student-page">
       <Navbar />
+
 
       {/* Error Banner */}
       {error && (
@@ -438,6 +495,7 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
 
       {/* ✅ TOUCH-FRIENDLY Banner Section */}
       {/* ✅ SMART Banner Section - Swipe vs Tap Detection */}
@@ -470,12 +528,15 @@ export default function HomePage() {
               }
             };
 
+
             const href = isInternalLink ? getRelativePath(banner.link_url) : banner.link_url;
+
 
             // ✅ Track touch/mouse movement to detect swipe
             let touchStartX = 0;
             let touchStartY = 0;
             let touchStartTime = 0;
+
 
             const handleTouchStart = (e: React.TouchEvent) => {
               const touch = e.touches[0];
@@ -484,11 +545,13 @@ export default function HomePage() {
               touchStartTime = Date.now();
             };
 
+
             const handleMouseDown = (e: React.MouseEvent) => {
               touchStartX = e.clientX;
               touchStartY = e.clientY;
               touchStartTime = Date.now();
             };
+
 
             const handleTouchEnd = (e: React.TouchEvent) => {
               const touch = e.changedTouches[0];
@@ -496,14 +559,17 @@ export default function HomePage() {
               const touchEndY = touch.clientY;
               const touchEndTime = Date.now();
 
+
               const deltaX = Math.abs(touchEndX - touchStartX);
               const deltaY = Math.abs(touchEndY - touchStartY);
               const deltaTime = touchEndTime - touchStartTime;
+
 
               // ✅ If movement is more than 10px or took longer than 300ms, it's a swipe
               if (deltaX > 10 || deltaY > 10 || deltaTime > 300) {
                 return; // It's a swipe, don't navigate
               }
+
 
               // ✅ It's a tap, navigate
               e.preventDefault();
@@ -516,16 +582,19 @@ export default function HomePage() {
               }
             };
 
+
             const handleClick = (e: React.MouseEvent) => {
               const deltaX = Math.abs(e.clientX - touchStartX);
               const deltaY = Math.abs(e.clientY - touchStartY);
               const deltaTime = Date.now() - touchStartTime;
+
 
               // ✅ If movement is more than 5px or took longer than 300ms, it's a drag
               if (deltaX > 5 || deltaY > 5 || deltaTime > 300) {
                 e.preventDefault();
                 return; // It's a drag, don't navigate
               }
+
 
               // ✅ It's a click, navigate
               e.preventDefault();
@@ -537,6 +606,7 @@ export default function HomePage() {
                 window.open(href, '_blank', 'noopener,noreferrer');
               }
             };
+
 
             return (
               <div key={banner.id} className="relative">
@@ -594,6 +664,7 @@ export default function HomePage() {
 </section>
 
 
+
       {/* Recently Viewed Section - With Blue Background */}
       {recentlyViewed.length > 0 && (
         <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
@@ -606,6 +677,7 @@ export default function HomePage() {
                 </h3>
               </div>
             </div>
+
 
             {/* Mobile View */}
             <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
@@ -645,6 +717,7 @@ export default function HomePage() {
               </div>
             </div>
 
+
             {/* Tablet View */}
             <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
               <div className="flex gap-3">
@@ -659,6 +732,7 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
+
 
             {/* Desktop View */}
             <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
@@ -677,6 +751,7 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
 
       {/* Trending Section - With Orange Background */}
       {trendingProducts.length > 0 && (
@@ -697,6 +772,7 @@ export default function HomePage() {
               </div>
             </div>
 
+
             {/* Mobile View */}
             <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
               <div className="flex gap-3">
@@ -712,6 +788,7 @@ export default function HomePage() {
               </div>
             </div>
 
+
             {/* Tablet View */}
             <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
               <div className="flex gap-3">
@@ -726,6 +803,7 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
+
 
             {/* Desktop View */}
             <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
@@ -745,6 +823,7 @@ export default function HomePage() {
         </section>
       )}
 
+
       {/* Category Section */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
         <div className="category-section">
@@ -756,6 +835,7 @@ export default function HomePage() {
               Find exactly what you need for your student life
             </p>
           </div>
+
 
           {categories.length > 0 ? (
             <>
@@ -769,6 +849,7 @@ export default function HomePage() {
                   ))}
                 </Slider>
               </div>
+
 
               {/* Mobile/Tablet - Two Rows */}
               <div className="block xl:hidden">
@@ -817,6 +898,7 @@ export default function HomePage() {
         </div>
       </section>
 
+
       {/* Featured Products */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
         <div className="text-center mb-8 lg:mb-12">
@@ -827,6 +909,7 @@ export default function HomePage() {
             Handpicked products that students love, with the best deals and reviews
           </p>
         </div>
+
 
         {products.length > 0 ? (
           <div className="product-grid">
@@ -847,6 +930,7 @@ export default function HomePage() {
         )}
       </section>
 
+
       {/* See All Products Button */}
       {products.length >= MAX_FEATURED_PRODUCTS && (
         <div className="text-center mt-12 mb-16">
@@ -864,6 +948,7 @@ export default function HomePage() {
           </Link>
         </div>
       )}
+
 
       <Footer />
     </div>
