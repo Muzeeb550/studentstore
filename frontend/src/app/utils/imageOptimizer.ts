@@ -175,8 +175,8 @@ export function optimizeReviewImage(
   return applyImageKitTransformations(url, {
     ...config,
     format: 'auto',
-    crop: 'maintain_ratio',
-    focus: 'auto'
+    crop: 'force',
+    focus: 'center'
   });
 }
 
