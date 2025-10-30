@@ -182,6 +182,7 @@ textarea:focus {
 /* -------------------------------------------
    4.1 PRODUCT CARDS
    Used by: ProductCard.tsx, page.tsx
+   ✅ FIXED: Equal card widths on mobile
    ------------------------------------------- */
 
 .product-card {
@@ -193,6 +194,11 @@ textarea:focus {
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  
+  /* ✅ FIXED: Force consistent width */
+  width: 100%;
+  min-width: 0; /* Prevents overflow */
+  max-width: 100%;
   
   /* Base mobile height */
   height: 380px;
@@ -221,11 +227,14 @@ textarea:focus {
 /* Product Image Container (65% height) */
 .product-image-container {
   position: relative;
-  flex: 0.65;
+  flex: 0 0 247px; /* ✅ FIXED: flex-shrink: 0 prevents shrinking */
   width: 100%;
+  max-width: 100%;
   background: linear-gradient(135deg, var(--bg-light) 0%, var(--border-light) 100%);
   overflow: hidden;
+  height: 247px;
   min-height: 247px;
+  max-height: 247px;
 }
 
 .product-image {
@@ -241,12 +250,16 @@ textarea:focus {
 
 /* Product Info Container (35% height) */
 .product-info-container {
-  flex: 0.35;
+  flex: 0 0 133px; /* ✅ FIXED: flex-shrink: 0 prevents shrinking */
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  height: 133px;
   min-height: 133px;
+  max-height: 133px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .product-title {
@@ -260,7 +273,10 @@ textarea:focus {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   word-break: break-word;
+  overflow-wrap: break-word; /* ✅ FIXED: Break long words */
+  hyphens: auto;
   transition: color 0.2s ease;
+  min-width: 0; /* ✅ FIXED: Allows text to shrink */
 }
 
 .product-card:hover .product-title {
@@ -272,11 +288,14 @@ textarea:focus {
   line-height: 1.4;
   color: var(--text-secondary);
   margin: 0 0 8px 0;
-  flex: 1;
+  flex: 1 1 auto;
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  word-break: break-word;
+  overflow-wrap: break-word; /* ✅ FIXED: Break long words */
+  min-width: 0; /* ✅ FIXED: Allows text to shrink */
 }
 
 /* Product CTA Button */
@@ -287,13 +306,20 @@ textarea:focus {
   border-radius: 12px;
   font-size: 0.875rem;
   font-weight: 600;
+  height: 48px;
   min-height: 48px;
+  max-height: 48px;
   width: 100%;
-  padding: 12px 16px;
+  max-width: 100%;
+  padding: 0 16px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .product-cta:hover {
@@ -305,11 +331,19 @@ textarea:focus {
   transform: translateY(0) scale(0.98);
 }
 
-/* Product Grid Layout */
+/* Product Grid Layout - ✅ FIXED: Equal width columns */
 .product-grid {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* ✅ minmax prevents overflow */
   gap: 16px;
-  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
+}
+
+/* Force all grid items to equal width */
+.product-grid > * {
+  min-width: 0; /* ✅ Allows content to shrink */
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Responsive Product Cards */
@@ -320,43 +354,80 @@ textarea:focus {
     max-height: 360px;
   }
   
-  .product-image-container { min-height: 234px; }
+  .product-image-container { 
+    flex: 0 0 234px;
+    height: 234px;
+    min-height: 234px;
+    max-height: 234px;
+  }
+  
   .product-info-container { 
+    flex: 0 0 126px;
+    height: 126px;
     min-height: 126px;
+    max-height: 126px;
     padding: 10px 14px;
   }
   
   .product-title { font-size: 0.9375rem; }
   .product-description { 
     font-size: 0.75rem;
-    -webkit-line-clamp: 1;
+    -webkit-line-clamp: 2; /* ✅ Keep 2 lines */
   }
   .product-cta { 
+    height: 44px;
     min-height: 44px;
+    max-height: 44px;
     font-size: 0.8125rem;
   }
   .product-grid { gap: 12px; }
 }
 
 @media (min-width: 641px) {
-  .product-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .product-grid { 
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* ✅ minmax for tablets */
+    gap: 18px; 
+  }
 }
 
 @media (min-width: 1025px) {
-  .product-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .product-grid { 
+    grid-template-columns: repeat(4, minmax(0, 1fr)); /* ✅ minmax for desktop */
+    gap: 24px; 
+  }
+  
   .product-card {
     height: 440px;
     min-height: 440px;
     max-height: 440px;
   }
-  .product-image-container { min-height: 286px; }
+  
+  .product-image-container { 
+    flex: 0 0 286px;
+    height: 286px;
+    min-height: 286px;
+    max-height: 286px;
+  }
+  
   .product-info-container { 
+    flex: 0 0 154px;
+    height: 154px;
     min-height: 154px;
+    max-height: 154px;
     padding: 16px 18px;
   }
+  
   .product-title { font-size: 1.0625rem; }
   .product-description { font-size: 0.875rem; }
+  
+  .product-cta {
+    height: 52px;
+    min-height: 52px;
+    max-height: 52px;
+    font-size: 0.9375rem;
+  }
 }
+
 
 /* -------------------------------------------
    4.2 CATEGORY CARDS
