@@ -194,7 +194,7 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   
-  /* ✅ FIXED: Base mobile height */
+  /* Base mobile height */
   height: 380px;
   min-height: 380px;
   max-height: 380px;
@@ -218,25 +218,20 @@ textarea:focus {
   transition: all 0.15s ease;
 }
 
-/* Product Image Container - ✅ FIXED: No flex, absolute positioning */
+/* Product Image Container (65% height) */
 .product-image-container {
   position: relative;
-  height: 247px;
-  min-height: 247px;
-  max-height: 247px;
+  flex: 0.65;
   width: 100%;
   background: linear-gradient(135deg, var(--bg-light) 0%, var(--border-light) 100%);
   overflow: hidden;
+  min-height: 247px;
 }
 
 .product-image {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -244,15 +239,14 @@ textarea:focus {
   transform: scale(1.05);
 }
 
-/* Product Info Container - ✅ FIXED: No flex, fixed height */
+/* Product Info Container (35% height) */
 .product-info-container {
-  height: 133px;
-  min-height: 133px;
-  max-height: 133px;
+  flex: 0.35;
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-height: 133px;
 }
 
 .product-title {
@@ -267,7 +261,6 @@ textarea:focus {
   -webkit-line-clamp: 2;
   word-break: break-word;
   transition: color 0.2s ease;
-  min-height: 2.6em;
 }
 
 .product-card:hover .product-title {
@@ -279,14 +272,14 @@ textarea:focus {
   line-height: 1.4;
   color: var(--text-secondary);
   margin: 0 0 8px 0;
+  flex: 1;
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  min-height: 2.275em;
 }
 
-/* Product CTA Button - ✅ FIXED: Fixed height */
+/* Product CTA Button */
 .product-cta {
   background: linear-gradient(45deg, var(--student-blue) 0%, var(--student-green) 100%);
   color: white;
@@ -294,18 +287,13 @@ textarea:focus {
   border-radius: 12px;
   font-size: 0.875rem;
   font-weight: 600;
-  height: 48px;
   min-height: 48px;
-  max-height: 48px;
   width: 100%;
-  padding: 0 16px;
+  padding: 12px 16px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .product-cta:hover {
@@ -324,60 +312,51 @@ textarea:focus {
   grid-template-columns: repeat(2, 1fr);
 }
 
-/* ✅ DELETED: @media (max-width: 480px) - Removed entirely! */
-
-/* Tablet: 3 columns */
-@media (min-width: 641px) {
-  .product-grid { 
-    grid-template-columns: repeat(3, 1fr); 
-    gap: 18px; 
-  }
-}
-
-/* Desktop: 4 columns + larger cards */
-@media (min-width: 1025px) {
-  .product-grid { 
-    grid-template-columns: repeat(4, 1fr); 
-    gap: 24px; 
+/* Responsive Product Cards */
+@media (max-width: 480px) {
+  .product-card {
+    height: 360px;
+    min-height: 360px;
+    max-height: 360px;
   }
   
+  .product-image-container { min-height: 234px; }
+  .product-info-container { 
+    min-height: 126px;
+    padding: 10px 14px;
+  }
+  
+  .product-title { font-size: 0.9375rem; }
+  .product-description { 
+    font-size: 0.75rem;
+    -webkit-line-clamp: 1;
+  }
+  .product-cta { 
+    min-height: 44px;
+    font-size: 0.8125rem;
+  }
+  .product-grid { gap: 12px; }
+}
+
+@media (min-width: 641px) {
+  .product-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+}
+
+@media (min-width: 1025px) {
+  .product-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
   .product-card {
     height: 440px;
     min-height: 440px;
     max-height: 440px;
   }
-  
-  .product-image-container { 
-    height: 286px;
-    min-height: 286px;
-    max-height: 286px;
-  }
-  
+  .product-image-container { min-height: 286px; }
   .product-info-container { 
-    height: 154px;
     min-height: 154px;
-    max-height: 154px;
     padding: 16px 18px;
   }
-  
-  .product-title { 
-    font-size: 1.0625rem;
-    min-height: 2.76em;
-  }
-  
-  .product-description { 
-    font-size: 0.875rem;
-    min-height: 2.45em;
-  }
-  
-  .product-cta {
-    height: 52px;
-    min-height: 52px;
-    max-height: 52px;
-    font-size: 0.9375rem;
-  }
+  .product-title { font-size: 1.0625rem; }
+  .product-description { font-size: 0.875rem; }
 }
-
 
 /* -------------------------------------------
    4.2 CATEGORY CARDS
