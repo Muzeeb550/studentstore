@@ -287,7 +287,7 @@ router.get('/products/:id', productDetailsCache, async (req, res) => {
         JOIN Categories c ON p.category_id = c.id
         WHERE p.category_id = $1 AND p.id <> $2
         ORDER BY COALESCE(p.rating_average, 0) DESC, p.views_count DESC, p.created_at DESC
-        LIMIT 4
+        LIMIT 6
       `, [product.category_id, productId])
     ]);
 

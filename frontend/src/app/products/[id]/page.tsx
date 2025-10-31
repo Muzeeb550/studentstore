@@ -1117,6 +1117,18 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
               <ProductCard key={relatedProduct.id} product={relatedProduct} />
             ))}
           </div>
+           {/* ✅ NEW: VIEW ALL PRODUCTS Button */}
+          <div className="flex justify-center mt-12">
+            <a
+              href={`/categories/${product.category_id}`}
+              className="bg-gradient-to-r from-student-blue to-student-green hover:from-student-blue/90 hover:to-student-green/90 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95 flex items-center space-x-2"
+            >
+              <span>📂 View All {product.category_name} Products</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
+          </div>
         </section>
       )}
 
