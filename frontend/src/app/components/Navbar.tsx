@@ -424,230 +424,235 @@ export default function Navbar() {
                       </svg>
                     </button>
 
-                    {/* ✅ FIXED: Desktop Dropdown with Inline Styles */}
-                    {dropdownOpen && (
-                      <>
-                        {/* Backdrop */}
-                        <div
-                          style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 99998,
-                            background: 'transparent',
-                            cursor: 'default'
-                          }}
-                          onClick={() => setDropdownOpen(false)}
-                        />
-                        
-                        {/* Dropdown menu */}
-                        <div 
-                          style={{
-                            position: 'fixed',
-                            top: '80px',
-                            right: '20px',
-                            width: '16rem',
-                            backgroundColor: '#ffffff',
-                            borderRadius: '1rem',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                            border: '1px solid #E2E8F0',
-                            overflow: 'hidden',
-                            zIndex: 99999,
-                            pointerEvents: 'auto',
-                            cursor: 'default'
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Profile header */}
-                          <div style={{
-                            padding: '1.25rem 1.5rem',
-                            background: 'linear-gradient(to right, rgba(79, 70, 229, 0.1), rgba(16, 185, 129, 0.1), rgba(249, 115, 22, 0.1))',
-                            borderBottom: '1px solid #E2E8F0'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                              <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontWeight: 700, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {getDisplayName()}
-                                </p>
-                                <p style={{ fontSize: '0.875rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {user.email}
-                                </p>
-                                <p style={{ fontSize: '0.75rem', color: '#4F46E5', fontWeight: 500, marginTop: '0.25rem', textTransform: 'capitalize' }}>
-                                  {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
+                    {/* ✅ FIXED: Desktop Dropdown with Inline Styles and Classes */}
+{dropdownOpen && (
+  <>
+    {/* Backdrop */}
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99998,
+        background: 'transparent',
+        cursor: 'default'
+      }}
+      onClick={() => setDropdownOpen(false)}
+    />
+    
+    {/* Dropdown menu */}
+    <div 
+      className="navbar-dropdown-menu" /* ✅ ADDED CLASS */
+      style={{
+        position: 'fixed',
+        top: '80px',
+        right: '20px',
+        width: '16rem',
+        backgroundColor: '#ffffff',
+        borderRadius: '1rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        border: '1px solid #E2E8F0',
+        overflow: 'hidden',
+        zIndex: 99999,
+        pointerEvents: 'auto',
+        cursor: 'default'
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Profile header */}
+      <div style={{
+        padding: '1.25rem 1.5rem',
+        background: 'linear-gradient(to right, rgba(79, 70, 229, 0.1), rgba(16, 185, 129, 0.1), rgba(249, 115, 22, 0.1))',
+        borderBottom: '1px solid #E2E8F0'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 700, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {getDisplayName()}
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user.email}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#4F46E5', fontWeight: 500, marginTop: '0.25rem', textTransform: 'capitalize' }}>
+              {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
+            </p>
+          </div>
+        </div>
+      </div>
 
-                          {/* Menu items */}
-                          <div style={{ padding: '0.75rem 0' }}>
-                            {/* Dashboard Link */}
-                            <a
-                              href="/dashboard"
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: '100%',
-                                padding: '0.75rem 1.5rem',
-                                color: '#1E293B',
-                                textDecoration: 'none',
-                                transition: 'background-color 0.2s',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.1)'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                              <div style={{
-                                width: '2.75rem',
-                                height: '2.75rem',
-                                backgroundColor: '#F1F5F9',
-                                borderRadius: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: '1rem',
-                                transition: 'background-color 0.2s'
-                              }}>
-                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                                </svg>
-                              </div>
-                              <div style={{ textAlign: 'left' }}>
-                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Dashboard</p>
-                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Overview & stats</p>
-                              </div>
-                            </a>
+      {/* Menu items */}
+      <div style={{ padding: '0.75rem 0' }}>
+        {/* Dashboard Link */}
+        <a
+          href="/dashboard"
+          className="navbar-dropdown-item" /* ✅ ADDED CLASS */
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            padding: '0.75rem 1.5rem',
+            color: '#1E293B',
+            textDecoration: 'none',
+            transition: 'background-color 0.2s',
+            cursor: 'pointer',
+            pointerEvents: 'auto'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <div style={{
+            width: '2.75rem',
+            height: '2.75rem',
+            backgroundColor: '#F1F5F9',
+            borderRadius: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: '1rem',
+            transition: 'background-color 0.2s'
+          }}>
+            <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+            </svg>
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Dashboard</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Overview & stats</p>
+          </div>
+        </a>
 
-                            {/* Profile Link */}
-                            <a
-                              href="/profile"
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: '100%',
-                                padding: '0.75rem 1.5rem',
-                                color: '#1E293B',
-                                textDecoration: 'none',
-                                transition: 'background-color 0.2s',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                              <div style={{
-                                width: '2.75rem',
-                                height: '2.75rem',
-                                backgroundColor: '#F1F5F9',
-                                borderRadius: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: '1rem',
-                                transition: 'background-color 0.2s'
-                              }}>
-                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                              </div>
-                              <div style={{ textAlign: 'left' }}>
-                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Profile</p>
-                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Settings & preferences</p>
-                              </div>
-                            </a>
+        {/* Profile Link */}
+        <a
+          href="/profile"
+          className="navbar-dropdown-item" /* ✅ ADDED CLASS */
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            padding: '0.75rem 1.5rem',
+            color: '#1E293B',
+            textDecoration: 'none',
+            transition: 'background-color 0.2s',
+            cursor: 'pointer',
+            pointerEvents: 'auto'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <div style={{
+            width: '2.75rem',
+            height: '2.75rem',
+            backgroundColor: '#F1F5F9',
+            borderRadius: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: '1rem',
+            transition: 'background-color 0.2s'
+          }}>
+            <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Profile</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Settings & preferences</p>
+          </div>
+        </a>
 
-                            {/* Admin Panel Link (conditional) */}
-                            {user.role === 'admin' && (
-                              <a
-                                href="/admin"
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  width: '100%',
-                                  padding: '0.75rem 1.5rem',
-                                  color: '#1E293B',
-                                  textDecoration: 'none',
-                                  transition: 'background-color 0.2s',
-                                  cursor: 'pointer',
-                                  pointerEvents: 'auto'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(249, 115, 22, 0.1)'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                              >
-                                <div style={{
-                                  width: '2.75rem',
-                                  height: '2.75rem',
-                                  backgroundColor: '#F1F5F9',
-                                  borderRadius: '0.75rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  marginRight: '1rem',
-                                  transition: 'background-color 0.2s'
-                                }}>
-                                  <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                  </svg>
-                                </div>
-                                <div style={{ textAlign: 'left' }}>
-                                  <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Admin Panel</p>
-                                  <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Manage platform</p>
-                                </div>
-                              </a>
-                            )}
+        {/* Admin Panel Link (conditional) */}
+        {user.role === 'admin' && (
+          <a
+            href="/admin"
+            className="navbar-dropdown-item" /* ✅ ADDED CLASS */
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              padding: '0.75rem 1.5rem',
+              color: '#1E293B',
+              textDecoration: 'none',
+              transition: 'background-color 0.2s',
+              cursor: 'pointer',
+              pointerEvents: 'auto'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(249, 115, 22, 0.1)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <div style={{
+              width: '2.75rem',
+              height: '2.75rem',
+              backgroundColor: '#F1F5F9',
+              borderRadius: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: '1rem',
+              transition: 'background-color 0.2s'
+            }}>
+              <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              </svg>
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Admin Panel</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Manage platform</p>
+            </div>
+          </a>
+        )}
 
-                            {/* Sign Out Button */}
-                            <button
-                              onClick={handleLogout}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: '100%',
-                                padding: '0.75rem 1.5rem',
-                                color: '#1E293B',
-                                textDecoration: 'none',
-                                transition: 'all 0.2s',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto',
-                                border: 'none',
-                                background: 'transparent',
-                                textAlign: 'left',
-                                fontFamily: 'inherit'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                                e.currentTarget.style.color = '#DC2626';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                                e.currentTarget.style.color = '#1E293B';
-                              }}
-                            >
-                              <div style={{
-                                width: '2.75rem',
-                                height: '2.75rem',
-                                backgroundColor: '#F1F5F9',
-                                borderRadius: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: '1rem',
-                                transition: 'background-color 0.2s'
-                              }}>
-                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                              </div>
-                              <div style={{ textAlign: 'left' }}>
-                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Sign Out</p>
-                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Logout from account</p>
-                              </div>
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
+        {/* Sign Out Button */}
+        <button
+          onClick={handleLogout}
+          className="navbar-dropdown-item" /* ✅ ADDED CLASS */
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            padding: '0.75rem 1.5rem',
+            color: '#1E293B',
+            textDecoration: 'none',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            border: 'none',
+            background: 'transparent',
+            textAlign: 'left',
+            fontFamily: 'inherit'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            e.currentTarget.style.color = '#DC2626';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#1E293B';
+          }}
+        >
+          <div style={{
+            width: '2.75rem',
+            height: '2.75rem',
+            backgroundColor: '#F1F5F9',
+            borderRadius: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: '1rem',
+            transition: 'background-color 0.2s'
+          }}>
+            <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Sign Out</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Logout from account</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  </>
+)}
                   </div>
                 </div>
               ) : (
