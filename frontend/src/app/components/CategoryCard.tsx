@@ -40,7 +40,7 @@ export default function CategoryCard({ category }: CategoryCardProps) {
               src={getOptimizedIcon(category.icon_url)}
               alt=""
               aria-hidden="true"
-              className="w-full h-40 sm:h-48 object-cover"
+              className="w-full h-40 sm:h-48 object-cover object-center" // ✅ ADDED: object-center
               loading="lazy"
               decoding="async"
               width={300}
@@ -55,10 +55,11 @@ export default function CategoryCard({ category }: CategoryCardProps) {
         </div>
         
         {/* Category name below card - MOBILE */}
-        <h4 className="category-title mt-2 text-center font-semibold text-student-primary text-sm sm:text-base">
+        <h4 className="category-title mt-2 text-center font-bold text-student-primary text-sm sm:text-base"> {/* ✅ CHANGED: font-semibold → font-bold */}
           {category.name}
         </h4>
       </div>
+
 
       {/* ✅ DESKTOP: Original design with padding */}
       <div className="hidden md:block">
