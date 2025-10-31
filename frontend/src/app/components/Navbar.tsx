@@ -439,251 +439,236 @@ export default function Navbar() {
                           onClick={() => setDropdownOpen(false)}
                         />
                         
-{/* Dropdown menu */}
-<div 
-  style={{
-    position: 'fixed',
-    top: '80px',
-    right: '20px',
-    width: '16rem',
-    backgroundColor: '#ffffff',
-    borderRadius: '1rem',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    border: '1px solid #E2E8F0',
-    overflow: 'hidden',
-    zIndex: 99999,
-    pointerEvents: 'auto',
-    cursor: 'default'
-  }}
-  onClick={(e) => e.stopPropagation()}
->
-  {/* Profile header */}
-  <div style={{
-    padding: '1.25rem 1.5rem',
-    background: 'linear-gradient(to right, rgba(79, 70, 229, 0.1), rgba(16, 185, 129, 0.1), rgba(249, 115, 22, 0.1))',
-    borderBottom: '1px solid #E2E8F0'
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-      <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontWeight: 700, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {getDisplayName()}
-        </p>
-        <p style={{ fontSize: '0.875rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {user.email}
-        </p>
-        <p style={{ fontSize: '0.75rem', color: '#4F46E5', fontWeight: 500, marginTop: '0.25rem', textTransform: 'capitalize' }}>
-          {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
-        </p>
-      </div>
-    </div>
-  </div>
+                        {/* Dropdown menu */}
+                        <div 
+                          style={{
+                            position: 'fixed',
+                            top: '80px',
+                            right: '20px',
+                            width: '16rem',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '1rem',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            border: '1px solid #E2E8F0',
+                            overflow: 'hidden',
+                            zIndex: 99999,
+                            pointerEvents: 'auto',
+                            cursor: 'default'
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* Profile header */}
+                          <div style={{
+                            padding: '1.25rem 1.5rem',
+                            background: 'linear-gradient(to right, rgba(79, 70, 229, 0.1), rgba(16, 185, 129, 0.1), rgba(249, 115, 22, 0.1))',
+                            borderBottom: '1px solid #E2E8F0'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                              <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontWeight: 700, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {getDisplayName()}
+                                </p>
+                                <p style={{ fontSize: '0.875rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {user.email}
+                                </p>
+                                <p style={{ fontSize: '0.75rem', color: '#4F46E5', fontWeight: 500, marginTop: '0.25rem', textTransform: 'capitalize' }}>
+                                  {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
 
-  {/* Menu items */}
-  <div style={{ padding: '0.75rem 0' }}>
-    {/* Dashboard Link - ✅ FIXED: Added onClick */}
-    <a
-      href="/dashboard"
-      onClick={(e) => {
-        e.preventDefault();
-        setDropdownOpen(false);
-        window.location.href = '/dashboard';
-      }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        width: '100%',
-        padding: '0.75rem 1.5rem',
-        color: '#1E293B',
-        textDecoration: 'none',
-        transition: 'background-color 0.2s',
-        cursor: 'pointer',
-        pointerEvents: 'auto'
-      }}
-      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.1)'}
-      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-    >
-      <div style={{
-        width: '2.75rem',
-        height: '2.75rem',
-        backgroundColor: '#F1F5F9',
-        borderRadius: '0.75rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: '1rem',
-        transition: 'background-color 0.2s'
-      }}>
-        <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-        </svg>
-      </div>
-      <div style={{ textAlign: 'left' }}>
-        <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Dashboard</p>
-        <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Overview & stats</p>
-      </div>
-    </a>
+                          {/* Menu items */}
+                          <div style={{ padding: '0.75rem 0' }}>
+                            {/* Dashboard Link */}
+                            <a
+                              href="/dashboard"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                width: '100%',
+                                padding: '0.75rem 1.5rem',
+                                color: '#1E293B',
+                                textDecoration: 'none',
+                                transition: 'background-color 0.2s',
+                                cursor: 'pointer',
+                                pointerEvents: 'auto'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              <div style={{
+                                width: '2.75rem',
+                                height: '2.75rem',
+                                backgroundColor: '#F1F5F9',
+                                borderRadius: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: '1rem',
+                                transition: 'background-color 0.2s'
+                              }}>
+                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                                </svg>
+                              </div>
+                              <div style={{ textAlign: 'left' }}>
+                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Dashboard</p>
+                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Overview & stats</p>
+                              </div>
+                            </a>
 
-    {/* Profile Link - ✅ FIXED: Added onClick */}
-    <a
-      href="/profile"
-      onClick={(e) => {
-        e.preventDefault();
-        setDropdownOpen(false);
-        window.location.href = '/profile';
-      }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        width: '100%',
-        padding: '0.75rem 1.5rem',
-        color: '#1E293B',
-        textDecoration: 'none',
-        transition: 'background-color 0.2s',
-        cursor: 'pointer',
-        pointerEvents: 'auto'
-      }}
-      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'}
-      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-    >
-      <div style={{
-        width: '2.75rem',
-        height: '2.75rem',
-        backgroundColor: '#F1F5F9',
-        borderRadius: '0.75rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: '1rem',
-        transition: 'background-color 0.2s'
-      }}>
-        <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      </div>
-      <div style={{ textAlign: 'left' }}>
-        <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Profile</p>
-        <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Settings & preferences</p>
-      </div>
-    </a>
+                            {/* Profile Link */}
+                            <a
+                              href="/profile"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                width: '100%',
+                                padding: '0.75rem 1.5rem',
+                                color: '#1E293B',
+                                textDecoration: 'none',
+                                transition: 'background-color 0.2s',
+                                cursor: 'pointer',
+                                pointerEvents: 'auto'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              <div style={{
+                                width: '2.75rem',
+                                height: '2.75rem',
+                                backgroundColor: '#F1F5F9',
+                                borderRadius: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: '1rem',
+                                transition: 'background-color 0.2s'
+                              }}>
+                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                              </div>
+                              <div style={{ textAlign: 'left' }}>
+                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Profile</p>
+                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Settings & preferences</p>
+                              </div>
+                            </a>
 
-    {/* Admin Panel Link (conditional) - ✅ FIXED: Added onClick */}
-    {user.role === 'admin' && (
-      <a
-        href="/admin"
-        onClick={(e) => {
-          e.preventDefault();
-          setDropdownOpen(false);
-          window.location.href = '/admin';
-        }}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-          padding: '0.75rem 1.5rem',
-          color: '#1E293B',
-          textDecoration: 'none',
-          transition: 'background-color 0.2s',
-          cursor: 'pointer',
-          pointerEvents: 'auto'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(249, 115, 22, 0.1)'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-      >
-        <div style={{
-          width: '2.75rem',
-          height: '2.75rem',
-          backgroundColor: '#F1F5F9',
-          borderRadius: '0.75rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginRight: '1rem',
-          transition: 'background-color 0.2s'
-        }}>
-          <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          </svg>
-        </div>
-        <div style={{ textAlign: 'left' }}>
-          <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Admin Panel</p>
-          <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Manage platform</p>
-        </div>
-      </a>
-    )}
+                            {/* Admin Panel Link (conditional) */}
+                            {user.role === 'admin' && (
+                              <a
+                                href="/admin"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  width: '100%',
+                                  padding: '0.75rem 1.5rem',
+                                  color: '#1E293B',
+                                  textDecoration: 'none',
+                                  transition: 'background-color 0.2s',
+                                  cursor: 'pointer',
+                                  pointerEvents: 'auto'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(249, 115, 22, 0.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                <div style={{
+                                  width: '2.75rem',
+                                  height: '2.75rem',
+                                  backgroundColor: '#F1F5F9',
+                                  borderRadius: '0.75rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginRight: '1rem',
+                                  transition: 'background-color 0.2s'
+                                }}>
+                                  <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                  </svg>
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                  <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Admin Panel</p>
+                                  <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Manage platform</p>
+                                </div>
+                              </a>
+                            )}
 
-    {/* Sign Out Button */}
-    <button
-      onClick={handleLogout}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        width: '100%',
-        padding: '0.75rem 1.5rem',
-        color: '#1E293B',
-        textDecoration: 'none',
-        transition: 'all 0.2s',
-        cursor: 'pointer',
-        pointerEvents: 'auto',
-        border: 'none',
-        background: 'transparent',
-        textAlign: 'left',
-        fontFamily: 'inherit'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-        e.currentTarget.style.color = '#DC2626';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-        e.currentTarget.style.color = '#1E293B';
-      }}
-    >
-      <div style={{
-        width: '2.75rem',
-        height: '2.75rem',
-        backgroundColor: '#F1F5F9',
-        borderRadius: '0.75rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: '1rem',
-        transition: 'background-color 0.2s'
-      }}>
-        <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
-      </div>
-      <div style={{ textAlign: 'left' }}>
-        <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Sign Out</p>
-        <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Logout from account</p>
-      </div>
-    </button>
-  </div>
-</div>
-</>
-)}
-</div>
-</div>
-) : (
-<button 
-  onClick={() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    window.location.href = `${apiUrl}/auth/google`;
-  }}
-  className="bg-gradient-to-r from-student-orange to-student-blue hover:from-student-orange/90 hover:to-student-blue/90 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-2"
->
-  <svg className="w-5 h-5" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-  </svg>
-  <span>Join StudentStore</span>
-</button>
-)}
-</div>
-</div>
+                            {/* Sign Out Button */}
+                            <button
+                              onClick={handleLogout}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                width: '100%',
+                                padding: '0.75rem 1.5rem',
+                                color: '#1E293B',
+                                textDecoration: 'none',
+                                transition: 'all 0.2s',
+                                cursor: 'pointer',
+                                pointerEvents: 'auto',
+                                border: 'none',
+                                background: 'transparent',
+                                textAlign: 'left',
+                                fontFamily: 'inherit'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                                e.currentTarget.style.color = '#DC2626';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.color = '#1E293B';
+                              }}
+                            >
+                              <div style={{
+                                width: '2.75rem',
+                                height: '2.75rem',
+                                backgroundColor: '#F1F5F9',
+                                borderRadius: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: '1rem',
+                                transition: 'background-color 0.2s'
+                              }}>
+                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                              </div>
+                              <div style={{ textAlign: 'left' }}>
+                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Sign Out</p>
+                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Logout from account</p>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => {
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+                    window.location.href = `${apiUrl}/auth/google`;
+                  }}
+                  className="bg-gradient-to-r from-student-orange to-student-blue hover:from-student-orange/90 hover:to-student-blue/90 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  <span>Join StudentStore</span>
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* Mobile Navigation - UNCHANGED */}
           <div className="md:hidden">
