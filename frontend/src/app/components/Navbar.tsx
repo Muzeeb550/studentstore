@@ -426,37 +426,38 @@ export default function Navbar() {
 
                     {/* ✅ FIXED: Desktop Dropdown with Inline Styles */}
                     {dropdownOpen && (
-                      <>
-                        {/* Backdrop */}
-                        <div
-                          style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 99998,
-                            background: 'transparent',
-                            cursor: 'default'
-                          }}
-                          onClick={() => setDropdownOpen(false)}
-                        />
-                        
-                        {/* Dropdown menu */}
-                        <div 
-                          style={{
-                            position: 'fixed',
-                            top: '80px',
-                            right: '20px',
-                            width: '16rem',
-                            backgroundColor: '#ffffff',
-                            borderRadius: '1rem',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                            border: '1px solid #E2E8F0',
-                            overflow: 'hidden',
-                            zIndex: 99999,
-                            pointerEvents: 'auto',
-                            cursor: 'default'
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <>
+                          {/* ✅ FIXED: Backdrop that doesn't block dropdown */}
+                          <div
+                            style={{
+                              position: 'fixed',
+                              inset: 0,
+                              zIndex: 99998,
+                              background: 'transparent',
+                              cursor: 'default',
+                              pointerEvents: 'auto'  // ✅ ADDED - Allows clicks to pass through
+                            }}
+                            onClick={() => setDropdownOpen(false)}
+                          />
+                          
+                          {/* ✅ Dropdown menu - ensure overflow is visible */}
+                          <div 
+                            style={{
+                              position: 'fixed',
+                              top: '80px',
+                              right: '20px',
+                              width: '16rem',
+                              backgroundColor: '#ffffff',
+                              borderRadius: '1rem',
+                              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                              border: '1px solid #E2E8F0',
+                              overflow: 'visible',  // ✅ CHANGED from 'hidden' to 'visible'
+                              zIndex: 99999,
+                              pointerEvents: 'auto'  // ✅ ENSURE THIS IS HERE
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+
                           {/* Profile header */}
                           <div style={{
                             padding: '1.25rem 1.5rem',
