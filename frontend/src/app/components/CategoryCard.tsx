@@ -29,17 +29,18 @@ export default function CategoryCard({ category }: CategoryCardProps) {
   return (
     <Link
       href={`/categories/${category.id}`}
-      className="group cursor-pointer touch-optimized"
+      className="group cursor-pointer touch-optimized block"
       aria-label={`Category: ${category.name}`}
     >
-      <div className="category-card">
-        <div className="category-image-area">
+      {/* ✅ MOBILE: Full image, no padding */}
+      <div className="md:hidden">
+        <div className="bg-student-card rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
           {showImage ? (
             <img
               src={getOptimizedIcon(category.icon_url)}
               alt=""
               aria-hidden="true"
-              className="category-icon"
+              className="w-full h-40 sm:h-48 object-cover"
               loading="lazy"
               decoding="async"
               width={300}
@@ -47,17 +48,47 @@ export default function CategoryCard({ category }: CategoryCardProps) {
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="category-fallback flex">
+            <div className="w-full h-40 sm:h-48 bg-gradient-to-br from-student-blue/20 to-student-green/20 flex items-center justify-center text-4xl font-bold text-student-blue">
               {initial}
             </div>
           )}
         </div>
+        
+        {/* Category name below card - MOBILE */}
+        <h4 className="category-title mt-2 text-center font-semibold text-student-primary text-sm sm:text-base">
+          {category.name}
+        </h4>
+      </div>
 
-        <div className="category-text-area">
-          <h4 className="category-title">{category.name}</h4>
+      {/* ✅ DESKTOP: Original design with padding */}
+      <div className="hidden md:block">
+        <div className="category-card">
+          <div className="category-image-area">
+            {showImage ? (
+              <img
+                src={getOptimizedIcon(category.icon_url)}
+                alt=""
+                aria-hidden="true"
+                className="category-icon"
+                loading="lazy"
+                decoding="async"
+                width={300}
+                height={300}
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div className="category-fallback flex">
+                {initial}
+              </div>
+            )}
+          </div>
+
+          <div className="category-text-area">
+            <h4 className="category-title">{category.name}</h4>
+          </div>
+
+          <div className="touch-ripple"></div>
         </div>
-
-        <div className="touch-ripple"></div>
       </div>
     </Link>
   );
