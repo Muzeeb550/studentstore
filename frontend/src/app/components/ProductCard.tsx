@@ -91,9 +91,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           </h4>
           
           {/* Description */}
-          <p className="product-description">
+          {/* <p className="product-description">
             {product.description}
-          </p>
+          </p> */}
 
           {/* Quick Stats Row */}
           {/* <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem', minHeight: '16px' }}>

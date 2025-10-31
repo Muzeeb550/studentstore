@@ -112,9 +112,9 @@ export default function TrendingCard({ product, trendingRank = 1 }: TrendingCard
             {product.name}
           </h4>
           
-          <p className="trending-description">
+          {/* <p className="trending-description">
             {product.description}
-          </p>
+          </p> */}
 
           {/* Social Proof */}
           {/* <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.75rem' }}>
