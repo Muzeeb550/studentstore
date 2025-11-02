@@ -9,6 +9,8 @@ const { connectRedis, getRedisClient } = require('./config/redis');
 const adminRoutes = require('./routes/admin');
 const wishlistRoutes = require('./routes/wishlist');
 const reviewRoutes = require('./routes/reviews');
+const chatRoutes = require('./routes/chat'); // ✅ ADD THIS LINE
+
 
 require('dotenv').config();
 
@@ -176,6 +178,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes); 
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/chat', chatRoutes); // ✅ ADD THIS LINE
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
