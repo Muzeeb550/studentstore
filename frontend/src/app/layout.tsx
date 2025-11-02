@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import { WishlistProvider } from "./context/WishlistContext"; // ✅ ADDED
+import { ChatProvider } from "./context/ChatContext";
+import ChatAssistant from "./components/ChatAssistant";
 import "./globals.css";
 
 
@@ -124,7 +126,10 @@ export default function RootLayout({
         <GoogleAnalytics />
         {/* ✅ WRAP CHILDREN WITH WISHLIST PROVIDER */}
         <WishlistProvider>
-          {children}
+          <ChatProvider>
+            {children}
+            <ChatAssistant />
+          </ChatProvider>
         </WishlistProvider>
       </body>
     </html>
