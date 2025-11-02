@@ -56,9 +56,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
           
           {/* Category Badge */}
-          <div className="product-badge product-badge-category">
+          {/* <div className="product-badge product-badge-category">
             {product.category_name}
-          </div>
+          </div> */}
 
           {/* Trending Badge */}
           {/* {Math.random() > 0.7 && (
