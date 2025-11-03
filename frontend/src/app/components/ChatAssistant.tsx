@@ -493,9 +493,10 @@ export default function ChatAssistant() {
           {showScrollButton && (
             <button
               onClick={scrollToBottom}
-              className="absolute bottom-4 right-4 bg-student-blue text-white rounded-full p-2 shadow-lg hover:bg-student-blue/90 hover:shadow-xl transition-all animate-bounce z-10"
+              className="absolute bottom-20 right-4 bg-student-blue text-white rounded-full p-2 shadow-lg hover:bg-student-blue/90 hover:shadow-xl transition-all animate-bounce z-10"
               title="Scroll to latest message"
             >
+
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
