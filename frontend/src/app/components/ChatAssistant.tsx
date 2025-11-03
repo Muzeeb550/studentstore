@@ -13,15 +13,13 @@ export default function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showScrollButton, setShowScrollButton] = useState(false); // ✅ ADD THIS
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null); // ✅ ADD THIS
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  
   const { messages, loading, sendMessage, addBotMessage, getMessageCount, showMoreProducts, showPreviousProducts, clearChat } = useChat();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-
 
   // ============================================
   // CHECK AUTHENTICATION
@@ -32,18 +30,15 @@ export default function ChatAssistant() {
     setIsAuthenticated(!!token);
   }, []);
 
-     // ============================================
-  // AUTO-SCROLL TO LATEST MESSAGE (Only if at bottom)
+  // ============================================
+  // AUTO-SCROLL TO LATEST MESSAGE
   // ============================================
   
-   useEffect(() => {
-    // Always smooth scroll to latest message when new messages arrive
+  useEffect(() => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 50); // Small delay for smooth animation
+    }, 50);
   }, [messages]);
-
-
 
   // ============================================
   // HANDLE SCROLL - Show/Hide Down Arrow
@@ -53,8 +48,6 @@ export default function ChatAssistant() {
     if (!messagesContainerRef.current) return;
     
     const { scrollHeight, scrollTop, clientHeight } = messagesContainerRef.current;
-    
-    // Show down arrow if user is not at the bottom (more than 100px from bottom)
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
     setShowScrollButton(!isAtBottom);
   };
@@ -69,7 +62,6 @@ export default function ChatAssistant() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   };
-
 
   // ============================================
   // FOCUS INPUT WHEN CHAT OPENS
@@ -129,7 +121,6 @@ export default function ChatAssistant() {
   
   const handleSuggestionClick = (suggestion: string) => {
     setInput(suggestion);
-    // Auto-send after a short delay
     setTimeout(() => {
       const form = document.querySelector('[data-chat-form]') as HTMLFormElement;
       if (form) {
@@ -138,12 +129,11 @@ export default function ChatAssistant() {
     }, 100);
   };
 
-    // ============================================
+  // ============================================
   // HANDLE BUDGET OPTION CLICK
   // ============================================
   
   const handleBudgetClick = (label: string, value: number) => {
-    // ✅ Create a COPY of messages array before reversing
     const category = [...messages]
       .reverse()
       .find(m => m.type === 'user')?.content || '';
@@ -158,7 +148,6 @@ export default function ChatAssistant() {
       }
     }, 100);
   };
-
 
   // ============================================
   // RENDER: Not Authenticated
@@ -261,18 +250,17 @@ export default function ChatAssistant() {
     );
   }
 
-
   // ============================================
   // RENDER: Authenticated
   // ============================================
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - Responsive Position */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-gradient-to-r from-student-blue to-student-green text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all hover:scale-110 z-40 active:scale-95"
+          className="fixed bottom-4 right-4 md:bottom-6 md:right-6 bg-gradient-to-r from-student-blue to-student-green text-white rounded-full p-3 md:p-4 shadow-lg hover:shadow-xl transition-all hover:scale-110 z-40 active:scale-95"
           title="Open Shopping Assistant"
         >
           <div className="relative">
@@ -286,25 +274,28 @@ export default function ChatAssistant() {
         </button>
       )}
 
-      {/* Chat Window */}
+      {/* Chat Window - Full Screen on Mobile, Floating on Desktop */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl flex flex-col max-h-[600px] z-50 overflow-hidden">
-                    {/* Header */}
-          <div className="bg-gradient-to-r from-student-blue to-student-green text-white p-4 rounded-t-2xl flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 rounded-full p-2">
-                <MessageCircle size={20} />
+        <div className="fixed md:bottom-6 md:right-6 md:w-96 md:max-w-[calc(100vw-24px)] md:rounded-2xl md:max-h-[600px] 
+                        bottom-0 right-0 w-full h-full max-h-screen rounded-none
+                        bg-white shadow-2xl flex flex-col z-50 overflow-hidden">
+          
+          {/* Header - Responsive */}
+          <div className="bg-gradient-to-r from-student-blue to-student-green text-white p-3 md:p-4 md:rounded-t-2xl flex justify-between items-center">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="bg-white/20 rounded-full p-1.5 md:p-2">
+                <MessageCircle size={18} className="md:w-5 md:h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">Shopping Assistant</h3>
-                <p className="text-xs text-white/80">Always here to help! 🎓</p>
+                <h3 className="font-bold text-base md:text-lg">Shopping Assistant</h3>
+                <p className="text-[10px] md:text-xs text-white/80 hidden sm:block">Always here to help! 🎓</p>
               </div>
             </div>
             
-            {/* ✅ CLEAR CHAT BUTTON */}
+            {/* Clear Chat Button - Larger Touch Target */}
             <button
               onClick={() => clearChat()}
-              className="hover:bg-white/20 p-2 rounded-lg transition text-white mr-2"
+              className="hover:bg-white/20 p-2 rounded-lg transition text-white mr-1 md:mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="Clear chat and start fresh"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,21 +303,20 @@ export default function ChatAssistant() {
               </svg>
             </button>
 
-            {/* Close Button */}
+            {/* Close Button - Larger Touch Target */}
             <button
               onClick={() => setIsOpen(false)}
-              className="hover:bg-white/20 p-2 rounded-lg transition text-white"
+              className="hover:bg-white/20 p-2 rounded-lg transition text-white min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <X size={20} />
             </button>
           </div>
 
-
-                      {/* Messages Container */}
+          {/* Messages Container - Responsive Padding */}
           <div 
             ref={messagesContainerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 relative"
+            className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 bg-gray-50 relative"
           >
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-8">
@@ -341,25 +331,25 @@ export default function ChatAssistant() {
                 >
                   {/* Bot Message */}
                   {message.type === 'bot' && (
-                    <div className="max-w-xs">
+                    <div className="max-w-[85%] md:max-w-xs w-full">
                       {/* Text Content */}
-                      <div className="bg-white text-gray-800 px-4 py-3 rounded-lg rounded-bl-none shadow-sm border border-gray-200">
+                      <div className="bg-white text-gray-800 px-3 md:px-4 py-2 md:py-3 rounded-lg rounded-bl-none shadow-sm border border-gray-200">
                         <p className="text-sm">{message.content}</p>
                       </div>
 
                       {/* Product Cards */}
                       {message.products && message.products.length > 0 && (
                         <div className="mt-3 space-y-2">
-                                                      {/* Show Previous Button */}
+                          {/* Show Previous Button */}
                           {message.hasPrevious && (
                             <button
                               onClick={() => showPreviousProducts(message.id)}
-                              className="w-full mb-3 px-4 py-2 bg-gradient-to-r from-student-blue to-student-green text-white rounded-lg hover:shadow-md transition font-semibold flex items-center justify-center gap-2"
+                              className="w-full mb-3 px-4 py-3 md:py-2 bg-gradient-to-r from-student-blue to-student-green text-white rounded-lg hover:shadow-md transition font-semibold flex items-center justify-center gap-2 text-sm md:text-base min-h-[44px]"
                             >
                               <svg className="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                               </svg>
-                              Show Previous Products
+                              Show Previous
                             </button>
                           )}
 
@@ -370,9 +360,9 @@ export default function ChatAssistant() {
                               onClick={() => setIsOpen(false)}
                               className="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:border-student-blue transition"
                             >
-                              <div className="flex gap-3 p-3">
-                                {/* Image */}
-                                <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded">
+                              <div className="flex gap-2 md:gap-3 p-2 md:p-3">
+                                {/* Image - Responsive Size */}
+                                <div className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded">
                                   <img
                                     src={product.image}
                                     alt={product.name}
@@ -383,12 +373,12 @@ export default function ChatAssistant() {
                                   />
                                 </div>
 
-                                {/* Product Info */}
+                                {/* Product Info - Responsive Text */}
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold text-sm text-gray-900 truncate">
+                                  <h4 className="font-semibold text-xs md:text-sm text-gray-900 line-clamp-2">
                                     {product.name}
                                   </h4>
-                                  <p className="text-blue-600 font-bold text-sm">
+                                  <p className="text-blue-600 font-bold text-sm md:text-base mt-1">
                                     {product.price}
                                   </p>
 
@@ -405,10 +395,10 @@ export default function ChatAssistant() {
                                   {/* Top Review */}
                                   {product.topReviews && product.topReviews.length > 0 && (
                                     <div className="mt-2 p-2 bg-gray-50 rounded text-xs border-l-2 border-yellow-400">
-                                      <p className="font-semibold text-gray-700 mb-1">
+                                      <p className="font-semibold text-gray-700 mb-1 line-clamp-1">
                                         From {product.topReviews[0].author}:
                                       </p>
-                                      <p className="text-gray-600 italic">
+                                      <p className="text-gray-600 italic line-clamp-2">
                                         "{product.topReviews[0].text}"
                                       </p>
                                       <p className="text-yellow-600 font-semibold mt-1">
@@ -426,16 +416,16 @@ export default function ChatAssistant() {
                             </Link>
                           ))}
 
-                          {/* ✅ SHOW MORE BUTTON */}
+                          {/* Show More Button */}
                           {message.hasMore && (
                             <button
                               onClick={() => showMoreProducts(message.id)}
-                              className="w-full mt-3 px-4 py-3 bg-gradient-to-r from-student-green to-student-blue text-white rounded-lg hover:shadow-md transition font-semibold flex items-center justify-center gap-2"
+                              className="w-full mt-3 px-4 py-3 bg-gradient-to-r from-student-green to-student-blue text-white rounded-lg hover:shadow-md transition font-semibold flex items-center justify-center gap-2 text-sm md:text-base min-h-[44px]"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                               </svg>
-                              Show More Products
+                              Show More
                             </button>
                           )}
                         </div>
@@ -448,7 +438,7 @@ export default function ChatAssistant() {
                             <button
                               key={suggestion}
                               onClick={() => handleSuggestionClick(suggestion)}
-                              className="px-3 py-1 bg-student-blue text-white text-xs rounded-full hover:bg-student-blue/80 transition font-medium"
+                              className="px-3 py-2 md:py-1 bg-student-blue text-white text-xs rounded-full hover:bg-student-blue/80 transition font-medium min-h-[36px] md:min-h-0"
                             >
                               {suggestion}
                             </button>
@@ -463,7 +453,7 @@ export default function ChatAssistant() {
                             <button
                               key={option.value}
                               onClick={() => handleBudgetClick(option.label, option.value)}
-                              className="w-full px-3 py-2 bg-gradient-to-r from-student-green to-student-blue text-white text-sm rounded-lg hover:shadow-md transition font-medium text-left"
+                              className="w-full px-3 py-3 md:py-2 bg-gradient-to-r from-student-green to-student-blue text-white text-sm rounded-lg hover:shadow-md transition font-medium text-left min-h-[44px]"
                             >
                               💰 {option.label}
                             </button>
@@ -475,7 +465,7 @@ export default function ChatAssistant() {
 
                   {/* User Message */}
                   {message.type === 'user' && (
-                    <div className="max-w-xs bg-student-blue text-white px-4 py-3 rounded-lg rounded-br-none shadow-sm">
+                    <div className="max-w-[85%] md:max-w-xs bg-student-blue text-white px-3 md:px-4 py-2 md:py-3 rounded-lg rounded-br-none shadow-sm">
                       <p className="text-sm">{message.content}</p>
                     </div>
                   )}
@@ -512,12 +502,11 @@ export default function ChatAssistant() {
             </button>
           )}
 
-
-          {/* Input Area */}
+          {/* Input Area - Responsive */}
           <form
             onSubmit={handleSendMessage}
             data-chat-form
-            className="border-t border-gray-200 p-3 bg-white flex gap-2"
+            className="border-t border-gray-200 p-3 md:p-3 bg-white flex gap-2"
           >
             <input
               ref={inputRef}
@@ -525,16 +514,16 @@ export default function ChatAssistant() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask for products..."
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-student-blue focus:border-transparent"
+              className="flex-1 border border-gray-300 rounded-lg px-3 md:px-4 py-3 md:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-student-blue focus:border-transparent min-h-[44px]"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="bg-student-blue hover:bg-student-blue/90 disabled:bg-gray-400 text-white rounded-lg p-2 transition"
+              className="bg-student-blue hover:bg-student-blue/90 disabled:bg-gray-400 text-white rounded-lg p-3 md:p-2 transition min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="Send message"
             >
-              <Send size={18} />
+              <Send size={20} className="md:w-[18px] md:h-[18px]" />
             </button>
           </form>
         </div>
