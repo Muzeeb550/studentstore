@@ -25,6 +25,7 @@ export default function Navbar() {
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
+  const [lastTapTime, setLastTapTime] = useState(0);
 
   // ✅ Detect screen size
   useEffect(() => {
@@ -244,11 +245,6 @@ export default function Navbar() {
     setDropdownOpen(false);
   };
 
-  const handleNavigation = (url: string) => {
-    setDropdownOpen(false);
-    window.location.href = url;
-  };
-
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
@@ -257,28 +253,85 @@ export default function Navbar() {
     return user?.name || user?.display_name || user?.email.split('@')[0] || 'Student';
   };
 
-  const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => (
-    <a 
-      href="/"
-      className={`group flex ${mobile ? 'flex-col items-center' : 'items-center'} ${mobile ? 'space-x-0' : 'space-x-3'} transition-all duration-300 active:scale-95`}
-    >
-      <div className="flex items-center space-x-3">
-        <img 
-          src="/favicon-96x96.png" 
-          alt="StudentStore Logo" 
-          className={`${mobile ? 'w-12 h-12' : 'w-12 h-12'} object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105`}
-        />
-        <span className={`logo-gradient ${mobile ? 'text-2xl' : 'text-2xl'}`}>
-          StudentStore
-        </span>
-      </div>
-      {mobile && (
-        <div className="text-xs text-student-secondary font-medium mt-1 text-center">
-          By Students, For Students
+  const handleLogoDoubleClick = () => {
+    window.location.href = '/skillstore';
+  };
+
+  const handleLogoTap = () => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapTime;
+
+    // If two taps within 300ms = double tap
+    if (tapLength < 300 && tapLength > 0) {
+      handleLogoDoubleClick();
+    }
+
+    setLastTapTime(currentTime);
+  };
+
+    const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
+    const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTapTime;
+
+      // If two taps within 300ms = double tap
+      if (tapLength < 300 && tapLength > 0) {
+        e.preventDefault();
+        handleLogoDoubleClick();
+        return;
+      }
+
+      setLastTapTime(currentTime);
+
+      // If not a double tap and on mobile, navigate to home
+      if (mobile && tapLength > 300) {
+        window.location.href = '/';
+      }
+    };
+
+    if (mobile) {
+      return (
+        <div 
+          onTouchEnd={handleTouchEnd}
+          className={`group flex flex-col items-start space-x-0 transition-all duration-300 active:scale-95 cursor-pointer select-none`}
+          style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+        >
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/favicon-96x96.png" 
+              alt="StudentStore Logo" 
+              className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105"
+            />
+            <span className="logo-gradient text-2xl">
+              StudentStore
+            </span>
+          </div>
+          <div className="text-xs text-student-secondary font-medium mt-1 text-center">
+            By Students, For Students
+          </div>
         </div>
-      )}
-    </a>
-  );
+      );
+    }
+
+    return (
+      <a 
+        href="/"
+        onDoubleClick={handleLogoDoubleClick}
+        className={`group flex items-center space-x-3 transition-all duration-300 active:scale-95 cursor-pointer select-none`}
+      >
+        <div className="flex items-center space-x-3">
+          <img 
+            src="/favicon-96x96.png" 
+            alt="StudentStore Logo" 
+            className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105"
+          />
+          <span className="logo-gradient text-2xl">
+            StudentStore
+          </span>
+        </div>
+      </a>
+    );
+  };
 
   const ProfileAvatar = ({ 
     size = 'w-12 h-12', 
@@ -402,21 +455,18 @@ export default function Navbar() {
                     </svg>
                   </button>
 
-                  {/* ✅ FIXED: Desktop Dropdown - Simple state-based */}
+                  {/* ✅ Desktop Dropdown */}
                   {dropdownOpen && (
                     <>
-                      {/* Backdrop */}
                       <div
                         className="fixed inset-0 z-40"
                         onClick={() => setDropdownOpen(false)}
                       ></div>
                       
-                      {/* Dropdown menu */}
                       <div 
                         className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {/* Profile header */}
                         <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
                           <div className="flex items-center gap-3">
                             <ProfileAvatar />
@@ -434,7 +484,6 @@ export default function Navbar() {
                           </div>
                         </div>
 
-                        {/* Menu items */}
                         <div className="py-2">
                           <a
                             href="/dashboard"
@@ -571,13 +620,11 @@ export default function Navbar() {
 
                     {dropdownOpen && (
                       <>
-                        {/* Backdrop */}
                         <div
                           className="fixed inset-0 z-40"
                           onClick={() => setDropdownOpen(false)}
                         ></div>
 
-                        {/* Mobile Menu */}
                         <div 
                           className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
                           onClick={(e) => e.stopPropagation()}
