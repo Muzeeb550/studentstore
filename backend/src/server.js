@@ -10,7 +10,9 @@ const adminRoutes = require('./routes/admin');
 const wishlistRoutes = require('./routes/wishlist');
 const reviewRoutes = require('./routes/reviews');
 const chatRoutes = require('./routes/chat'); // ✅ ADD THIS LINE
-
+const skillstoreAdminRoutes = require('./routes/skillstore-admin');
+const skillstorePublicRoutes = require('./routes/skillstore-public');
+const skillstoreBookmarksRoutes = require('./routes/skillstore-bookmarks');
 
 require('dotenv').config();
 
@@ -179,6 +181,12 @@ app.use('/api/public', publicRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes); // ✅ ADD THIS LINE
+app.use('/api/admin/skillstore', skillstoreAdminRoutes);
+app.use('/api/skillstore', skillstorePublicRoutes);
+app.use('/api/skillstore/bookmarks', skillstoreBookmarksRoutes);
+
+
+
 
 
 // Error handling middleware
