@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import logger from '../utils/logger';
 
@@ -21,9 +21,6 @@ export default function Navbar() {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string>('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // ✅ PWA Install functionality - SIMPLIFIED (no browser detection needed)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
@@ -61,7 +58,7 @@ export default function Navbar() {
     setLoading(false);
   }, []);
 
-  // ✅ FIXED: PWA Install event listener - Always show button after 2s
+  // ✅ PWA Install event listener
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -72,14 +69,12 @@ export default function Navbar() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Check if already installed
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
     
     if (isInstalled) {
       console.log('✅ Already installed');
       setShowInstallButton(false);
     } else {
-      // Show install button after 2 seconds regardless
       const timer = setTimeout(() => {
         console.log('📱 Showing install button');
         setShowInstallButton(true);
@@ -96,13 +91,11 @@ export default function Navbar() {
     };
   }, []);
 
-  // ✅ FINAL FIX: Simple logic - If prompt exists use it, else show modal
   const handleInstallClick = async () => {
     console.log('📲 Install clicked');
     console.log('- Screen type:', isMobileScreen ? 'Mobile' : 'Desktop');
     console.log('- Has deferredPrompt:', !!deferredPrompt);
 
-    // DESKTOP - Always allow native install if available
     if (!isMobileScreen) {
       if (deferredPrompt) {
         console.log('💻 Desktop: Native install');
@@ -118,7 +111,6 @@ export default function Navbar() {
       return;
     }
 
-    // MOBILE - If prompt available, use it; otherwise show modal
     if (isMobileScreen) {
       if (deferredPrompt) {
         console.log('📱 Mobile: Native install (prompt available)');
@@ -240,19 +232,6 @@ export default function Navbar() {
     
     return () => {
       window.removeEventListener('wishlist-count-change', handleCountChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -397,258 +376,122 @@ export default function Navbar() {
               {loading ? (
                 <div className="loading-shimmer w-12 h-12 rounded-full"></div>
               ) : user ? (
-                <div className="flex items-center space-x-4">
-                  <div className="navbar-dropdown-container" ref={dropdownRef}>
-                    <button
-                      onClick={() => setDropdownOpen(!dropdownOpen)}
-                      className="flex items-center space-x-4 bg-student-card hover:bg-student-light rounded-full py-3 px-5 border border-border-light transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-student-blue/30"
+                <div className="relative">
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center space-x-4 bg-student-card hover:bg-student-light rounded-full py-3 px-5 border border-border-light transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-student-blue/30"
+                  >
+                    <ProfileAvatar />
+                    
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-student-primary">
+                        {getDisplayName()}
+                      </p>
+                      <p className="text-xs text-student-secondary capitalize font-medium">
+                        {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
+                      </p>
+                    </div>
+                    
+                    <svg 
+                      className={`w-5 h-5 text-student-secondary transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
                     >
-                      <ProfileAvatar />
-                      
-                      <div className="text-left">
-                        <p className="text-sm font-semibold text-student-primary">
-                          {getDisplayName()}
-                        </p>
-                        <p className="text-xs text-student-secondary capitalize font-medium">
-                          {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                        </p>
-                      </div>
-                      
-                      <svg 
-                        className={`w-5 h-5 text-student-secondary transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
 
-                    {/* ✅ FIXED: Desktop Dropdown with Inline Styles */}
-                    {dropdownOpen && (
-                      <>
-                        {/* Backdrop */}
-                        <div
-                          style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 99998,
-                            background: 'transparent',
-                            cursor: 'default'
-                          }}
-                          onClick={() => setDropdownOpen(false)}
-                        />
-                        
-                        {/* Dropdown menu */}
-                        <div 
-                          style={{
-                            position: 'fixed',
-                            top: '80px',
-                            right: '20px',
-                            width: '16rem',
-                            backgroundColor: '#ffffff',
-                            borderRadius: '1rem',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                            border: '1px solid #E2E8F0',
-                            overflow: 'hidden',
-                            zIndex: 99999,
-                            pointerEvents: 'auto',
-                            cursor: 'default'
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Profile header */}
-                          <div style={{
-                            padding: '1.25rem 1.5rem',
-                            background: 'linear-gradient(to right, rgba(79, 70, 229, 0.1), rgba(16, 185, 129, 0.1), rgba(249, 115, 22, 0.1))',
-                            borderBottom: '1px solid #E2E8F0'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                              <ProfileAvatar size="w-16 h-16" textSize="text-xl" />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontWeight: 700, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {getDisplayName()}
-                                </p>
-                                <p style={{ fontSize: '0.875rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {user.email}
-                                </p>
-                                <p style={{ fontSize: '0.75rem', color: '#4F46E5', fontWeight: 500, marginTop: '0.25rem', textTransform: 'capitalize' }}>
-                                  {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
-                                </p>
-                              </div>
+                  {/* ✅ FIXED: Desktop Dropdown - Simple state-based */}
+                  {dropdownOpen && (
+                    <>
+                      {/* Backdrop */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setDropdownOpen(false)}
+                      ></div>
+                      
+                      {/* Dropdown menu */}
+                      <div 
+                        className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Profile header */}
+                        <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
+                          <div className="flex items-center gap-3">
+                            <ProfileAvatar />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-student-primary text-sm truncate">
+                                {getDisplayName()}
+                              </p>
+                              <p className="text-xs text-student-secondary truncate">
+                                {user.email}
+                              </p>
+                              <p className="text-xs text-student-blue font-medium capitalize mt-1">
+                                {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
+                              </p>
                             </div>
                           </div>
-
-                          {/* Menu items */}
-                          <div style={{ padding: '0.75rem 0' }}>
-                            {/* Dashboard Link */}
-                            <a
-                              href="/dashboard"
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: '100%',
-                                padding: '0.75rem 1.5rem',
-                                color: '#1E293B',
-                                textDecoration: 'none',
-                                transition: 'background-color 0.2s',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.1)'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                              <div style={{
-                                width: '2.75rem',
-                                height: '2.75rem',
-                                backgroundColor: '#F1F5F9',
-                                borderRadius: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: '1rem',
-                                transition: 'background-color 0.2s'
-                              }}>
-                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                                </svg>
-                              </div>
-                              <div style={{ textAlign: 'left' }}>
-                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Dashboard</p>
-                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Overview & stats</p>
-                              </div>
-                            </a>
-
-                            {/* Profile Link */}
-                            <a
-                              href="/profile"
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: '100%',
-                                padding: '0.75rem 1.5rem',
-                                color: '#1E293B',
-                                textDecoration: 'none',
-                                transition: 'background-color 0.2s',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto'
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                              <div style={{
-                                width: '2.75rem',
-                                height: '2.75rem',
-                                backgroundColor: '#F1F5F9',
-                                borderRadius: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: '1rem',
-                                transition: 'background-color 0.2s'
-                              }}>
-                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                              </div>
-                              <div style={{ textAlign: 'left' }}>
-                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>My Profile</p>
-                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Settings & preferences</p>
-                              </div>
-                            </a>
-
-                            {/* Admin Panel Link (conditional) */}
-                            {user.role === 'admin' && (
-                              <a
-                                href="/admin"
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  width: '100%',
-                                  padding: '0.75rem 1.5rem',
-                                  color: '#1E293B',
-                                  textDecoration: 'none',
-                                  transition: 'background-color 0.2s',
-                                  cursor: 'pointer',
-                                  pointerEvents: 'auto'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(249, 115, 22, 0.1)'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                              >
-                                <div style={{
-                                  width: '2.75rem',
-                                  height: '2.75rem',
-                                  backgroundColor: '#F1F5F9',
-                                  borderRadius: '0.75rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  marginRight: '1rem',
-                                  transition: 'background-color 0.2s'
-                                }}>
-                                  <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                  </svg>
-                                </div>
-                                <div style={{ textAlign: 'left' }}>
-                                  <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Admin Panel</p>
-                                  <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Manage platform</p>
-                                </div>
-                              </a>
-                            )}
-
-                            {/* Sign Out Button */}
-                            <button
-                              onClick={handleLogout}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: '100%',
-                                padding: '0.75rem 1.5rem',
-                                color: '#1E293B',
-                                textDecoration: 'none',
-                                transition: 'all 0.2s',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto',
-                                border: 'none',
-                                background: 'transparent',
-                                textAlign: 'left',
-                                fontFamily: 'inherit'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                                e.currentTarget.style.color = '#DC2626';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                                e.currentTarget.style.color = '#1E293B';
-                              }}
-                            >
-                              <div style={{
-                                width: '2.75rem',
-                                height: '2.75rem',
-                                backgroundColor: '#F1F5F9',
-                                borderRadius: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: '1rem',
-                                transition: 'background-color 0.2s'
-                              }}>
-                                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#64748B' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                              </div>
-                              <div style={{ textAlign: 'left' }}>
-                                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Sign Out</p>
-                                <p style={{ fontSize: '0.75rem', color: '#64748B' }}>Logout from account</p>
-                              </div>
-                            </button>
-                          </div>
                         </div>
-                      </>
-                    )}
-                  </div>
+
+                        {/* Menu items */}
+                        <div className="py-2">
+                          <a
+                            href="/dashboard"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-blue/10 transition-colors"
+                          >
+                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                            </svg>
+                            <span className="font-medium">My Dashboard</span>
+                          </a>
+
+                          <a
+                            href="/profile"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-green/10 transition-colors"
+                          >
+                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span className="font-medium">My Profile</span>
+                          </a>
+
+                          <a
+                            href="/skillstore"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-green/10 transition-colors"
+                          >
+                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <span className="font-medium">Skill Store</span>
+                          </a>
+
+                          {user.role === 'admin' && (
+                            <a
+                              href="/admin"
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-orange/10 transition-colors"
+                            >
+                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              </svg>
+                              <span className="font-medium">Admin Panel</span>
+                            </a>
+                          )}
+
+                          <div className="border-t border-border-light my-2"></div>
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <svg className="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span className="font-medium">Sign Out</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <button 
@@ -670,7 +513,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Mobile Navigation - UNCHANGED */}
+          {/* Mobile Navigation */}
           <div className="md:hidden">
             <div className="flex justify-between items-start h-auto py-4">
               <StudentStoreLogo mobile={true} />
@@ -718,7 +561,7 @@ export default function Navbar() {
                 {loading ? (
                   <div className="loading-shimmer w-10 h-10 rounded-full"></div>
                 ) : user ? (
-                  <div className="navbar-dropdown-container" ref={dropdownRef}>
+                  <div className="relative">
                     <button
                       onClick={() => setDropdownOpen(!dropdownOpen)}
                       className="p-1 rounded-full hover:bg-student-light active:bg-student-light transition-all duration-200"
@@ -727,90 +570,88 @@ export default function Navbar() {
                     </button>
 
                     {dropdownOpen && (
-                      <div 
-                        className="navbar-dropdown-menu" 
-                        style={{ width: '14rem' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
-                          <div className="flex items-center space-x-3">
-                            <ProfileAvatar size="w-12 h-12" textSize="text-base" />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
-                              <p className="text-xs text-student-secondary truncate">{user.email}</p>
-                              <p className="text-xs text-student-blue font-medium capitalize mt-1">
-                                {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                              </p>
+                      <>
+                        {/* Backdrop */}
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setDropdownOpen(false)}
+                        ></div>
+
+                        {/* Mobile Menu */}
+                        <div 
+                          className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
+                            <div className="flex items-center space-x-3">
+                              <ProfileAvatar size="w-12 h-12" textSize="text-base" />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
+                                <p className="text-xs text-student-secondary truncate">{user.email}</p>
+                                <p className="text-xs text-student-blue font-medium capitalize mt-1">
+                                  {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="py-2">
+                            <a
+                              href="/profile"
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-blue/10 transition-colors"
+                            >
+                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span className="font-medium">My Profile</span>
+                            </a>
+
+                            <a
+                              href="/dashboard"
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-blue/10 transition-colors"
+                            >
+                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                              </svg>
+                              <span className="font-medium">Dashboard</span>
+                            </a>
+
+                            <a
+                              href="/skillstore"
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-green/10 transition-colors"
+                            >
+                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                              <span className="font-medium">Skill Store</span>
+                            </a>
+
+                            {user.role === 'admin' && (
+                              <a
+                                href="/admin"
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-orange/10 transition-colors"
+                              >
+                                <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                </svg>
+                                <span className="font-medium">Admin Panel</span>
+                              </a>
+                            )}
+
+                            <div className="border-t border-border-light mt-2 pt-2">
+                              <button
+                                onClick={handleLogout}
+                                className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                <svg className="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                <span className="font-medium">Sign Out</span>
+                              </button>
                             </div>
                           </div>
                         </div>
-
-                        <div className="py-2">
-                          <button
-                            onClick={() => handleNavigation('/profile')}
-                            onTouchEnd={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleNavigation('/profile');
-                            }}
-                            className="navbar-dropdown-item"
-                          >
-                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            <span className="font-medium">My Profile</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleNavigation('/dashboard')}
-                            onTouchEnd={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleNavigation('/dashboard');
-                            }}
-                            className="navbar-dropdown-item"
-                          >
-                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                            </svg>
-                            <span className="font-medium">Dashboard</span>
-                          </button>
-
-                          {user.role === 'admin' && (
-                            <button
-                              onClick={() => handleNavigation('/admin')}
-                              onTouchEnd={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleNavigation('/admin');
-                              }}
-                              className="navbar-dropdown-item"
-                            >
-                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              </svg>
-                              <span className="font-medium">Admin Panel</span>
-                            </button>
-                          )}
-
-                          <div className="border-t border-border-light mt-2 pt-2">
-                            <button
-                              onClick={handleLogout}
-                              onTouchEnd={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleLogout();
-                              }}
-                              className="navbar-dropdown-item hover:bg-red-50 hover:text-red-600"
-                            >
-                              <svg className="w-5 h-5 text-student-secondary hover:text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                              </svg>
-                              <span className="font-medium">Sign Out</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 ) : (
@@ -834,7 +675,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* PWA Install Modal - UNCHANGED */}
+      {/* PWA Install Modal */}
       {showInstallModal && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
