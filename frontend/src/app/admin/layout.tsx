@@ -18,6 +18,7 @@ export default function AdminLayout({
 }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [skillstoreOpen, setSkillstoreOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -71,31 +72,97 @@ export default function AdminLayout({
               <div className="bg-red-600 text-white px-3 py-2 rounded-lg font-bold text-xl">
                 🛠️ Admin Panel
               </div>
-              <nav className="flex space-x-6">
+              <nav className="flex space-x-1">
                 <a 
                   href="/admin" 
-                  className="text-gray-600 hover:text-red-600 font-medium"
+                  className="text-gray-600 hover:text-red-600 px-3 py-2 font-medium"
                 >
                   Dashboard
                 </a>
                 <a 
                   href="/admin/products" 
-                  className="text-gray-600 hover:text-red-600 font-medium"
+                  className="text-gray-600 hover:text-red-600 px-3 py-2 font-medium"
                 >
                   Products
                 </a>
                 <a 
                   href="/admin/categories" 
-                  className="text-gray-600 hover:text-red-600 font-medium"
+                  className="text-gray-600 hover:text-red-600 px-3 py-2 font-medium"
                 >
                   Categories
                 </a>
                 <a 
                   href="/admin/banners" 
-                  className="text-gray-600 hover:text-red-600 font-medium"
+                  className="text-gray-600 hover:text-red-600 px-3 py-2 font-medium"
                 >
                   Banners
                 </a>
+
+                {/* SkillStore Dropdown - NEW */}
+                <div className="relative group">
+                  <button 
+                    onClick={() => setSkillstoreOpen(!skillstoreOpen)}
+                    className="text-gray-600 hover:text-purple-600 px-3 py-2 font-medium flex items-center gap-1"
+                  >
+                    🎓 SkillStore
+                    <svg 
+                      className={`w-4 h-4 transition-transform ${skillstoreOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {skillstoreOpen && (
+                    <div className="absolute left-0 mt-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <a 
+                        href="/admin/skillstore" 
+                        className="block px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+                      >
+                        📈 SkillStore Dashboard
+                      </a>
+                      
+                      <div className="border-t border-gray-200 my-2"></div>
+                      
+                      <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase">
+                        Banners
+                      </div>
+                      <a 
+                        href="/admin/skillstore/banners" 
+                        className="block px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+                      >
+                        🎨 Manage Banners
+                      </a>
+                      <a 
+                        href="/admin/skillstore/banners/create" 
+                        className="block px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 pl-8"
+                      >
+                        ➕ Create Banner
+                      </a>
+
+                      <div className="border-t border-gray-200 my-2"></div>
+                      
+                      <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase">
+                        Skills
+                      </div>
+                      <a 
+                        href="/admin/skillstore/skills" 
+                        className="block px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+                      >
+                        🎓 Manage Skills
+                      </a>
+                      <a 
+                        href="/admin/skillstore/skills/create" 
+                        className="block px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 pl-8"
+                      >
+                        ➕ Create Skill
+                      </a>
+                    </div>
+                  )}
+                </div>
               </nav>
             </div>
 
