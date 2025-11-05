@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useBookmarks } from '../../context/BookmarkContext';
@@ -13,7 +13,7 @@ interface Skill {
   bookmark_count: string;
 }
 
-// ✅ NEW: Separate component for search content that uses useSearchParams
+// ✅ Separate component for search content that uses useSearchParams
 function SearchPageContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
@@ -37,6 +37,16 @@ function SearchPageContent() {
       }
     }
   }, []);
+
+  // ✅ NEW: Memoized bookmark check to prevent unnecessary re-renders
+  const handleCheckBookmarks = useCallback(
+    async (skillIds: number[]) => {
+      if (user && skillIds.length > 0) {
+        await checkBookmarks(skillIds);
+      }
+    },
+    [user, checkBookmarks]
+  );
 
   useEffect(() => {
     const fetchSearchResults = async () => {
@@ -67,10 +77,9 @@ function SearchPageContent() {
         if (result.status === 'success') {
           setSkills(result.data);
           
+          // ✅ Use memoized callback instead of direct checkBookmarks
           const skillIds = result.data.map((s: Skill) => s.id);
-          if (user && skillIds.length > 0) {
-            checkBookmarks(skillIds);
-          }
+          await handleCheckBookmarks(skillIds);
           
           hasFetchedRef.current = true;
         }
@@ -83,7 +92,8 @@ function SearchPageContent() {
     };
 
     fetchSearchResults();
-  }, [query, user, checkBookmarks]);
+    // ✅ Only depends on query and handleCheckBookmarks (not checkBookmarks directly)
+  }, [query, handleCheckBookmarks]);
 
   const handleBookmark = async (skillId: number) => {
     if (!user) {
@@ -239,7 +249,7 @@ function SearchPageLoading() {
   );
 }
 
-// ✅ NEW: Main page component with Suspense
+// ✅ Main page component with Suspense
 export default function SearchPage() {
   return (
     <Suspense fallback={<SearchPageLoading />}>

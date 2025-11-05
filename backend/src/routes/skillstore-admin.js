@@ -8,16 +8,14 @@ const router = express.Router();
 // All routes require admin authentication
 router.use(requireAdmin);
 
-// ✅ Helper function to invalidate cache
+// ✅ FIXED: Helper function to invalidate cache - only delete keys that actually exist
 const invalidateSkillstoreCache = async (keys = []) => {
   try {
     if (keys.length === 0) {
-      // Invalidate all skillstore caches
+      // Invalidate all skillstore caches (must match skillstore-public.js keys)
       keys = [
-        'skillstore:skills:all',
-        'skillstore:banners:active',
-        'studentstore:skillstore:skills:all',
-        'studentstore:skillstore:banners:active'
+        'studentstore:skillstore:skills:all',      // ✅ Matches public.js
+        'studentstore:skillstore:banners:active'   // ✅ Matches public.js
       ];
     }
     
@@ -30,16 +28,13 @@ const invalidateSkillstoreCache = async (keys = []) => {
   }
 };
 
-// ✅ Helper function to invalidate specific skill cache
+// ✅ FIXED: Helper function to invalidate specific skill cache
 const invalidateSkillCache = async (skillId) => {
   try {
     const keys = [
-      `skillstore:skill:${skillId}:details`,
-      `studentstore:skillstore:skill:${skillId}:details`,
-      'skillstore:skills:all',
-      'studentstore:skillstore:skills:all',
-      'skillstore:banners:active',
-      'studentstore:skillstore:banners:active'
+      `studentstore:skillstore:skill:${skillId}:details`, // ✅ Matches public.js
+      'studentstore:skillstore:skills:all',                // ✅ Matches public.js
+      'studentstore:skillstore:banners:active'             // ✅ Matches public.js
     ];
     
     for (const key of keys) {
@@ -50,6 +45,7 @@ const invalidateSkillCache = async (skillId) => {
     console.error('Cache invalidation error:', error);
   }
 };
+
 
 // ===================================
 // SKILLSTORE ADMIN DASHBOARD STATS

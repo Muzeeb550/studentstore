@@ -16,6 +16,7 @@ export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [removingId, setRemovingId] = useState<number | null>(null); // ✅ NEW: Track removing state
 
   useEffect(() => {
     fetchBookmarks();
@@ -51,8 +52,11 @@ export default function BookmarksPage() {
     }
   };
 
+  // ✅ FIXED: Use skill_id (from result data) not id
   const handleRemoveBookmark = async (skillId: number) => {
     try {
+      setRemovingId(skillId); // ✅ NEW: Show removing state
+      
       const token = localStorage.getItem('studentstore_token');
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       
@@ -63,10 +67,16 @@ export default function BookmarksPage() {
 
       const result = await response.json();
       if (result.status === 'success') {
+        // ✅ FIXED: Filter by bookmark.id (the actual database ID)
         setBookmarks(bookmarks.filter(b => b.id !== skillId));
+        console.log(`✅ Bookmark removed: Skill ${skillId}`);
+      } else {
+        console.error('Failed to remove bookmark:', result.message);
       }
     } catch (error) {
       console.error('Remove bookmark error:', error);
+    } finally {
+      setRemovingId(null); // ✅ NEW: Clear removing state
     }
   };
 
@@ -133,7 +143,12 @@ export default function BookmarksPage() {
             {/* Skills Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {bookmarks.map((bookmark) => (
-                <div key={bookmark.id} className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
+                <div 
+                  key={bookmark.id} 
+                  className={`bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${
+                    removingId === bookmark.id ? 'opacity-50 pointer-events-none' : '' // ✅ NEW: Visual feedback
+                  }`}
+                >
                   
                   {/* Skill Image */}
                   <div className="aspect-square bg-gray-100 relative overflow-hidden group">
@@ -141,12 +156,21 @@ export default function BookmarksPage() {
                       src={bookmark.card_image_url}
                       alt={bookmark.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23f3f4f6" width="400" height="400"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="18" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage Not Found%3C/text%3E%3C/svg%3E';
+                      }}
                     />
                     
                     {/* Remove Button */}
                     <button
-                      onClick={() => handleRemoveBookmark(bookmark.id)}
-                      className="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors"
+                      onClick={() => handleRemoveBookmark(bookmark.id)} // ✅ Pass bookmark.id
+                      disabled={removingId !== null} // ✅ NEW: Disable during removal
+                      className={`absolute top-3 right-3 text-white p-2 rounded-full transition-colors ${
+                        removingId === bookmark.id
+                          ? 'bg-gray-500 cursor-not-allowed'
+                          : 'bg-red-500 hover:bg-red-600'
+                      }`}
+                      title="Remove bookmark"
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />

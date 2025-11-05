@@ -182,8 +182,8 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes); // ✅ ADD THIS LINE
 app.use('/api/admin/skillstore', skillstoreAdminRoutes);
-app.use('/api/skillstore', skillstorePublicRoutes);
 app.use('/api/skillstore/bookmarks', skillstoreBookmarksRoutes);
+app.use('/api/skillstore', skillstorePublicRoutes);
 
 
 

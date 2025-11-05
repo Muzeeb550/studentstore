@@ -1,29 +1,29 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { createCacheMiddleware } = require('../middleware/cache');
-const redis = require('../config/redis'); // ✅ Import redis
+const redis = require('../config/redis');
 const router = express.Router();
 
 // ===================================
 // CACHE MIDDLEWARE CONFIGURATIONS
 // ===================================
 
-// ✅ FIXED: Use consistent cache key names with 'studentstore:' prefix
+// ✅ FIXED: Reduced TTL to 30 seconds for instant updates
 const bannersCache = createCacheMiddleware(
     () => 'studentstore:skillstore:banners:active',
-    300, // 5 minutes
+    30, // ✅ Changed from 300 to 30 seconds
     (req) => req.headers['cache-control'] === 'no-cache'
 );
 
 const skillsCache = createCacheMiddleware(
     () => 'studentstore:skillstore:skills:all',
-    600, // 10 minutes
+    30, // ✅ Changed from 600 to 30 seconds
     (req) => req.headers['cache-control'] === 'no-cache'
 );
 
 const skillDetailsCache = createCacheMiddleware(
     (req) => `studentstore:skillstore:skill:${req.params.skillId}:details`,
-    300, // 5 minutes
+    30, // ✅ Changed from 300 to 30 seconds
     (req) => req.headers['cache-control'] === 'no-cache'
 );
 
@@ -47,6 +47,9 @@ router.get('/banners', bannersCache, async (req, res) => {
         `);
         
         const duration = Date.now() - startTime;
+        
+        // ✅ NEW: Add Cache-Control header to browser
+        res.set('Cache-Control', 'public, max-age=30');
         
         res.json({
             status: 'success',
@@ -86,6 +89,9 @@ router.get('/skills', skillsCache, async (req, res) => {
         `);
         
         const duration = Date.now() - startTime;
+        
+        // ✅ NEW: Add Cache-Control header to browser
+        res.set('Cache-Control', 'public, max-age=30');
         
         res.json({
             status: 'success',
@@ -153,6 +159,9 @@ router.get('/skills/:skillId', skillDetailsCache, async (req, res) => {
         `, [skillId]);
         
         const duration = Date.now() - startTime;
+        
+        // ✅ NEW: Add Cache-Control header to browser
+        res.set('Cache-Control', 'public, max-age=30');
         
         res.json({
             status: 'success',
@@ -227,6 +236,9 @@ router.get('/search', async (req, res) => {
         ]);
         
         const duration = Date.now() - startTime;
+        
+        // ✅ NEW: Add Cache-Control header (search results shouldn't be cached long)
+        res.set('Cache-Control', 'public, max-age=60'); // 60 sec for search
         
         console.log(`🔍 Search: "${searchTerm}" | Results: ${result.rows.length} | ${duration}ms`);
         

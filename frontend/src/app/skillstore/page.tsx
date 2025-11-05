@@ -33,19 +33,99 @@ export default function SkillStorePage() {
   // Touch/Swipe handling
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
-  const SWIPE_THRESHOLD = 50; // pixels - industry standard
-  const BANNER_INTERVAL = 6000; // 6 seconds
+  const SWIPE_THRESHOLD = 50;
+  const BANNER_INTERVAL = 6000;
 
   const { bookmarkedSkills, addBookmark, removeBookmark, checkBookmarks } = useBookmarks();
 
+  // ✅ Initialize user on mount
   useEffect(() => {
     const userStr = localStorage.getItem('studentstore_user');
     if (userStr) {
       setUser(JSON.parse(userStr));
     }
-    
-    fetchData();
   }, []);
+
+  // ✅ NEW: Fetch data with cache-busting
+  const fetchData = async () => {
+  try {
+    setLoading(true);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    
+    console.log('🔄 Fetching from:', apiUrl);
+    
+    // ✅ SIMPLIFIED: Remove complex headers, just use query param
+    const [bannersRes, skillsRes] = await Promise.all([
+      fetch(`${apiUrl}/api/skillstore/banners?t=${Date.now()}`, {
+        method: 'GET',
+        credentials: 'omit' // ✅ Don't send cookies
+      }),
+      fetch(`${apiUrl}/api/skillstore/skills?t=${Date.now()}`, {
+        method: 'GET',
+        credentials: 'omit' // ✅ Don't send cookies
+      })
+    ]);
+
+    console.log('✅ Banners Response Status:', bannersRes.status);
+    console.log('✅ Skills Response Status:', skillsRes.status);
+
+    if (!bannersRes.ok) {
+      console.error('❌ Banners fetch failed:', bannersRes.statusText);
+    }
+    if (!skillsRes.ok) {
+      console.error('❌ Skills fetch failed:', skillsRes.statusText);
+    }
+
+    const bannersResult = await bannersRes.json();
+    const skillsResult = await skillsRes.json();
+
+    console.log('📊 Banners:', bannersResult);
+    console.log('📊 Skills:', skillsResult);
+
+    if (bannersResult.status === 'success') {
+      setBanners(bannersResult.data);
+    }
+
+    if (skillsResult.status === 'success') {
+      setSkills(skillsResult.data);
+      
+      if (user) {
+        checkBookmarks(skillsResult.data.map((s: Skill) => s.id));
+      }
+    }
+  } catch (error) {
+    console.error('❌ Fetch error:', error);
+    setLoading(false);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // ✅ NEW: Initial fetch on mount
+  useEffect(() => {
+    fetchData();
+  }, [user]);
+
+  // ✅ NEW: Auto-refresh every 30 seconds to sync with cache TTL
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('🔄 Refreshing skillstore data...');
+      fetchData();
+    }, 30000); // 30 seconds = same as cache TTL
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // ✅ NEW: Listen for manual refresh event
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('🔄 Manual refresh triggered');
+      fetchData();
+    };
+
+    window.addEventListener('skillstore:refresh', handleRefresh);
+    return () => window.removeEventListener('skillstore:refresh', handleRefresh);
+  }, [user]);
 
   // Auto-slide banner every 6 seconds
   useEffect(() => {
@@ -58,36 +138,6 @@ export default function SkillStorePage() {
     return () => clearInterval(interval);
   }, [banners.length, timerKey]);
 
-  const fetchData = async () => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      
-      const [bannersRes, skillsRes] = await Promise.all([
-        fetch(`${apiUrl}/api/skillstore/banners`),
-        fetch(`${apiUrl}/api/skillstore/skills`)
-      ]);
-
-      const bannersResult = await bannersRes.json();
-      const skillsResult = await skillsRes.json();
-
-      if (bannersResult.status === 'success') {
-        setBanners(bannersResult.data);
-      }
-
-      if (skillsResult.status === 'success') {
-        setSkills(skillsResult.data);
-        
-        if (user) {
-          checkBookmarks(skillsResult.data.map((s: Skill) => s.id));
-        }
-      }
-    } catch (error) {
-      console.error('Fetch error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleBannerClick = (banner: Banner) => {
     if (banner.redirect_type === 'skill' && banner.redirect_skill_id) {
       window.location.href = `/skillstore/${banner.redirect_skill_id}`;
@@ -96,44 +146,37 @@ export default function SkillStorePage() {
     }
   };
 
-  // Handle dot click - update banner index and reset timer
   const handleDotClick = (index: number) => {
     setCurrentBannerIndex(index);
     setTimerKey((prev) => prev + 1);
   };
 
-  // Handle touch start - record starting position
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     touchStartX.current = e.changedTouches[0].screenX;
   };
 
-  // Handle touch end - calculate swipe direction and distance
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     touchEndX.current = e.changedTouches[0].screenX;
     handleSwipe();
   };
 
-  // Handle swipe logic - professional implementation
   const handleSwipe = () => {
     const swipeDistance = touchStartX.current - touchEndX.current;
 
-    // LEFT SWIPE (distance > 50px) = NEXT banner
     if (swipeDistance > SWIPE_THRESHOLD) {
       const nextIndex = (currentBannerIndex + 1) % banners.length;
       setCurrentBannerIndex(nextIndex);
-      setTimerKey((prev) => prev + 1); // Reset timer
+      setTimerKey((prev) => prev + 1);
       console.log('🔄 Swiped LEFT → Next banner');
     }
 
-    // RIGHT SWIPE (distance < -50px) = PREVIOUS banner
     if (swipeDistance < -SWIPE_THRESHOLD) {
       const prevIndex = (currentBannerIndex - 1 + banners.length) % banners.length;
       setCurrentBannerIndex(prevIndex);
-      setTimerKey((prev) => prev + 1); // Reset timer
+      setTimerKey((prev) => prev + 1);
       console.log('🔄 Swiped RIGHT → Previous banner');
     }
 
-    // Reset touch positions
     touchStartX.current = 0;
     touchEndX.current = 0;
   };
@@ -167,7 +210,6 @@ export default function SkillStorePage() {
       {/* Banners Carousel */}
       {banners.length > 0 && (
         <div className="mb-8">
-          {/* Carousel Container with Touch Support */}
           <div 
             className="relative w-full h-64 md:h-96 rounded-xl overflow-hidden cursor-pointer group select-none"
             onClick={() => handleBannerClick(banners[currentBannerIndex])}
@@ -177,7 +219,6 @@ export default function SkillStorePage() {
               touchAction: 'pan-y',
             }}
           >
-            {/* Banner Image with Smooth Transition */}
             <img
               src={banners[currentBannerIndex].image_url}
               alt={`Banner ${currentBannerIndex + 1}`}
@@ -185,10 +226,8 @@ export default function SkillStorePage() {
               key={currentBannerIndex}
             />
             
-            {/* Gradient Overlay for Better Text Readability (Optional) */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-            {/* Banner Navigation Dots */}
             {banners.length > 1 && (
               <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
                 {banners.map((_, index) => (
@@ -208,11 +247,6 @@ export default function SkillStorePage() {
                 ))}
               </div>
             )}
-
-            {/* Swipe Hint - Shows on Mobile (Optional) */}
-            {/* <div className="absolute top-2 left-2 md:hidden bg-black/30 text-white px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm">
-              👆 Swipe to explore
-            </div> */}
           </div>
         </div>
       )}
@@ -235,7 +269,6 @@ export default function SkillStorePage() {
               key={skill.id} 
               className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow"
             >
-              {/* Skill Image */}
               <div className="aspect-square bg-gray-100 relative overflow-hidden group">
                 <img
                   src={skill.card_image_url}
@@ -246,7 +279,6 @@ export default function SkillStorePage() {
                   }}
                 />
                 
-                {/* Bookmark Button */}
                 <button
                   onClick={() => handleBookmark(skill.id)}
                   className={`absolute top-3 right-3 p-2 rounded-full transition-all ${
@@ -261,7 +293,6 @@ export default function SkillStorePage() {
                   </svg>
                 </button>
 
-                {/* Status Badge */}
                 {!skill.has_details && (
                   <div className="absolute bottom-3 right-3 bg-orange-500 text-white px-2 py-1 rounded text-xs font-semibold">
                     Coming Soon
@@ -269,7 +300,6 @@ export default function SkillStorePage() {
                 )}
               </div>
 
-              {/* Skill Info */}
               <div className="p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-2">{skill.name}</h3>
                 
