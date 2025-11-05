@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useBookmarks } from '../context/BookmarkContext';
 
@@ -27,7 +27,14 @@ export default function SkillStorePage() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [timerKey, setTimerKey] = useState(0);
   const [user, setUser] = useState<any>(null);
+
+  // Touch/Swipe handling
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const SWIPE_THRESHOLD = 50; // pixels - industry standard
+  const BANNER_INTERVAL = 6000; // 6 seconds
 
   const { bookmarkedSkills, addBookmark, removeBookmark, checkBookmarks } = useBookmarks();
 
@@ -40,14 +47,16 @@ export default function SkillStorePage() {
     fetchData();
   }, []);
 
+  // Auto-slide banner every 6 seconds
   useEffect(() => {
-    if (banners.length > 0) {
-      const interval = setInterval(() => {
-        setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [banners.length]);
+    if (banners.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+    }, BANNER_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [banners.length, timerKey]);
 
   const fetchData = async () => {
     try {
@@ -87,6 +96,48 @@ export default function SkillStorePage() {
     }
   };
 
+  // Handle dot click - update banner index and reset timer
+  const handleDotClick = (index: number) => {
+    setCurrentBannerIndex(index);
+    setTimerKey((prev) => prev + 1);
+  };
+
+  // Handle touch start - record starting position
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
+
+  // Handle touch end - calculate swipe direction and distance
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+    handleSwipe();
+  };
+
+  // Handle swipe logic - professional implementation
+  const handleSwipe = () => {
+    const swipeDistance = touchStartX.current - touchEndX.current;
+
+    // LEFT SWIPE (distance > 50px) = NEXT banner
+    if (swipeDistance > SWIPE_THRESHOLD) {
+      const nextIndex = (currentBannerIndex + 1) % banners.length;
+      setCurrentBannerIndex(nextIndex);
+      setTimerKey((prev) => prev + 1); // Reset timer
+      console.log('🔄 Swiped LEFT → Next banner');
+    }
+
+    // RIGHT SWIPE (distance < -50px) = PREVIOUS banner
+    if (swipeDistance < -SWIPE_THRESHOLD) {
+      const prevIndex = (currentBannerIndex - 1 + banners.length) % banners.length;
+      setCurrentBannerIndex(prevIndex);
+      setTimerKey((prev) => prev + 1); // Reset timer
+      console.log('🔄 Swiped RIGHT → Previous banner');
+    }
+
+    // Reset touch positions
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
+
   const handleBookmark = async (skillId: number) => {
     if (!user) {
       alert('Please login to bookmark skills');
@@ -116,35 +167,52 @@ export default function SkillStorePage() {
       {/* Banners Carousel */}
       {banners.length > 0 && (
         <div className="mb-8">
+          {/* Carousel Container with Touch Support */}
           <div 
-            className="relative w-full h-64 md:h-96 rounded-xl overflow-hidden cursor-pointer group"
+            className="relative w-full h-64 md:h-96 rounded-xl overflow-hidden cursor-pointer group select-none"
             onClick={() => handleBannerClick(banners[currentBannerIndex])}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            style={{
+              touchAction: 'pan-y',
+            }}
           >
+            {/* Banner Image with Smooth Transition */}
             <img
               src={banners[currentBannerIndex].image_url}
               alt={`Banner ${currentBannerIndex + 1}`}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              key={currentBannerIndex}
             />
             
+            {/* Gradient Overlay for Better Text Readability (Optional) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
             {/* Banner Navigation Dots */}
             {banners.length > 1 && (
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
                 {banners.map((_, index) => (
                   <button
                     key={index}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setCurrentBannerIndex(index);
+                      handleDotClick(index);
                     }}
-                    className={`w-2 h-2 rounded-full transition-all ${
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
                       index === currentBannerIndex 
                         ? 'bg-white w-6' 
                         : 'bg-white/50 hover:bg-white/75'
                     }`}
+                    aria-label={`Go to banner ${index + 1}`}
                   />
                 ))}
               </div>
             )}
+
+            {/* Swipe Hint - Shows on Mobile (Optional) */}
+            {/* <div className="absolute top-2 left-2 md:hidden bg-black/30 text-white px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm">
+              👆 Swipe to explore
+            </div> */}
           </div>
         </div>
       )}
@@ -186,6 +254,7 @@ export default function SkillStorePage() {
                       ? 'bg-red-500 text-white'
                       : 'bg-white/90 text-gray-400 hover:text-red-500'
                   }`}
+                  aria-label={bookmarkedSkills[skill.id] ? 'Remove bookmark' : 'Add bookmark'}
                 >
                   <svg className="w-5 h-5" fill={bookmarkedSkills[skill.id] ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />

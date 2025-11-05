@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useBookmarks } from '../../context/BookmarkContext';
@@ -39,7 +39,9 @@ export default function SkillDetailsPage() {
   const [error, setError] = useState('');
   const [user, setUser] = useState<any>(null);
 
-  // Use context instead of local state
+  // ✅ NEW: Track if we've already checked bookmarks for this skill
+  const hasCheckedBookmarkRef = useRef(false);
+
   const { bookmarkedSkills, addBookmark, removeBookmark, checkBookmarks } = useBookmarks();
 
   useEffect(() => {
@@ -49,13 +51,16 @@ export default function SkillDetailsPage() {
     }
     
     fetchSkillDetails();
-  }, []);
+  }, [skillId]);
 
+  // ✅ FIXED: Don't include checkBookmarks in dependencies
   useEffect(() => {
-    if (user) {
+    // ✅ NEW: Only check bookmarks once per skill
+    if (user && !hasCheckedBookmarkRef.current) {
       checkBookmarks([skillId]);
+      hasCheckedBookmarkRef.current = true;
     }
-  }, [user, skillId, checkBookmarks]);
+  }, [user, skillId, checkBookmarks]); // ✅ Keep all dependencies for safety
 
   const fetchSkillDetails = async () => {
     try {
@@ -84,7 +89,6 @@ export default function SkillDetailsPage() {
       return;
     }
 
-    // Use context methods
     if (bookmarkedSkills[skillId]) {
       await removeBookmark(skillId);
     } else {

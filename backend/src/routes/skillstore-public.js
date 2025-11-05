@@ -1,26 +1,28 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { createCacheMiddleware } = require('../middleware/cache');
+const redis = require('../config/redis'); // ✅ Import redis
 const router = express.Router();
 
 // ===================================
 // CACHE MIDDLEWARE CONFIGURATIONS
 // ===================================
 
+// ✅ FIXED: Use consistent cache key names with 'studentstore:' prefix
 const bannersCache = createCacheMiddleware(
-    () => 'skillstore:banners:active',
+    () => 'studentstore:skillstore:banners:active',
     300, // 5 minutes
     (req) => req.headers['cache-control'] === 'no-cache'
 );
 
 const skillsCache = createCacheMiddleware(
-    () => 'skillstore:skills:all',
+    () => 'studentstore:skillstore:skills:all',
     600, // 10 minutes
     (req) => req.headers['cache-control'] === 'no-cache'
 );
 
 const skillDetailsCache = createCacheMiddleware(
-    (req) => `skillstore:skill:${req.params.skillId}:details`,
+    (req) => `studentstore:skillstore:skill:${req.params.skillId}:details`,
     300, // 5 minutes
     (req) => req.headers['cache-control'] === 'no-cache'
 );
@@ -75,7 +77,7 @@ router.get('/skills', skillsCache, async (req, res) => {
             SELECT 
                 s.id, s.name, s.card_image_url, s.created_at,
                 COUNT(DISTINCT sd.id) > 0 as has_details,
-                COUNT(DISTINCT ub.id) as bookmark_count
+                COUNT(DISTINCT ub.id)::text as bookmark_count
             FROM SkillstoreSkills s
             LEFT JOIN SkillstoreSkillDetails sd ON s.id = sd.skill_id
             LEFT JOIN UserSkillstoreBookmarks ub ON s.id = ub.skill_id
@@ -171,6 +173,78 @@ router.get('/skills/:skillId', skillDetailsCache, async (req, res) => {
         res.status(500).json({
             status: 'error',
             message: 'Failed to retrieve skill details',
+            error: error.message
+        });
+    }
+});
+
+// ===================================
+// SEARCH ENDPOINT
+// ===================================
+
+router.get('/search', async (req, res) => {
+    try {
+        const { q } = req.query;
+        
+        if (!q || typeof q !== 'string' || q.trim().length === 0) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Search query is required and must be a non-empty string'
+            });
+        }
+        
+        const searchTerm = q.trim();
+        
+        if (searchTerm.length > 100) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Search query too long (max 100 characters)'
+            });
+        }
+        
+        const startTime = Date.now();
+        
+        const result = await pool.query(`
+            SELECT DISTINCT
+                s.id, 
+                s.name, 
+                s.card_image_url, 
+                s.created_at,
+                COUNT(DISTINCT sd.id) > 0 as has_details,
+                COUNT(DISTINCT ub.id)::text as bookmark_count
+            FROM SkillstoreSkills s
+            LEFT JOIN SkillstoreSkillDetails sd ON s.id = sd.skill_id
+            LEFT JOIN UserSkillstoreBookmarks ub ON s.id = ub.skill_id
+            WHERE 
+                s.name ILIKE $1 
+                OR (sd.description ILIKE $2)
+            GROUP BY s.id, s.name, s.card_image_url, s.created_at
+            ORDER BY s.name ASC
+            LIMIT 10
+        `, [
+            `%${searchTerm}%`,
+            `%${searchTerm}%`
+        ]);
+        
+        const duration = Date.now() - startTime;
+        
+        console.log(`🔍 Search: "${searchTerm}" | Results: ${result.rows.length} | ${duration}ms`);
+        
+        res.json({
+            status: 'success',
+            message: 'Search completed successfully',
+            data: result.rows,
+            meta: {
+                query: searchTerm,
+                count: result.rows.length,
+                query_time: `${duration}ms`
+            }
+        });
+    } catch (error) {
+        console.error('Search error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to perform search',
             error: error.message
         });
     }

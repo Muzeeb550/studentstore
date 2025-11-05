@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookmarks } from '../context/BookmarkContext';
+import SkillstoreSearchBar from './SkillstoreSearchBar'; // ✅ ADD THIS LINE
 
 interface User {
   id: number;
@@ -37,7 +38,6 @@ export default function SkillstoreNavbar() {
     }
   }, []);
 
-  // ✅ Fetch user profile
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -89,7 +89,6 @@ export default function SkillstoreNavbar() {
     }
   }, []);
 
-  // ✅ Listen for profile updates
   useEffect(() => {
     const handleProfileUpdate = () => {
       const userStr = localStorage.getItem('studentstore_user');
@@ -131,7 +130,6 @@ export default function SkillstoreNavbar() {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTapTime;
 
-    // If two taps within 300ms = double tap
     if (tapLength < 300 && tapLength > 0) {
       handleLogoDoubleClick();
     }
@@ -224,6 +222,9 @@ export default function SkillstoreNavbar() {
                 </div>
               </div>
             </div>
+
+            {/* Center: Search Bar (✅ ADD THIS) */}
+            <SkillstoreSearchBar mobile={false} />
 
             {/* Right: Actions */}
             <div className="flex items-center space-x-6">
@@ -376,18 +377,15 @@ export default function SkillstoreNavbar() {
 
                     {profileOpen && (
                       <>
-                        {/* Backdrop */}
                         <div
                           className="fixed inset-0 z-40"
                           onClick={() => setProfileOpen(false)}
                         ></div>
 
-                        {/* Mobile Menu */}
                         <div 
                           className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {/* Profile Header */}
                           <div className="px-4 py-3 bg-gradient-to-r from-purple-50 via-blue-50 to-purple-50 border-b border-gray-200">
                             <div className="flex items-center gap-2">
                               <ProfileAvatar />
@@ -402,7 +400,6 @@ export default function SkillstoreNavbar() {
                             </div>
                           </div>
 
-                          {/* Menu Items */}
                           <div className="py-2">
                             <a
                               href="/"
@@ -448,6 +445,9 @@ export default function SkillstoreNavbar() {
                 )}
               </div>
             </div>
+
+            {/* Mobile Search Bar (✅ ADD THIS) - Full Width Below Navbar */}
+            <SkillstoreSearchBar mobile={true} />
           </div>
         </div>
       </nav>

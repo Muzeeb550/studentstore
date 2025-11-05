@@ -1,12 +1,55 @@
 const express = require('express');
 const { requireAdmin } = require('../middleware/adminAuth');
 const { pool } = require('../config/database');
-const { invalidateCache } = require('../config/redis');
+const redis = require('../config/redis'); // ✅ Import redis
 const { addDefaultTransformations } = require('../utils/imagekitHelper');
 const router = express.Router();
 
 // All routes require admin authentication
 router.use(requireAdmin);
+
+// ✅ Helper function to invalidate cache
+const invalidateSkillstoreCache = async (keys = []) => {
+  try {
+    if (keys.length === 0) {
+      // Invalidate all skillstore caches
+      keys = [
+        'skillstore:skills:all',
+        'skillstore:banners:active',
+        'studentstore:skillstore:skills:all',
+        'studentstore:skillstore:banners:active'
+      ];
+    }
+    
+    for (const key of keys) {
+      await redis.del(key);
+      console.log(`🗑️ Cache invalidated: ${key}`);
+    }
+  } catch (error) {
+    console.error('Cache invalidation error:', error);
+  }
+};
+
+// ✅ Helper function to invalidate specific skill cache
+const invalidateSkillCache = async (skillId) => {
+  try {
+    const keys = [
+      `skillstore:skill:${skillId}:details`,
+      `studentstore:skillstore:skill:${skillId}:details`,
+      'skillstore:skills:all',
+      'studentstore:skillstore:skills:all',
+      'skillstore:banners:active',
+      'studentstore:skillstore:banners:active'
+    ];
+    
+    for (const key of keys) {
+      await redis.del(key);
+      console.log(`🗑️ Cache invalidated: ${key}`);
+    }
+  } catch (error) {
+    console.error('Cache invalidation error:', error);
+  }
+};
 
 // ===================================
 // SKILLSTORE ADMIN DASHBOARD STATS
@@ -21,7 +64,6 @@ router.get('/dashboard', async (req, res) => {
             pool.query(`SELECT COUNT(*) as count FROM SkillstoreSkills WHERE created_at >= NOW() - INTERVAL '7 days'`)
         ]);
 
-        // Get recent skills
         const recentSkills = await pool.query(`
             SELECT s.id, s.name, s.created_at, u.display_name as admin_name
             FROM SkillstoreSkills s
@@ -55,7 +97,6 @@ router.get('/dashboard', async (req, res) => {
 // BANNERS MANAGEMENT
 // ===================================
 
-// Get all banners
 router.get('/banners', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -85,7 +126,6 @@ router.get('/banners', async (req, res) => {
     }
 });
 
-// Get single banner
 router.get('/banners/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -124,7 +164,6 @@ router.get('/banners/:id', async (req, res) => {
     }
 });
 
-// Create banner
 router.post('/banners', async (req, res) => {
     try {
         const { image_url, display_order, redirect_type, redirect_skill_id, redirect_custom_url } = req.body;
@@ -136,7 +175,6 @@ router.post('/banners', async (req, res) => {
             });
         }
 
-        // Optimize banner image
         const optimizedImageUrl = addDefaultTransformations(image_url, 'banner');
         console.log(`🎨 Optimized SkillStore banner image`);
 
@@ -156,7 +194,9 @@ router.post('/banners', async (req, res) => {
             req.user.id
         ]);
 
-        // Cache invalidation (we'll add this later)
+        // ✅ FIXED: Invalidate cache immediately
+        await invalidateSkillstoreCache();
+
         console.log(`✅ SkillStore banner created: ID ${result.rows[0].id}`);
 
         res.json({
@@ -174,7 +214,6 @@ router.post('/banners', async (req, res) => {
     }
 });
 
-// Update banner
 router.put('/banners/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -187,7 +226,6 @@ router.put('/banners/:id', async (req, res) => {
             });
         }
 
-        // Optimize banner image
         const optimizedImageUrl = addDefaultTransformations(image_url, 'banner');
 
         const result = await pool.query(`
@@ -213,6 +251,11 @@ router.put('/banners/:id', async (req, res) => {
             });
         }
 
+        // ✅ FIXED: Invalidate cache immediately
+        await invalidateSkillstoreCache();
+
+        console.log(`✅ Banner updated: ID ${id}`);
+
         res.json({
             status: 'success',
             message: 'Banner updated successfully with optimized image',
@@ -228,7 +271,6 @@ router.put('/banners/:id', async (req, res) => {
     }
 });
 
-// Delete banner
 router.delete('/banners/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -244,6 +286,9 @@ router.delete('/banners/:id', async (req, res) => {
                 message: 'Banner not found or access denied'
             });
         }
+
+        // ✅ FIXED: Invalidate cache immediately
+        await invalidateSkillstoreCache();
         
         console.log(`🗑️ SkillStore banner deleted: ID ${id}`);
         
@@ -265,7 +310,6 @@ router.delete('/banners/:id', async (req, res) => {
 // SKILLS MANAGEMENT
 // ===================================
 
-// Get all skills
 router.get('/skills', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -299,7 +343,6 @@ router.get('/skills', async (req, res) => {
     }
 });
 
-// Get single skill
 router.get('/skills/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -335,7 +378,6 @@ router.get('/skills/:id', async (req, res) => {
     }
 });
 
-// Create skill
 router.post('/skills', async (req, res) => {
     try {
         const { name, card_image_url } = req.body;
@@ -347,7 +389,6 @@ router.post('/skills', async (req, res) => {
             });
         }
 
-        // Check if skill name already exists
         const existingSkill = await pool.query(
             'SELECT id FROM SkillstoreSkills WHERE name = $1',
             [name]
@@ -360,7 +401,6 @@ router.post('/skills', async (req, res) => {
             });
         }
 
-        // Optimize skill card image
         const optimizedImageUrl = addDefaultTransformations(card_image_url, 'category');
         console.log(`🎨 Optimized skill card image: ${name}`);
 
@@ -369,6 +409,9 @@ router.post('/skills', async (req, res) => {
             VALUES ($1, $2, $3, NOW(), NOW())
             RETURNING *
         `, [name, optimizedImageUrl, req.user.id]);
+
+        // ✅ FIXED: Invalidate cache immediately
+        await invalidateSkillstoreCache();
 
         console.log(`✅ Skill created: ${name} (ID: ${result.rows[0].id})`);
 
@@ -380,7 +423,7 @@ router.post('/skills', async (req, res) => {
     } catch (error) {
         console.error('Create skill error:', error);
         
-        if (error.code === '23505') { // Unique constraint violation
+        if (error.code === '23505') {
             return res.status(400).json({
                 status: 'error',
                 message: 'Skill with this name already exists'
@@ -395,7 +438,6 @@ router.post('/skills', async (req, res) => {
     }
 });
 
-// Update skill
 router.put('/skills/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -408,7 +450,6 @@ router.put('/skills/:id', async (req, res) => {
             });
         }
 
-        // Check if new name already exists (excluding current skill)
         const existingSkill = await pool.query(
             'SELECT id FROM SkillstoreSkills WHERE name = $1 AND id != $2',
             [name, id]
@@ -421,7 +462,6 @@ router.put('/skills/:id', async (req, res) => {
             });
         }
 
-        // Optimize skill card image
         const optimizedImageUrl = addDefaultTransformations(card_image_url, 'category');
 
         const result = await pool.query(`
@@ -437,6 +477,9 @@ router.put('/skills/:id', async (req, res) => {
                 message: 'Skill not found or access denied'
             });
         }
+
+        // ✅ FIXED: Invalidate specific skill cache
+        await invalidateSkillCache(id);
 
         console.log(`✅ Skill updated: ${name} (ID: ${id})`);
 
@@ -455,7 +498,6 @@ router.put('/skills/:id', async (req, res) => {
     }
 });
 
-// Delete skill
 router.delete('/skills/:id', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -463,7 +505,6 @@ router.delete('/skills/:id', async (req, res) => {
         
         await client.query('BEGIN');
         
-        // Get skill info before deletion
         const skillInfo = await client.query(
             'SELECT name FROM SkillstoreSkills WHERE id = $1 AND admin_id = $2',
             [id, req.user.id]
@@ -479,10 +520,12 @@ router.delete('/skills/:id', async (req, res) => {
         
         const skillName = skillInfo.rows[0].name;
         
-        // Delete skill (CASCADE will handle related records)
         await client.query('DELETE FROM SkillstoreSkills WHERE id = $1 AND admin_id = $2', [id, req.user.id]);
         
         await client.query('COMMIT');
+
+        // ✅ FIXED: Invalidate specific skill cache
+        await invalidateSkillCache(id);
         
         console.log(`🗑️ Skill deleted: ${skillName} (ID: ${id})`);
         
@@ -505,15 +548,12 @@ router.delete('/skills/:id', async (req, res) => {
 
 // ===================================
 // SKILL DETAILS + RESOURCES MANAGEMENT
-// (About Skill Page - All in One)
 // ===================================
 
-// Get skill details with all resources
 router.get('/skill-details/:skillId', async (req, res) => {
     try {
         const { skillId } = req.params;
         
-        // Get skill details
         const detailsResult = await pool.query(`
             SELECT 
                 sd.id, sd.skill_id, sd.description, sd.roadmap_image_url, 
@@ -533,7 +573,6 @@ router.get('/skill-details/:skillId', async (req, res) => {
             });
         }
         
-        // Get free resources
         const freeResources = await pool.query(`
             SELECT id, skill_id, resource_number, image_url, link_url, created_at
             FROM SkillstoreFreeResources
@@ -541,7 +580,6 @@ router.get('/skill-details/:skillId', async (req, res) => {
             ORDER BY resource_number ASC
         `, [skillId]);
         
-        // Get paid resources
         const paidResources = await pool.query(`
             SELECT id, skill_id, resource_number, image_url, link_url, created_at
             FROM SkillstorePaidResources
@@ -568,7 +606,6 @@ router.get('/skill-details/:skillId', async (req, res) => {
     }
 });
 
-// Create or Update skill details with resources (All in one)
 router.post('/skill-details', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -577,11 +614,10 @@ router.post('/skill-details', async (req, res) => {
             description,
             roadmap_image_url,
             opportunities_image_url,
-            free_resources, // Array: [{ resource_number, image_url, link_url }, ...]
-            paid_resources  // Array: [{ resource_number, image_url, link_url }, ...]
+            free_resources,
+            paid_resources
         } = req.body;
 
-        // Validation
         if (!skill_id || !description || !roadmap_image_url || !opportunities_image_url) {
             return res.status(400).json({
                 status: 'error',
@@ -589,7 +625,6 @@ router.post('/skill-details', async (req, res) => {
             });
         }
 
-        // Validate at least 1 free resource
         if (!free_resources || !Array.isArray(free_resources) || free_resources.length === 0) {
             return res.status(400).json({
                 status: 'error',
@@ -597,7 +632,6 @@ router.post('/skill-details', async (req, res) => {
             });
         }
 
-        // Validate at least 1 paid resource
         if (!paid_resources || !Array.isArray(paid_resources) || paid_resources.length === 0) {
             return res.status(400).json({
                 status: 'error',
@@ -605,7 +639,6 @@ router.post('/skill-details', async (req, res) => {
             });
         }
 
-        // Verify skill exists
         const skillExists = await client.query(
             'SELECT id FROM SkillstoreSkills WHERE id = $1',
             [skill_id]
@@ -620,11 +653,9 @@ router.post('/skill-details', async (req, res) => {
 
         await client.query('BEGIN');
 
-        // Optimize images
         const optimizedRoadmap = addDefaultTransformations(roadmap_image_url, 'product');
         const optimizedOpportunities = addDefaultTransformations(opportunities_image_url, 'product');
 
-        // Check if skill details already exist
         const existingDetails = await client.query(
             'SELECT id FROM SkillstoreSkillDetails WHERE skill_id = $1',
             [skill_id]
@@ -633,7 +664,6 @@ router.post('/skill-details', async (req, res) => {
         let detailsId;
 
         if (existingDetails.rows.length > 0) {
-            // Update existing details
             const updateResult = await client.query(`
                 UPDATE SkillstoreSkillDetails SET
                     description = $1, roadmap_image_url = $2, 
@@ -644,13 +674,11 @@ router.post('/skill-details', async (req, res) => {
             
             detailsId = updateResult.rows[0].id;
 
-            // Delete existing resources (we'll re-insert)
             await client.query('DELETE FROM SkillstoreFreeResources WHERE skill_id = $1', [skill_id]);
             await client.query('DELETE FROM SkillstorePaidResources WHERE skill_id = $1', [skill_id]);
 
             console.log(`✅ Skill details updated for skill ID: ${skill_id}`);
         } else {
-            // Insert new details
             const insertResult = await client.query(`
                 INSERT INTO SkillstoreSkillDetails (
                     skill_id, description, roadmap_image_url, 
@@ -665,7 +693,6 @@ router.post('/skill-details', async (req, res) => {
             console.log(`✅ Skill details created for skill ID: ${skill_id}`);
         }
 
-        // Insert free resources
         for (const resource of free_resources) {
             const optimizedThumb = addDefaultTransformations(resource.image_url, 'review');
             await client.query(`
@@ -676,7 +703,6 @@ router.post('/skill-details', async (req, res) => {
             `, [skill_id, resource.resource_number, optimizedThumb, resource.link_url]);
         }
 
-        // Insert paid resources
         for (const resource of paid_resources) {
             const optimizedThumb = addDefaultTransformations(resource.image_url, 'review');
             await client.query(`
@@ -688,6 +714,9 @@ router.post('/skill-details', async (req, res) => {
         }
 
         await client.query('COMMIT');
+
+        // ✅ FIXED: Invalidate specific skill cache immediately
+        await invalidateSkillCache(skill_id);
 
         console.log(`✅ Added ${free_resources.length} free and ${paid_resources.length} paid resources`);
 
@@ -713,7 +742,6 @@ router.post('/skill-details', async (req, res) => {
     }
 });
 
-// Delete skill details (and all resources)
 router.delete('/skill-details/:skillId', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -721,11 +749,9 @@ router.delete('/skill-details/:skillId', async (req, res) => {
         
         await client.query('BEGIN');
         
-        // Delete resources first
         await client.query('DELETE FROM SkillstoreFreeResources WHERE skill_id = $1', [skillId]);
         await client.query('DELETE FROM SkillstorePaidResources WHERE skill_id = $1', [skillId]);
         
-        // Delete details
         const result = await client.query(
             'DELETE FROM SkillstoreSkillDetails WHERE skill_id = $1',
             [skillId]
@@ -740,6 +766,9 @@ router.delete('/skill-details/:skillId', async (req, res) => {
         }
         
         await client.query('COMMIT');
+
+        // ✅ FIXED: Invalidate specific skill cache immediately
+        await invalidateSkillCache(skillId);
         
         console.log(`🗑️ Skill details and resources deleted for skill ID: ${skillId}`);
         
@@ -759,6 +788,5 @@ router.delete('/skill-details/:skillId', async (req, res) => {
         client.release();
     }
 });
-
 
 module.exports = router;
