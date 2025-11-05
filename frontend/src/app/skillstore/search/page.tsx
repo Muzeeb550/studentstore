@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useBookmarks } from '../../context/BookmarkContext';
@@ -13,7 +13,8 @@ interface Skill {
   bookmark_count: string;
 }
 
-export default function SearchPage() {
+// ✅ NEW: Separate component for search content that uses useSearchParams
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   
@@ -21,13 +22,11 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   
-  // ✅ Track if we've already fetched for this query
   const hasFetchedRef = useRef(false);
   const previousQueryRef = useRef('');
   
   const { bookmarkedSkills, addBookmark, removeBookmark, checkBookmarks } = useBookmarks();
 
-  // Initialize user
   useEffect(() => {
     const userStr = localStorage.getItem('studentstore_user');
     if (userStr) {
@@ -39,7 +38,6 @@ export default function SearchPage() {
     }
   }, []);
 
-  // Fetch search results - ONLY ONCE per unique query
   useEffect(() => {
     const fetchSearchResults = async () => {
       if (!query || query.trim().length === 0) {
@@ -48,13 +46,11 @@ export default function SearchPage() {
         return;
       }
 
-      // ✅ If query changed, reset the fetch flag
       if (query !== previousQueryRef.current) {
         hasFetchedRef.current = false;
         previousQueryRef.current = query;
       }
 
-      // ✅ Don't fetch if we already fetched this query
       if (hasFetchedRef.current) {
         return;
       }
@@ -71,13 +67,11 @@ export default function SearchPage() {
         if (result.status === 'success') {
           setSkills(result.data);
           
-          // Check bookmarks directly
           const skillIds = result.data.map((s: Skill) => s.id);
           if (user && skillIds.length > 0) {
             checkBookmarks(skillIds);
           }
           
-          // Mark as fetched for this query
           hasFetchedRef.current = true;
         }
       } catch (error) {
@@ -89,7 +83,6 @@ export default function SearchPage() {
     };
 
     fetchSearchResults();
-    // ✅ ONLY depends on query
   }, [query, user, checkBookmarks]);
 
   const handleBookmark = async (skillId: number) => {
@@ -232,5 +225,25 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ✅ Loading fallback component
+function SearchPageLoading() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    </div>
+  );
+}
+
+// ✅ NEW: Main page component with Suspense
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<SearchPageLoading />}>
+      <SearchPageContent />
+    </Suspense>
   );
 }
