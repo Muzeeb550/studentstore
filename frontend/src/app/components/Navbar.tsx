@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import SearchBar from './SearchBar';
+// import SearchBar from './SearchBar';
+import dynamic from 'next/dynamic';
+const SearchBar = dynamic(() => import('./SearchBar'), { ssr: false });
 import logger from '../utils/logger';
 
 interface User {
@@ -25,10 +27,6 @@ export default function Navbar() {
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
-  const [isSwipingRight, setIsSwipingRight] = useState(false);
-  const [swipeProgress, setSwipeProgress] = useState(0);
-
-  // const [lastTapTime, setLastTapTime] = useState(0);
 
   // ✅ Detect screen size
   useEffect(() => {
@@ -256,124 +254,142 @@ export default function Navbar() {
     return user?.name || user?.display_name || user?.email.split('@')[0] || 'Student';
   };
 
-  // const handleLogoDoubleClick = () => {
-  //   window.location.href = '/skillstore';
-  // };
+  // ✅ StudentStoreLogo Component - FIXED for mobile click handling
+const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const [isSwipingRight, setIsSwipingRight] = useState(false);
+  const [swipeProgress, setSwipeProgress] = useState(0);
+  const [lastTapTime, setLastTapTime] = useState(0);
 
-  // const handleLogoTap = () => {
-  //   const currentTime = new Date().getTime();
-  //   const tapLength = currentTime - lastTapTime;
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsSwipingRight(false);
+    setSwipeProgress(0);
+  };
 
-    // If two taps within 300ms = double tap
-  //   if (tapLength < 300 && tapLength > 0) {
-  //     handleLogoDoubleClick();
-  //   }
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    const currentX = e.targetTouches[0].clientX;
+    const distance = touchStart - currentX;
+    
+    if (touchStart - currentX < 0) {
+      setIsSwipingRight(true);
+      const progress = Math.min(Math.abs(distance) / 100, 1);
+      setSwipeProgress(progress);
+    }
+  };
 
-  //   setLastTapTime(currentTime);
-  // };
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    setTouchEnd(e.changedTouches[0].clientX);
+    const distance = touchStart - touchEnd;
+    const isRightSwipe = distance < -50;
 
-         const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
-    const [touchStart, setTouchStart] = useState(0);
-    const [touchEnd, setTouchEnd] = useState(0);
-    const [isSwipingRight, setIsSwipingRight] = useState(false);
-    const [swipeProgress, setSwipeProgress] = useState(0);
-
-    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-      setTouchStart(e.targetTouches[0].clientX);
+    if (isRightSwipe && mobile) {
+      console.log('✨ Swiped right - going to SkillStore');
+      window.location.href = '/skillstore';
+    }
+    // ✅ FIXED: Only reset if it was a swipe
+    // If it's a tap, let onClick handler deal with it
+    if (!isRightSwipe) {
       setIsSwipingRight(false);
-      setSwipeProgress(0);
-    };
+    }
+    setSwipeProgress(0);
+  };
 
-    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-      const currentX = e.targetTouches[0].clientX;
-      const distance = touchStart - currentX;
-      
-      // If swiping left (negative distance = swiping right in UX terms)
-      if (touchStart - currentX < 0) {
-        setIsSwipingRight(true);
-        // Calculate rotation based on swipe distance (0-100px = 0-90 degrees for 3D flip)
-        const progress = Math.min(Math.abs(distance) / 100, 1);
-        setSwipeProgress(progress);
-      }
-    };
+  // ✅ FIXED: Handle double click on desktop
+  const handleLogoDoubleClick = () => {
+    console.log('🎓 Double clicked - going to SkillStore');
+    window.location.href = '/skillstore';
+  };
 
-    const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-      setTouchEnd(e.changedTouches[0].clientX);
-      handleSwipe();
-      setIsSwipingRight(false);
-      setSwipeProgress(0);
-    };
-
-    const handleSwipe = () => {
-      const distance = touchStart - touchEnd;
-      const isRightSwipe = distance < -50; // Swipe right
-
-      // Swipe RIGHT on mobile = go to SkillStore
-      if (isRightSwipe && mobile) {
-        console.log('✨ Swiped right - going to SkillStore');
-        window.location.href = '/skillstore';
-      }
-    };
-
-    if (mobile) {
-      return (
-        <div 
-          style={{
-            perspective: '1000px'
-          }}
-        >
-          <div 
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onClick={() => window.location.href = '/'}
-            className={`group flex flex-col items-start space-x-0 transition-all duration-300 active:scale-95 cursor-pointer select-none`}
-            title="Swipe right to go to SkillStore"
-            style={{ 
-              userSelect: 'none', 
-              WebkitUserSelect: 'none',
-              transform: `rotateY(${swipeProgress * 90}deg)`,
-              transformStyle: 'preserve-3d',
-              transition: isSwipingRight ? 'none' : 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-              transformOrigin: 'center'
-            }}
-          >
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/favicon-96x96.png" 
-                alt="StudentStore Logo" 
-                className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105"
-              />
-              <span className="logo-gradient text-2xl">
-                StudentStore
-              </span>
-            </div>
-            <div className="text-xs text-student-secondary font-medium mt-1 text-center">
-              By Students, For Students
-            </div>
-          </div>
-        </div>
-      );
+  // ✅ FIXED: Handle single click on mobile - redirect to home
+  const handleMobileClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // ✅ Prevent click if it's a swipe
+    if (isSwipingRight) {
+      return;
     }
 
-    return (
-      <a 
-        href="/"
-        className={`group flex items-center space-x-3 transition-all duration-300 active:scale-95 cursor-pointer select-none`}
-      >
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/favicon-96x96.png" 
-            alt="StudentStore Logo" 
-            className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105"
-          />
-          <span className="logo-gradient text-2xl">
-            StudentStore
-          </span>
-        </div>
-      </a>
-    );
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapTime;
+
+    if (tapLength < 300 && tapLength > 0) {
+      // Double tap detected
+      console.log('🎓 Double tapped - going to SkillStore');
+      window.location.href = '/skillstore';
+      setLastTapTime(0); // ✅ Reset to prevent triple-tap issues
+    } else {
+      // Single tap detected
+      console.log('🏠 Single tapped - going to Home');
+      window.location.href = '/';
+    }
+
+    setLastTapTime(currentTime);
   };
+
+  // ✅ Mobile version with double-tap + swipe support
+  if (mobile) {
+    return (
+      <div 
+        style={{
+          perspective: '1000px'
+        }}
+      >
+        <div 
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onClick={handleMobileClick} // ✅ FIXED: Better click handler
+          className={`group flex flex-col items-start space-x-0 transition-all duration-300 active:scale-95 cursor-pointer select-none`}
+          title="Swipe right → SkillStore | Double tap → SkillStore | Single tap → Home"
+          style={{ 
+            userSelect: 'none', 
+            WebkitUserSelect: 'none',
+            transform: `rotateY(${swipeProgress * 90}deg)`,
+            transformStyle: 'preserve-3d',
+            transition: isSwipingRight ? 'none' : 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+            transformOrigin: 'center'
+          }}
+        >
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <img 
+              src="/favicon-96x96.png" 
+              alt="StudentStore Logo" 
+              className="w-10 sm:w-12 h-10 sm:h-12 object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105"
+            />
+            <span className="logo-gradient text-lg sm:text-2xl">
+              StudentStore
+            </span>
+          </div>
+          <div className="text-xs text-student-secondary font-medium mt-0.5">
+            By Students, For Students
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Desktop version with double-click support
+  return (
+    <div
+      onDoubleClick={handleLogoDoubleClick}
+      onClick={() => window.location.href = '/'}
+      className={`group flex items-center space-x-3 transition-all duration-300 active:scale-95 cursor-pointer select-none`}
+      title="Click → Home | Double click → SkillStore"
+      style={{ userSelect: 'none' }}
+    >
+      <div className="flex items-center space-x-3">
+        <img 
+          src="/favicon-96x96.png" 
+          alt="StudentStore Logo" 
+          className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105"
+        />
+        <span className="logo-gradient text-2xl">
+          StudentStore
+        </span>
+      </div>
+    </div>
+  );
+};
 
 
   const ProfileAvatar = ({ 

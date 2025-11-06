@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import Slider from 'react-slick';
 import Navbar from './components/Navbar';
 import CategoryCard from './components/CategoryCard';
 import ProductCard from './components/ProductCard';
@@ -11,11 +10,12 @@ import RecentlyViewedCard from './components/RecentlyViewedCard';
 import TrendingCard from './components/TrendingCard';
 import Link from 'next/link';
 import { optimizeBannerImage, optimizeProductImage, getFirstImageOrPlaceholder } from './utils/imageOptimizer';
-import { useWishlist } from './context/WishlistContext'; // ✅ ADDED
+import { useWishlist } from './context/WishlistContext';
+// ✅ REMOVED React Slick for Banners (but kept for Categories below)
+import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import logger from './utils/logger';
-
 
 interface Banner {
   id: number;
@@ -25,7 +25,6 @@ interface Banner {
   display_order: number;
 }
 
-
 interface Category {
   id: number;
   name: string;
@@ -33,7 +32,6 @@ interface Category {
   icon_url: string;
   product_count?: number;
 }
-
 
 interface Product {
   id: number;
@@ -48,17 +46,14 @@ interface Product {
   views_count?: number;
 }
 
-
 interface RecentlyViewed {
   product: Product;
   viewedAt: number;
 }
 
-
 const MAX_RECENTLY_VIEWED = 10;
 const MAX_TRENDING_PRODUCTS = 10;
 const MAX_FEATURED_PRODUCTS = 12;
-
 
 // ✅ Cache configuration - optimized intervals
 const CACHE_CONFIG = {
@@ -68,10 +63,14 @@ const CACHE_CONFIG = {
   trending: 5 * 60 * 1000,     // 5 minutes
 };
 
-
 // ✅ Cache check interval - reduced to 2 minutes
 const CACHE_CHECK_INTERVAL = 2 * 60 * 1000;
 
+// ✅ NEW: Banner carousel configuration
+const BANNER_CONFIG = {
+  INTERVAL: 6000,           // 6 seconds ✅ CHANGED FROM 4500ms
+  TRANSITION_SPEED: 500,    // 500ms fade transition
+};
 
 export default function HomePage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -83,12 +82,21 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<number>(0);
 
-  const { checkMultipleProducts } = useWishlist(); // ✅ ADDED
+  // ✅ NEW: Banner carousel states
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [timerKey, setTimerKey] = useState(0);
+  const [isHoveringBanner, setIsHoveringBanner] = useState(false);
+
+  const { checkMultipleProducts } = useWishlist();
 
   const categorySliderRef = useRef<any>(null);
   const recentRowDesktopRef = useRef<HTMLDivElement>(null);
   const trendingRowDesktopRef = useRef<HTMLDivElement>(null);
 
+  // ✅ NEW: Touch/swipe detection for banners
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const SWIPE_THRESHOLD = 50;
 
   // ✅ Get optimized banner based on screen size
   const getOptimizedBanner = useCallback((url: string) => {
@@ -100,20 +108,17 @@ export default function HomePage() {
     return optimizeBannerImage(url, 'desktop');
   }, []);
 
-
   // ✅ Get optimized product image
   const getProductImage = useCallback((imageUrls: string) => {
     const firstImage = getFirstImageOrPlaceholder(imageUrls, '/placeholder-product.jpg');
     return optimizeProductImage(firstImage, 'small');
   }, []);
 
-
   // ✅ Initialize homepage
   useEffect(() => {
     initializeHomepage();
     loadRecentlyViewed();
   }, []);
-
 
   // ✅ Background cache refresh
   useEffect(() => {
@@ -125,7 +130,6 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-
   // ✅ Listen for admin updates
   useEffect(() => {
     const handleAdminUpdate = () => {
@@ -136,6 +140,16 @@ export default function HomePage() {
     return () => window.removeEventListener('adminUpdate' as any, handleAdminUpdate);
   }, []);
 
+  // ✅ NEW: Auto-slide banner with timer reset capability
+  useEffect(() => {
+    if (banners.length <= 1 || isHoveringBanner) return;
+
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+    }, BANNER_CONFIG.INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [banners.length, timerKey, isHoveringBanner]);
 
   const initializeHomepage = async () => {
     try {
@@ -153,7 +167,6 @@ export default function HomePage() {
     }
   };
 
-
   const loadFromLocalCache = useCallback(() => {
     try {
       const now = Date.now();
@@ -165,13 +178,11 @@ export default function HomePage() {
         hasValidCache: false
       };
 
-
       const bannersCache = localStorage.getItem('studentstore_cache_banners');
       if (bannersCache) {
         const { data, timestamp } = JSON.parse(bannersCache);
         if (now - timestamp < CACHE_CONFIG.banners) cached.banners = data;
       }
-
 
       const categoriesCache = localStorage.getItem('studentstore_cache_categories');
       if (categoriesCache) {
@@ -179,13 +190,11 @@ export default function HomePage() {
         if (now - timestamp < CACHE_CONFIG.categories) cached.categories = data;
       }
 
-
       const productsCache = localStorage.getItem('studentstore_cache_products');
       if (productsCache) {
         const { data, timestamp } = JSON.parse(productsCache);
         if (now - timestamp < CACHE_CONFIG.products) cached.products = data;
       }
-
 
       const trendingCache = localStorage.getItem('studentstore_cache_trending');
       if (trendingCache) {
@@ -193,14 +202,12 @@ export default function HomePage() {
         if (now - timestamp < CACHE_CONFIG.trending) cached.trending = data;
       }
 
-
       cached.hasValidCache = !!(cached.banners && cached.categories && cached.products);
       return cached;
     } catch {
       return { hasValidCache: false, banners: null, categories: null, products: null, trending: null };
     }
   }, []);
-
 
   const saveToLocalCache = useCallback((key: string, data: any) => {
     try {
@@ -210,7 +217,6 @@ export default function HomePage() {
     }
   }, []);
 
-
   const fetchAndUpdateData = async (showLoading: boolean = false) => {
     if (showLoading) setLoading(true);
     setError(null);
@@ -219,7 +225,6 @@ export default function HomePage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const now = Date.now();
       const cacheBuster = `t=${now}`;
-
 
       const [bannerRes, categoryRes, productsRes, trendingRes] = await Promise.all([
         fetch(`${apiUrl}/api/public/banners?${cacheBuster}`, { 
@@ -240,13 +245,11 @@ export default function HomePage() {
         })
       ]);
 
-
       const bannerData = await bannerRes.json();
       if (bannerData.status === 'success') {
         setBanners(bannerData.data);
         saveToLocalCache('banners', bannerData.data);
       }
-
 
       const categoryData = await categoryRes.json();
       if (categoryData.status === 'success') {
@@ -254,13 +257,11 @@ export default function HomePage() {
         saveToLocalCache('categories', categoryData.data);
       }
 
-
       const productsData = await productsRes.json();
       if (productsData.status === 'success') {
         setProducts(productsData.data.products);
         saveToLocalCache('products', productsData.data.products);
       }
-
 
       const trendingData = await trendingRes.json();
       if (trendingData.status === 'success') {
@@ -303,11 +304,9 @@ export default function HomePage() {
     }
   };
 
-
   const checkAndRefreshExpiredCache = useCallback(async () => {
     const now = Date.now();
     let needsRefresh = false;
-
 
     Object.keys(CACHE_CONFIG).forEach((key) => {
       const cached = localStorage.getItem(`studentstore_cache_${key}`);
@@ -323,12 +322,10 @@ export default function HomePage() {
       }
     });
 
-
     if (needsRefresh) {
       await fetchAndUpdateData(false);
     }
   }, []);
-
 
   const forceRefresh = useCallback(async () => {
     ['banners', 'categories', 'products', 'trending'].forEach(key => {
@@ -337,56 +334,63 @@ export default function HomePage() {
     await fetchAndUpdateData(false);
   }, []);
 
-
   const loadRecentlyViewed = useCallback(() => {
     const recentProducts = getRecentlyViewed();
     setRecentlyViewed(recentProducts.slice(0, MAX_RECENTLY_VIEWED));
   }, []);
 
+  // ✅ NEW: Handle dot click - changes banner AND resets timer
+  const handleBannerDotClick = useCallback((index: number) => {
+    setCurrentBannerIndex(index);
+    setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+    console.log(`🔄 Banner changed to index ${index}, timer reset`);
+  }, []);
 
-  // ✅ Memoized banner settings
-  const bannerSettings = useMemo(() => ({
-    dots: true,
-    arrows: false,
-    infinite: banners.length > 1,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: banners.length > 1,
-    autoplaySpeed: 4500,
-    fade: false,
-    pauseOnHover: true,
-    pauseOnFocus: true,
-    pauseOnDotsHover: true,
-    swipe: true,
-    swipeToSlide: true,
-    touchMove: true,
-    touchThreshold: 10,
-    draggable: true,
-    accessibility: true,
-    useCSS: true,
-    useTransform: true,
-    waitForAnimate: false,
-    focusOnSelect: false,
-    dotsClass: "slick-dots carousel-dots",
-    responsive: [
-      {
-        breakpoint: 1023,
-        settings: {
-          arrows: false,
-          speed: 400,
-          autoplaySpeed: 5000,
-          touchThreshold: 8,
-          swipe: true,
-          touchMove: true,
-          draggable: true,
-        }
+  // ✅ NEW: Handle banner swipe
+  const handleBannerTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.changedTouches[0].clientX;
+    touchStartY.current = e.changedTouches[0].clientY;
+  }, []);
+
+  const handleBannerTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const distX = Math.abs(touchEndX - touchStartX.current);
+    const distY = Math.abs(touchEndY - touchStartY.current);
+
+    // Only consider horizontal swipes
+    if (distX > SWIPE_THRESHOLD && distX > distY) {
+      if (touchEndX < touchStartX.current) {
+        // Swiped LEFT - next banner
+        const nextIndex = (currentBannerIndex + 1) % banners.length;
+        setCurrentBannerIndex(nextIndex);
+        setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+        console.log('➡️ Swiped left, next banner, timer reset');
+      } else {
+        // Swiped RIGHT - previous banner
+        const prevIndex = (currentBannerIndex - 1 + banners.length) % banners.length;
+        setCurrentBannerIndex(prevIndex);
+        setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+        console.log('⬅️ Swiped right, previous banner, timer reset');
       }
-    ]
-  }), [banners.length]);
+    }
+  }, [currentBannerIndex, banners.length]);
 
+  // ✅ NEW: Banner keyboard navigation
+  const handleBannerKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowRight') {
+      const nextIndex = (currentBannerIndex + 1) % banners.length;
+      setCurrentBannerIndex(nextIndex);
+      setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+    } else if (e.key === 'ArrowLeft') {
+      const prevIndex = (currentBannerIndex - 1 + banners.length) % banners.length;
+      setCurrentBannerIndex(prevIndex);
+      setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+    }
+  }, [currentBannerIndex, banners.length]);
 
-  // ✅ Memoized category settings
+  // ✅ Memoized category settings (unchanged)
   const categoryDesktopSettings = useMemo(() => ({
     dots: false,
     arrows: false,
@@ -405,7 +409,6 @@ export default function HomePage() {
     useTransform: true,
     waitForAnimate: false,
   }), []);
-
 
   const categoryRowSettings = useMemo(() => ({
     dots: false,
@@ -431,7 +434,6 @@ export default function HomePage() {
     ],
   }), []);
 
-
   // ✅ Split categories into two rows
   const { topRowCategories, bottomRowCategories } = useMemo(() => {
     const mid = Math.ceil(categories.length / 2);
@@ -440,7 +442,6 @@ export default function HomePage() {
       bottomRowCategories: categories.slice(mid),
     };
   }, [categories]);
-
 
   const LoadingSection = () => (
     <div className="animate-pulse">
@@ -452,7 +453,6 @@ export default function HomePage() {
       </div>
     </div>
   );
-
 
   if (loading) {
     return (
@@ -466,11 +466,9 @@ export default function HomePage() {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-student-page">
       <Navbar />
-
 
       {/* Error Banner */}
       {error && (
@@ -497,129 +495,73 @@ export default function HomePage() {
         </div>
       )}
 
-
-      {/* ✅ TOUCH-FRIENDLY Banner Section */}
-      {/* ✅ SMART Banner Section - Swipe vs Tap Detection */}
-<section className="banner-container relative max-w-7xl mx-auto">
-  <div className="relative" style={{ paddingBottom: '40px' }}>
-    <div className="rounded-xl lg:rounded-2xl shadow-lg lg:shadow-2xl">
+      {/* ✅ CUSTOM Banner Section - RESPONSIVE ASPECT RATIO */}
+{/* ✅ OPTIMIZED: 16:9 mobile, 2:1 tablet, 3:1 desktop */}
+<section className="banner-section w-full">
+  <div className="max-w-7xl mx-auto px-0 lg:px-4">
+    <div className="rounded-none lg:rounded-2xl shadow-none lg:shadow-lg overflow-hidden bg-gray-200 relative group">
       {banners.length > 0 ? (
-        <Slider {...bannerSettings}>
-          {banners.map((banner) => {
-            // ✅ Check if link is internal or external
-            const isInternalLink = banner.link_url.includes('studentstore-zeta.vercel.app') || 
-                                   banner.link_url.startsWith('/') ||
-                                   (typeof window !== 'undefined' && banner.link_url.startsWith(window.location.origin));
-            
-            // ✅ Extract relative path for internal links
-            const getRelativePath = (url: string) => {
-              try {
-                if (url.startsWith('/')) return url;
-                
-                const urlObj = new URL(url);
-                if (typeof window !== 'undefined' && 
-                    (urlObj.hostname === 'studentstore-zeta.vercel.app' || 
-                     urlObj.hostname === window.location.hostname)) {
-                  return urlObj.pathname + urlObj.search + urlObj.hash;
+        <>
+          {/* ✅ Banner Image Container - RESPONSIVE ASPECT RATIO */}
+          <div
+            className="relative w-full transition-all duration-500 cursor-pointer select-none
+              /* Mobile: 16:9 */
+              sm:!aspect-video
+              /* Tablet: 2:1 */
+              md:!aspect-[2/1]
+              /* Desktop: 3:1 */
+              lg:!aspect-[3/1]"
+            style={{
+              aspectRatio: '16 / 9', // Default: mobile 16:9
+              touchAction: 'pan-y',
+            }}
+            onTouchStart={handleBannerTouchStart}
+            onTouchEnd={handleBannerTouchEnd}
+            onMouseEnter={() => setIsHoveringBanner(true)}
+            onMouseLeave={() => setIsHoveringBanner(false)}
+            onKeyDown={handleBannerKeyDown}
+            tabIndex={0}
+            role="region"
+            aria-label="Banner carousel"
+          >
+            {/* ✅ Render all banners with fade transition */}
+            {banners.map((banner, idx) => {
+              const isInternalLink = banner.link_url.includes('studentstore-zeta.vercel.app') || 
+                                     banner.link_url.startsWith('/') ||
+                                     (typeof window !== 'undefined' && banner.link_url.startsWith(window.location.origin));
+              
+              const getRelativePath = (url: string) => {
+                try {
+                  if (url.startsWith('/')) return url;
+                  const urlObj = new URL(url);
+                  if (typeof window !== 'undefined' && 
+                      (urlObj.hostname === 'studentstore-zeta.vercel.app' || 
+                       urlObj.hostname === window.location.hostname)) {
+                    return urlObj.pathname + urlObj.search + urlObj.hash;
+                  }
+                  return url;
+                } catch {
+                  return url;
                 }
-                
-                return url;
-              } catch {
-                return url;
-              }
-            };
+              };
 
+              const href = isInternalLink ? getRelativePath(banner.link_url) : banner.link_url;
+              const isActive = idx === currentBannerIndex;
 
-            const href = isInternalLink ? getRelativePath(banner.link_url) : banner.link_url;
-
-
-            // ✅ Track touch/mouse movement to detect swipe
-            let touchStartX = 0;
-            let touchStartY = 0;
-            let touchStartTime = 0;
-
-
-            const handleTouchStart = (e: React.TouchEvent) => {
-              const touch = e.touches[0];
-              touchStartX = touch.clientX;
-              touchStartY = touch.clientY;
-              touchStartTime = Date.now();
-            };
-
-
-            const handleMouseDown = (e: React.MouseEvent) => {
-              touchStartX = e.clientX;
-              touchStartY = e.clientY;
-              touchStartTime = Date.now();
-            };
-
-
-            const handleTouchEnd = (e: React.TouchEvent) => {
-              const touch = e.changedTouches[0];
-              const touchEndX = touch.clientX;
-              const touchEndY = touch.clientY;
-              const touchEndTime = Date.now();
-
-
-              const deltaX = Math.abs(touchEndX - touchStartX);
-              const deltaY = Math.abs(touchEndY - touchStartY);
-              const deltaTime = touchEndTime - touchStartTime;
-
-
-              // ✅ If movement is more than 10px or took longer than 300ms, it's a swipe
-              if (deltaX > 10 || deltaY > 10 || deltaTime > 300) {
-                return; // It's a swipe, don't navigate
-              }
-
-
-              // ✅ It's a tap, navigate
-              e.preventDefault();
-              e.stopPropagation();
-              
-              if (isInternalLink) {
-                window.location.href = href;
-              } else {
-                window.open(href, '_blank', 'noopener,noreferrer');
-              }
-            };
-
-
-            const handleClick = (e: React.MouseEvent) => {
-              const deltaX = Math.abs(e.clientX - touchStartX);
-              const deltaY = Math.abs(e.clientY - touchStartY);
-              const deltaTime = Date.now() - touchStartTime;
-
-
-              // ✅ If movement is more than 5px or took longer than 300ms, it's a drag
-              if (deltaX > 5 || deltaY > 5 || deltaTime > 300) {
-                e.preventDefault();
-                return; // It's a drag, don't navigate
-              }
-
-
-              // ✅ It's a click, navigate
-              e.preventDefault();
-              e.stopPropagation();
-              
-              if (isInternalLink) {
-                window.location.href = href;
-              } else {
-                window.open(href, '_blank', 'noopener,noreferrer');
-              }
-            };
-
-
-            return (
-              <div key={banner.id} className="relative">
+              return (
                 <div
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={handleTouchEnd}
-                  onMouseDown={handleMouseDown}
-                  onClick={handleClick}
-                  className="block relative cursor-pointer"
-                  style={{ 
-                    WebkitTapHighlightColor: 'transparent',
-                    touchAction: 'pan-x'  // Allow horizontal swipe
+                  key={banner.id}
+                  className="absolute inset-0 transition-opacity duration-500"
+                  style={{
+                    opacity: isActive ? 1 : 0,
+                    pointerEvents: isActive ? 'auto' : 'none',
+                  }}
+                  onClick={() => {
+                    if (isInternalLink) {
+                      window.location.href = href;
+                    } else {
+                      window.open(href, '_blank', 'noopener,noreferrer');
+                    }
                   }}
                 >
                   {banner.media_url.includes('.mp4') || banner.media_url.includes('.webm') ? (
@@ -629,15 +571,15 @@ export default function HomePage() {
                       muted 
                       loop 
                       playsInline 
-                      className="banner-image"
+                      className="w-full h-full object-cover"
                       style={{ pointerEvents: 'none' }}
                     />
                   ) : (
                     <img 
                       src={getOptimizedBanner(banner.media_url)} 
                       alt={banner.name} 
-                      className="banner-image" 
-                      loading="eager"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading={idx <= 1 ? 'eager' : 'lazy'}
                       decoding="async"
                       width={1920}
                       height={1080}
@@ -646,14 +588,75 @@ export default function HomePage() {
                     />
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </Slider>
+              );
+            })}
+
+            {/* ✅ Hover overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          </div>
+
+          {/* ✅ Banner Navigation Dots - Proper Spacing */}
+          {banners.length > 1 && (
+            <div className="flex justify-center gap-2 mt-3 sm:mt-4 lg:mt-5 pb-2 lg:pb-0">
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleBannerDotClick(index)}
+                  className={`transition-all duration-300 rounded-full ${
+                    index === currentBannerIndex
+                      ? 'bg-student-blue w-6 h-2.5'
+                      : 'bg-gray-300 hover:bg-gray-400 w-2.5 h-2.5'
+                  }`}
+                  aria-label={`Go to banner ${index + 1}`}
+                  title={`Banner ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* ✅ Previous/Next Buttons - Hidden on mobile, visible on hover desktop */}
+          {banners.length > 1 && (
+            <>
+              <button
+                onClick={() => {
+                  const prevIndex = (currentBannerIndex - 1 + banners.length) % banners.length;
+                  handleBannerDotClick(prevIndex);
+                }}
+                className="hidden lg:flex absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/90 hover:bg-white text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center"
+                aria-label="Previous banner"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <button
+                onClick={() => {
+                  const nextIndex = (currentBannerIndex + 1) % banners.length;
+                  handleBannerDotClick(nextIndex);
+                }}
+                className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/90 hover:bg-white text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center"
+                aria-label="Next banner"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+        </>
       ) : (
-        <div className="bg-student-hero banner-image flex items-center justify-center rounded-xl lg:rounded-2xl">
+        <div 
+          className="flex items-center justify-center w-full rounded-none lg:rounded-2xl bg-gradient-to-br from-student-blue to-student-green
+            /* Mobile: 16:9 */
+            sm:!aspect-video
+            /* Tablet: 2:1 */
+            md:!aspect-[2/1]
+            /* Desktop: 3:1 */
+            lg:!aspect-[3/1]"
+        >
           <div className="text-center text-white px-4">
-            <h2 className="banner-title">Welcome to StudentStore</h2>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">Welcome to StudentStore</h2>
             <p className="text-sm sm:text-base lg:text-lg opacity-90">
               Your personal shopping companion for student life
             </p>
@@ -665,165 +668,156 @@ export default function HomePage() {
 </section>
 
 
-
       {/* Recently Viewed Section - With Blue Background */}
-      {recentlyViewed.length > 0 && (
-        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-          <div className="recently-viewed-section">
-            <div className="mb-6 lg:mb-8">
-              <div className="flex items-center mb-3 sm:mb-4">
-                <div className="w-1 h-7 sm:h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-2.5 sm:mr-3"></div>
-                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
-                  🔄 Continue Your Shopping Journey
-                </h3>
-              </div>
-            </div>
+{recentlyViewed.length > 0 && (
+  <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+    <div className="recently-viewed-section">
+      <div className="mb-6 lg:mb-8">
+        <div className="flex items-center mb-3 sm:mb-4">
+          <div className="w-1 h-5 sm:h-6 md:h-7 lg:h-8 bg-gradient-to-b from-student-blue to-cyan-400 rounded-full mr-2 sm:mr-2.5 md:mr-3"></div>
+          <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-student-primary">
+            🔄 Continue Your Shopping Journey
+          </h3>
+        </div>
+      </div>
 
-
-            {/* Mobile View */}
-            <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
-              <div className="flex gap-3">
-                {recentlyViewed.map((item, idx) => (
-                  <div
-                    key={`recent-m-${item.product.id}-${idx}`}
-                    className="snap-start shrink-0"
-                    style={{ width: '140px' }}
-                  >
-                    <Link href={`/products/${item.product.id}`} className="block">
-                      <div
-                        style={{
-                          width: '140px',
-                          aspectRatio: '1 / 1',
-                          borderRadius: '12px',
-                          overflow: 'hidden',
-                          background: 'var(--bg-light)',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        <img
-                          src={getProductImage(item.product.image_urls)}
-                          alt={item.product.name}
-                          loading="lazy"
-                          width={400}
-                          height={400}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                      <p className="text-xs text-student-primary font-medium line-clamp-2 px-1 leading-tight">
-                        {item.product.name}
-                      </p>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-
-            {/* Tablet View */}
-            <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
-              <div className="flex gap-3">
-                {recentlyViewed.map((item) => (
-                  <div
-                    key={`recent-t-${item.product.id}`}
-                    className="snap-start shrink-0"
-                    style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
-                  >
-                    <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-
-            {/* Desktop View */}
-            <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
-              <div ref={recentRowDesktopRef} className="flex gap-4">
-                {recentlyViewed.map((item) => (
-                  <div
-                    key={`recent-d-${item.product.id}`}
-                    className="snap-start shrink-0"
-                    style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
-                  >
-                    <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-
-      {/* Trending Section - With Orange Background */}
-      {trendingProducts.length > 0 && (
-        <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-          <div className="trending-section">
-            <div className="mb-6 lg:mb-8">
-              <div className="flex items-center mb-3 sm:mb-4">
-                <div className="w-1 h-7 sm:h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-2.5 sm:mr-3"></div>
-                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary">
-                  🔥 What's Trending Among Students
-                </h3>
-              </div>
-              <div className="trending-live-indicator ml-7 mt-2 sm:mt-3">
-                <div className="flex items-center text-xs sm:text-sm text-student-orange">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
-                  <span className="font-medium">Live trending data • Updated every 5 minutes</span>
+      {/* Mobile View */}
+      <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
+        <div className="flex gap-3">
+          {recentlyViewed.map((item, idx) => (
+            <div
+              key={`recent-m-${item.product.id}-${idx}`}
+              className="snap-start shrink-0"
+              style={{ width: '140px' }}
+            >
+              <Link href={`/products/${item.product.id}`} className="block">
+                <div
+                  style={{
+                    width: '140px',
+                    aspectRatio: '1 / 1',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    background: 'var(--bg-light)',
+                    marginBottom: '6px',
+                  }}
+                >
+                  <img
+                    src={getProductImage(item.product.image_urls)}
+                    alt={item.product.name}
+                    loading="lazy"
+                    width={400}
+                    height={400}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </div>
-              </div>
+                <p className="text-xs text-student-primary font-medium line-clamp-2 px-1 leading-tight">
+                  {item.product.name}
+                </p>
+              </Link>
             </div>
+          ))}
+        </div>
+      </div>
 
-
-            {/* Mobile View */}
-            <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
-              <div className="flex gap-3">
-                {trendingProducts.map((product, index) => (
-                  <div
-                    key={`trending-m-${product.id}-${index}`}
-                    className="snap-start shrink-0"
-                    style={{ width: 'calc((100% - (2 * 12px)) / 3.5)' }}
-                  >
-                    <TrendingCard product={product} trendingRank={index + 1} />
-                  </div>
-                ))}
-              </div>
+      {/* Tablet View */}
+      <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
+        <div className="flex gap-3">
+          {recentlyViewed.map((item) => (
+            <div
+              key={`recent-t-${item.product.id}`}
+              className="snap-start shrink-0"
+              style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
+            >
+              <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
             </div>
+          ))}
+        </div>
+      </div>
 
-
-            {/* Tablet View */}
-            <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
-              <div className="flex gap-3">
-                {trendingProducts.map((product, index) => (
-                  <div
-                    key={`trending-t-${product.id}-${index}`}
-                    className="snap-start shrink-0"
-                    style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
-                  >
-                    <TrendingCard product={product} trendingRank={index + 1} />
-                  </div>
-                ))}
-              </div>
+      {/* Desktop View */}
+      <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
+        <div ref={recentRowDesktopRef} className="flex gap-4">
+          {recentlyViewed.map((item) => (
+            <div
+              key={`recent-d-${item.product.id}`}
+              className="snap-start shrink-0"
+              style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
+            >
+              <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
             </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
 
-
-            {/* Desktop View */}
-            <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
-              <div ref={trendingRowDesktopRef} className="flex gap-4">
-                {trendingProducts.map((product, index) => (
-                  <div
-                    key={`trending-d-${product.id}-${index}`}
-                    className="snap-start shrink-0"
-                    style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
-                  >
-                    <TrendingCard product={product} trendingRank={index + 1} />
-                  </div>
-                ))}
-              </div>
-            </div>
+{/* Trending Section - With Orange Background */}
+{trendingProducts.length > 0 && (
+  <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+    <div className="trending-section">
+      <div className="mb-6 lg:mb-8">
+        <div className="flex items-center mb-3 sm:mb-4">
+          <div className="w-1 h-5 sm:h-6 md:h-7 lg:h-8 bg-gradient-to-b from-student-orange to-red-500 rounded-full mr-2 sm:mr-2.5 md:mr-3"></div>
+          <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-student-primary">
+            🔥 What's Trending Among Students
+          </h3>
+        </div>
+        <div className="trending-live-indicator ml-6 sm:ml-7 mt-2 sm:mt-3">
+          <div className="flex items-center text-xs sm:text-sm text-student-orange">
+            <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
+            <span className="font-medium">Live trending data • Updated every 5 minutes</span>
           </div>
-        </section>
-      )}
+        </div>
+      </div>
 
+      {/* Mobile View */}
+      <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
+        <div className="flex gap-3">
+          {trendingProducts.map((product, index) => (
+            <div
+              key={`trending-m-${product.id}-${index}`}
+              className="snap-start shrink-0"
+              style={{ width: 'calc((100% - (2 * 12px)) / 3.5)' }}
+            >
+              <TrendingCard product={product} trendingRank={index + 1} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tablet View */}
+      <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
+        <div className="flex gap-3">
+          {trendingProducts.map((product, index) => (
+            <div
+              key={`trending-t-${product.id}-${index}`}
+              className="snap-start shrink-0"
+              style={{ width: 'calc((100% - (3 * 12px)) / 4.5)' }}
+            >
+              <TrendingCard product={product} trendingRank={index + 1} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop View */}
+      <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
+        <div ref={trendingRowDesktopRef} className="flex gap-4">
+          {trendingProducts.map((product, index) => (
+            <div
+              key={`trending-d-${product.id}-${index}`}
+              className="snap-start shrink-0"
+              style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
+            >
+              <TrendingCard product={product} trendingRank={index + 1} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
 
       {/* Category Section */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
@@ -837,7 +831,6 @@ export default function HomePage() {
             </p>
           </div>
 
-
           {categories.length > 0 ? (
             <>
               {/* Desktop */}
@@ -850,7 +843,6 @@ export default function HomePage() {
                   ))}
                 </Slider>
               </div>
-
 
               {/* Mobile/Tablet - Two Rows */}
               <div className="block xl:hidden">
@@ -899,7 +891,6 @@ export default function HomePage() {
         </div>
       </section>
 
-
       {/* Featured Products */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
         <div className="text-center mb-8 lg:mb-12">
@@ -910,7 +901,6 @@ export default function HomePage() {
             Handpicked products that students love, with the best deals and reviews
           </p>
         </div>
-
 
         {products.length > 0 ? (
           <div className="product-grid">
@@ -931,7 +921,6 @@ export default function HomePage() {
         )}
       </section>
 
-
       {/* See All Products Button */}
       {products.length >= MAX_FEATURED_PRODUCTS && (
         <div className="text-center mt-12 mb-16">
@@ -949,7 +938,6 @@ export default function HomePage() {
           </Link>
         </div>
       )}
-
 
       <Footer />
     </div>

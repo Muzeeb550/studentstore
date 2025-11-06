@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import Footer from '../components/Footer';
@@ -48,7 +48,6 @@ interface SearchResultsData {
   };
 }
 
-// 🚀 NEW: Cache management types
 interface CacheData {
   data: SearchResultsData;
   timestamp: number;
@@ -77,6 +76,7 @@ export default function SearchPage() {
 
 function SearchPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter(); // ✅ NEW: useRouter for navigation
   const query = searchParams.get('q') || '';
   const categoryFilter = searchParams.get('category');
   const sortFilter = searchParams.get('sort') || 'relevance';
@@ -89,7 +89,6 @@ function SearchPageContent() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
   
-  // 🚀 NEW: Enhanced loading states
   const [loadingStates, setLoadingStates] = useState({
     initial: true,
     filtering: false,
@@ -97,13 +96,11 @@ function SearchPageContent() {
     pagination: false
   });
 
-  // 🚀 NEW: Cache configuration (matches backend TTL: 180s = 3 minutes)
   const CACHE_CONFIG = {
-    ttl: 3 * 60 * 1000, // 3 minutes (matches backend search cache)
-    maxCacheSize: 100, // Keep last 100 search combinations
+    ttl: 3 * 60 * 1000,
+    maxCacheSize: 100,
   };
 
-  // Popular student searches (can be from API later)
   const popularSearches = [
     'laptop', 'textbooks', 'calculator', 'notebook', 'headphones', 
     'backpack', 'study guide', 'tablet', 'desk lamp', 'stationery'
@@ -118,34 +115,29 @@ function SearchPageContent() {
     }
   }, [query, categoryFilter, sortFilter, pageFilter, minRatingFilter]);
 
-  // 🚀 NEW: Smart refresh interval for cache management
   useEffect(() => {
     const interval = setInterval(() => {
       checkAndRefreshExpiredCache();
-    }, 30000); // Check every 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [query, categoryFilter, sortFilter, pageFilter, minRatingFilter]);
 
-  // 🚀 NEW: Initialize with smart caching
   const initializeSearchPage = async () => {
     try {
       const cachedData = loadFromCache();
       
       if (cachedData) {
-        // Instant display from cache
         setData(cachedData);
         setLoading(false);
         setLoadingStates({ initial: false, filtering: false, sorting: false, pagination: false });
         console.log(`🚀 Search "${query}" loaded from cache (instant display)`);
         
-        // Background refresh if cache is getting old (> 90 seconds)
         const age = Date.now() - getCacheTimestamp();
-        if (age > 90000) { // 90 seconds
+        if (age > 90000) {
           await fetchSearchResults(false);
         }
       } else {
-        // No cache, fetch fresh data
         await fetchSearchResults(true);
       }
     } catch (error) {
@@ -154,7 +146,6 @@ function SearchPageContent() {
     }
   };
 
-  // 🚀 NEW: Generate cache key for current search
   const getCacheKey = (): string => {
     const filters = [
       `q:${query}`,
@@ -166,7 +157,6 @@ function SearchPageContent() {
     return `studentstore_search_${filters.join('_')}`;
   };
 
-  // 🚀 NEW: Load from cache with validation
   const loadFromCache = (): SearchResultsData | null => {
     try {
       const cacheKey = getCacheKey();
@@ -176,12 +166,10 @@ function SearchPageContent() {
         const { data, timestamp }: CacheData = JSON.parse(cached);
         const age = Date.now() - timestamp;
         
-        // Return cached data if it's fresh (within TTL)
         if (age < CACHE_CONFIG.ttl) {
           console.log(`📊 Cache hit for search "${query}" (age: ${Math.floor(age/1000)}s)`);
           return data;
         } else {
-          // Cache expired, remove it
           localStorage.removeItem(cacheKey);
           console.log(`⏰ Cache expired for search "${query}"`);
         }
@@ -194,7 +182,6 @@ function SearchPageContent() {
     }
   };
 
-  // 🚀 NEW: Save to cache with cleanup
   const saveToCache = (searchData: SearchResultsData) => {
     try {
       const cacheKey = getCacheKey();
@@ -204,17 +191,13 @@ function SearchPageContent() {
       };
       
       localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-      
-      // Cleanup old cache entries
       cleanupOldCache();
-      
       console.log(`💾 Cached search "${query}" with filters`);
     } catch (error) {
       console.error('Cache save error:', error);
     }
   };
 
-  // 🚀 NEW: Clean up old cache entries
   const cleanupOldCache = () => {
     try {
       const keys: string[] = [];
@@ -225,7 +208,6 @@ function SearchPageContent() {
         }
       }
       
-      // Sort by timestamp and keep only recent entries
       const cacheEntries = keys.map(key => {
         const data = localStorage.getItem(key);
         if (data) {
@@ -235,7 +217,6 @@ function SearchPageContent() {
         return null;
       }).filter(Boolean) as Array<{ key: string; timestamp: number }>;
       
-      // Keep only the most recent entries
       if (cacheEntries.length > CACHE_CONFIG.maxCacheSize) {
         cacheEntries.sort((a, b) => b.timestamp - a.timestamp);
         const toDelete = cacheEntries.slice(CACHE_CONFIG.maxCacheSize);
@@ -251,7 +232,6 @@ function SearchPageContent() {
     }
   };
 
-  // 🚀 NEW: Get cache timestamp
   const getCacheTimestamp = (): number => {
     try {
       const cacheKey = getCacheKey();
@@ -266,24 +246,20 @@ function SearchPageContent() {
     return 0;
   };
 
-  // 🚀 NEW: Check and refresh expired cache
   const checkAndRefreshExpiredCache = useCallback(async () => {
     if (!data || !query.trim()) return;
     
     const age = Date.now() - getCacheTimestamp();
     
-    // If current cache is expired, refresh in background
     if (age >= CACHE_CONFIG.ttl) {
       console.log('🔄 Background refresh triggered for expired search cache');
       await fetchSearchResults(false);
     }
   }, [query, data]);
 
-  // 🚀 NEW: Force refresh (for admin updates)
   const forceRefresh = useCallback(async () => {
     console.log(`🚀 Force refresh search "${query}"`);
     
-    // Clear all search caches (products might have changed)
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -297,12 +273,10 @@ function SearchPageContent() {
     await fetchSearchResults(false);
   }, [query]);
 
-  // 🚀 NEW: Listen for admin updates
   useEffect(() => {
     const handleAdminUpdate = (event: CustomEvent) => {
       const { type } = event.detail;
       
-      // Refresh if products or categories were updated (affects search results)
       if (type === 'product' || type === 'category') {
         console.log('🔄 Admin update detected, refreshing search results');
         forceRefresh();
@@ -313,10 +287,8 @@ function SearchPageContent() {
     return () => window.removeEventListener('adminUpdate' as any, handleAdminUpdate);
   }, [forceRefresh]);
 
-  // 🚀 ENHANCED: Fetch search results with smart caching
   const fetchSearchResults = async (showMainLoading: boolean = true) => {
     try {
-      // Set appropriate loading states
       if (showMainLoading) {
         setLoading(true);
         setLoadingStates({ initial: true, filtering: false, sorting: false, pagination: false });
@@ -328,11 +300,9 @@ function SearchPageContent() {
         setLoadingStates(prev => ({ ...prev, filtering: true }));
       }
 
-      // Build search URL with filters
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const searchUrl = new URL(`${apiUrl}/api/public/search`);
       
-      // 🚀 Cache busting for admin updates
       const cacheBuster = `t=${Date.now()}&v=${Math.random().toString(36).substr(2, 9)}`;
       
       searchUrl.searchParams.set('q', query);
@@ -357,7 +327,6 @@ function SearchPageContent() {
         setData(searchData);
         setError('');
         
-        // Cache the successful result
         saveToCache(searchData);
         
         console.log(`🔄 Search "${query}" updated from API`);
@@ -373,9 +342,8 @@ function SearchPageContent() {
     }
   };
 
-  // 🚀 ENHANCED: Update filters with optimistic loading
-  const updateFilters = useCallback((newCategory?: string, newSort?: string, newPage?: string, newMinRating?: string) => {
-    // Build new URL
+  // ✅ IMPROVED: updateFilters with router.push
+  const updateFilters = useCallback((newCategory?: string | null, newSort?: string, newPage?: string, newMinRating?: string | null) => {
     const url = new URL(window.location.href);
     
     if (newCategory !== undefined) {
@@ -399,7 +367,6 @@ function SearchPageContent() {
       url.searchParams.delete('page');
     }
     
-    // Check if we have this filter combination cached
     const tempParams = new URLSearchParams(url.search);
     const cacheKey = `studentstore_search_q:${tempParams.get('q') || query}_cat:${tempParams.get('category') || 'all'}_sort:${tempParams.get('sort') || 'relevance'}_page:${tempParams.get('page') || '1'}_rating:${tempParams.get('min_rating') || 'any'}`;
     
@@ -410,9 +377,9 @@ function SearchPageContent() {
         const age = Date.now() - timestamp;
         
         if (age < CACHE_CONFIG.ttl) {
-          // Instant filter change with cached data
           setData(cachedData);
-          window.history.pushState({}, '', url.toString());
+          // ✅ IMPROVED: Use router.push instead of window.location
+          router.push(url.pathname + url.search);
           console.log(`⚡ Instant filter change (from cache)`);
           return;
         }
@@ -421,7 +388,6 @@ function SearchPageContent() {
       }
     }
     
-    // No cache, show loading and navigate
     if (newPage) {
       setLoadingStates(prev => ({ ...prev, pagination: true }));
     } else if (newSort) {
@@ -430,40 +396,22 @@ function SearchPageContent() {
       setLoadingStates(prev => ({ ...prev, filtering: true }));
     }
     
-    window.history.pushState({}, '', url.toString());
-    window.location.reload();
-  }, [query]);
+    // ✅ IMPROVED: Use router.push instead of window.location.reload()
+    router.push(url.pathname + url.search);
+  }, [query, router]);
 
   const handlePageChange = (page: number) => {
     updateFilters(undefined, undefined, page.toString());
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const getSortLabel = (sort: string) => {
-    const labels: { [key: string]: string } = {
-      relevance: '🎯 Most Relevant',
-      newest: '🆕 Newest First',
-      oldest: '📅 Oldest First',
-      name_asc: '📝 Name A-Z',
-      name_desc: '📝 Name Z-A',
-      rating: '⭐ Highest Rated',
-      popular: '🔥 Most Popular',
-      trending: '📈 Trending',
-      views: '👁️ Most Viewed'
-    };
-    return labels[sort] || sort;
-  };
-
-  // 🚀 NEW: Enhanced loading components
   const SearchSkeleton = () => (
     <div className="max-w-7xl mx-auto px-4">
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar skeleton */}
         <div className="lg:w-1/4">
           <div className="animate-pulse bg-gray-200 h-64 rounded-xl"></div>
         </div>
         
-        {/* Results skeleton */}
         <div className="lg:w-3/4">
           <div className="animate-pulse bg-gray-200 h-16 rounded-xl mb-6"></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -476,7 +424,6 @@ function SearchPageContent() {
     </div>
   );
 
-  // 🚀 NEW: Cache status indicator (development only)
   const CacheStatusIndicator = () => {
     const cacheAge = getCacheTimestamp();
     const age = cacheAge ? Math.floor((Date.now() - cacheAge) / 1000) : 0;
@@ -522,7 +469,6 @@ function SearchPageContent() {
               Find exactly what you need for your student life - from textbooks to tech gear, all curated by fellow students
             </p>
             
-            {/* Popular Searches */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-student-primary mb-4">🔥 Popular Student Searches:</h3>
               <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
@@ -584,10 +530,9 @@ function SearchPageContent() {
     <div className="min-h-screen bg-student-page">
       <Navbar />
 
-      {/* 🚀 NEW: Cache status indicator (development only) */}
       {process.env.NODE_ENV === 'development' && <CacheStatusIndicator />}
 
-      {/* Enhanced Search Header - StudentStore Style */}
+      {/* Enhanced Search Header */}
       <section className="max-w-7xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-student-secondary mb-6 bg-student-card rounded-xl p-4 shadow-md">
@@ -639,16 +584,17 @@ function SearchPageContent() {
                 </div>
                 <div className="text-center">
                   <div className="text-student-orange font-bold">
-                    {Math.floor(Math.random() * 500 + 200)}
+                    {/* ✅ FIXED: Use data-driven value instead of Math.random() */}
+                    {data.total > 100 ? Math.floor(data.total * 1.2) : '200+'}
                   </div>
-                  <div className="text-student-secondary">Students Searched</div>
+                  <div className="text-student-secondary">Products Viewed</div>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Filters and Controls - Enhanced */}
+        {/* Filters and Controls */}
         {data.total > 0 && (
           <div className="flex flex-col lg:flex-row gap-6 mb-8">
             {/* Left Sidebar - Category Filters */}
@@ -670,7 +616,7 @@ function SearchPageContent() {
                 
                 <div className={`space-y-2 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                   <button
-                    onClick={() => updateFilters('')}
+                    onClick={() => updateFilters(null)} // ✅ FIXED: Use null
                     disabled={loadingStates.filtering}
                     className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 flex justify-between items-center disabled:opacity-50 ${
                       !data.filters.category 
@@ -719,7 +665,7 @@ function SearchPageContent() {
               <div className="bg-student-card rounded-xl p-6 shadow-lg border border-border-light mb-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
                   {/* Results Info */}
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 flex-wrap">
                     <p className="text-student-secondary">
                       Showing <span className="font-semibold text-student-primary">{data.results.length}</span> of{' '}
                       <span className="font-semibold text-student-primary">{data.total}</span> results
@@ -729,7 +675,6 @@ function SearchPageContent() {
                       Page {data.pagination.current_page} of {data.pagination.total_pages}
                     </p>
                     
-                    {/* 🚀 NEW: Loading indicators */}
                     {(loadingStates.filtering || loadingStates.sorting || loadingStates.pagination) && (
                       <>
                         <div className="h-4 w-px bg-border-light"></div>
@@ -744,7 +689,7 @@ function SearchPageContent() {
 
                   {/* Controls */}
                   <div className="flex items-center space-x-4">
-                    {/* Sort Dropdown - Enhanced */}
+                    {/* Sort Dropdown */}
                     <div className="relative">
                       <select
                         value={data.filters.sort}
@@ -803,7 +748,7 @@ function SearchPageContent() {
                 </div>
               </div>
 
-              {/* Products Grid/List - Enhanced with Loading States */}
+              {/* Products Grid/List */}
               {loadingStates.filtering || loadingStates.sorting ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {[...Array(6)].map((_, i) => (
@@ -824,7 +769,7 @@ function SearchPageContent() {
                 </div>
               )}
 
-              {/* Enhanced Pagination - StudentStore Style */}
+              {/* Enhanced Pagination */}
               {data.pagination.total_pages > 1 && (
                 <div className="bg-student-card rounded-xl p-6 shadow-lg border border-border-light">
                   <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
@@ -905,7 +850,7 @@ function SearchPageContent() {
           </div>
         )}
 
-        {/* Enhanced No Results - StudentStore Style */}
+        {/* No Results State */}
         {data.total === 0 && (
           <div className="text-center py-16">
             <div className="bg-student-card rounded-2xl p-12 shadow-xl border border-border-light max-w-2xl mx-auto">
