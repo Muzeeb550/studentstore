@@ -256,21 +256,6 @@ export default function Navbar() {
     return user?.name || user?.display_name || user?.email.split('@')[0] || 'Student';
   };
 
-  // const handleLogoDoubleClick = () => {
-  //   window.location.href = '/skillstore';
-  // };
-
-  // const handleLogoTap = () => {
-  //   const currentTime = new Date().getTime();
-  //   const tapLength = currentTime - lastTapTime;
-
-    // If two taps within 300ms = double tap
-  //   if (tapLength < 300 && tapLength > 0) {
-  //     handleLogoDoubleClick();
-  //   }
-
-  //   setLastTapTime(currentTime);
-  // };
 
          const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
     const [touchStart, setTouchStart] = useState(0);
