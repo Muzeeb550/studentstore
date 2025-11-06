@@ -589,6 +589,7 @@ textarea:focus {
 .category-card .category-image-area .category-fallback { width: 72px; height: 72px; }
 }
 
+
 /* -------------------------------------------
    4.3 RECENTLY VIEWED CARDS
    Used by: RecentlyViewedCard.tsx, page.tsx
@@ -1463,6 +1464,69 @@ border: 1px solid #93C5FD; / blue-300 */
 }
 
 
+/* -------------------------------------------
+   6.3 CATEGORY CAROUSEL ARROW CONTROLS
+   Used by: page.tsx Category Section (Desktop)
+   ------------------------------------------- */
+
+/* Only show arrows on desktop/laptop */
+@media (max-width: 1024px) {
+  .category-arrow-btn {
+    display: none !important;
+  }
+}
+
+/* Ensure buttons are clickable and visible */
+.category-arrow-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.category-arrow-btn:hover {
+  background: white;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.category-arrow-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.category-arrow-btn svg {
+  width: 20px;
+  height: 20px;
+  color: var(--student-orange);
+  stroke-width: 2.5;
+}
+
+/* Large screens */
+@media (min-width: 1536px) {
+  .category-arrow-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .category-arrow-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+
+
 /* ===========================================
    7. UTILITY CLASSES
    Used by: All components
@@ -1570,6 +1634,8 @@ border: 1px solid #93C5FD; / blue-300 */
 .border-student-orange {
   border-color: var(--student-orange);
 }
+
+
 
 /* -------------------------------------------
    7.4 LOADING & STATE UTILITIES

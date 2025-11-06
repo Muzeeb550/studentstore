@@ -734,25 +734,60 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Desktop View */}
-      <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
-        <div ref={recentRowDesktopRef} className="flex gap-4">
-          {recentlyViewed.map((item) => (
-            <div
-              key={`recent-d-${item.product.id}`}
-              className="snap-start shrink-0"
-              style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
-            >
-              <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
-            </div>
-          ))}
+      {/* ✅ Desktop View - With Arrows */}
+      <div className="hidden lg:block relative px-12">
+        {/* Previous Arrow */}
+        <button
+          onClick={() => {
+            if (recentRowDesktopRef.current) {
+              const scrollAmount = 300;
+              recentRowDesktopRef.current.scrollLeft -= scrollAmount;
+            }
+          }}
+          className="category-arrow-btn -left-6"
+          aria-label="Previous"
+        >
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Carousel */}
+        <div ref={recentRowDesktopRef} className="overflow-x-auto snap-x snap-mandatory scroll-smooth">
+          <div className="flex gap-4">
+            {recentlyViewed.map((item) => (
+              <div
+                key={`recent-d-${item.product.id}`}
+                className="snap-start shrink-0"
+                style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
+              >
+                <RecentlyViewedCard product={item.product} viewedAt={item.viewedAt} />
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* Next Arrow */}
+        <button
+          onClick={() => {
+            if (recentRowDesktopRef.current) {
+              const scrollAmount = 300;
+              recentRowDesktopRef.current.scrollLeft += scrollAmount;
+            }
+          }}
+          className="category-arrow-btn -right-6"
+          aria-label="Next"
+        >
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
     </div>
   </section>
 )}
 
-{/* Trending Section - With Orange Background */}
+{/* ✅ Trending Section - With Orange Background */}
 {trendingProducts.length > 0 && (
   <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
     <div className="trending-section">
@@ -778,7 +813,7 @@ export default function HomePage() {
             <div
               key={`trending-m-${product.id}-${index}`}
               className="snap-start shrink-0"
-              style={{ width: 'calc((100% - (2 * 12px)) / 3.5)' }}
+              style={{ width: 'calc((100% - (2 * 12px)) / 2.5)' }}
             >
               <TrendingCard product={product} trendingRank={index + 1} />
             </div>
@@ -801,95 +836,170 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Desktop View */}
-      <div className="hidden lg:block overflow-x-auto snap-x snap-mandatory scroll-smooth">
-        <div ref={trendingRowDesktopRef} className="flex gap-4">
-          {trendingProducts.map((product, index) => (
-            <div
-              key={`trending-d-${product.id}-${index}`}
-              className="snap-start shrink-0"
-              style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
-            >
-              <TrendingCard product={product} trendingRank={index + 1} />
-            </div>
-          ))}
+      {/* ✅ Desktop View - With Arrows */}
+      <div className="hidden lg:block relative px-12">
+        {/* Previous Arrow */}
+        <button
+          onClick={() => {
+            if (trendingRowDesktopRef.current) {
+              const scrollAmount = 300;
+              trendingRowDesktopRef.current.scrollLeft -= scrollAmount;
+            }
+          }}
+          className="category-arrow-btn -left-6"
+          aria-label="Previous"
+        >
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Carousel */}
+        <div ref={trendingRowDesktopRef} className="overflow-x-auto snap-x snap-mandatory scroll-smooth">
+          <div className="flex gap-4">
+            {trendingProducts.map((product, index) => (
+              <div
+                key={`trending-d-${product.id}-${index}`}
+                className="snap-start shrink-0"
+                style={{ width: 'calc((100% - (5 * 16px)) / 6)' }}
+              >
+                <TrendingCard product={product} trendingRank={index + 1} />
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* Next Arrow */}
+        <button
+          onClick={() => {
+            if (trendingRowDesktopRef.current) {
+              const scrollAmount = 300;
+              trendingRowDesktopRef.current.scrollLeft += scrollAmount;
+            }
+          }}
+          className="category-arrow-btn -right-6"
+          aria-label="Next"
+        >
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
     </div>
   </section>
 )}
 
       {/* Category Section */}
-      <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-        <div className="category-section">
-          <div className="mb-6 lg:mb-8 text-center">
-            <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2">
-              Shop by Category
-            </h3>
-            <p className="text-red-50 text-base lg:text-lg opacity-90">
-              Find exactly what you need for your student life
-            </p>
-          </div>
+<section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+  <div className="category-section">
+    <div className="mb-6 lg:mb-8 text-center">
+      <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2">
+        Shop by Category
+      </h3>
+      <p className="text-red-50 text-base lg:text-lg opacity-90">
+        Find exactly what you need for your student life
+      </p>
+    </div>
 
-          {categories.length > 0 ? (
-            <>
-              {/* Desktop */}
-              <div className="hidden xl:block">
-                <Slider {...categoryDesktopSettings} ref={categorySliderRef}>
-                  {categories.map((category) => (
-                    <div key={category.id} className="px-1">
-                      <CategoryCard category={category} />
-                    </div>
-                  ))}
-                </Slider>
-              </div>
+    {categories.length > 0 ? (
+      <>
+        {/* Desktop */}
+        <div className="hidden xl:block relative">
+          {/* Previous Arrow - Left */}
+          <button
+            onClick={() => categorySliderRef.current?.slickPrev()}
+            className="absolute -left-16 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white hover:bg-white/90 flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
+            aria-label="Previous categories"
+          >
+            <svg className="w-5 h-5 text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-              {/* Mobile/Tablet - Two Rows */}
-              <div className="block xl:hidden">
-                <div className="mb-3">
-                  <Slider {...categoryRowSettings}>
-                    {topRowCategories.map((category) => (
-                      <div key={category.id} className="px-1">
-                        <CategoryCard category={category} />
-                      </div>
-                    ))}
-                  </Slider>
-                </div>
-                <div>
-                  <Slider {...categoryRowSettings}>
-                    {bottomRowCategories.map((category) => (
-                      <div key={category.id} className="px-1">
-                        <CategoryCard category={category} />
-                      </div>
-                    ))}
-                  </Slider>
-                </div>
+          {/* Carousel */}
+          <Slider {...categoryDesktopSettings} ref={categorySliderRef}>
+            {categories.map((category) => (
+              <div key={category.id} className="px-1">
+                <CategoryCard category={category} />
               </div>
-            </>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
-              {[
-                { icon: '📚', name: 'Textbooks' },
-                { icon: '💻', name: 'Electronics' },
-                { icon: '✏️', name: 'Stationery' },
-                { icon: '🎒', name: 'Campus Gear' },
-                { icon: '📖', name: 'Courses' },
-              ].map((category, index) => (
-                <div key={index} className="category-card">
-                  <div className="category-image-area">
-                    <div className="text-4xl">{category.icon}</div>
-                  </div>
-                  <div className="category-text-area">
-                    <h4 className="category-title font-medium text-student-primary">
-                      {category.name}
-                    </h4>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+            ))}
+          </Slider>
+
+          {/* Next Arrow - Right */}
+          <button
+            onClick={() => categorySliderRef.current?.slickNext()}
+            className="absolute -right-16 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white hover:bg-white/90 flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
+            aria-label="Next categories"
+          >
+            <svg className="w-5 h-5 text-student-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
-      </section>
+
+       {/* Mobile/Tablet - Two Rows */}
+<div className="block xl:hidden">
+  {/* Top Row */}
+  <div className="mb-3 sm:mb-4">  {/* ← Changed from mb-6 to mb-3 on mobile, mb-4 on tablet */}
+    <div className="overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4">
+      <div className="flex gap-3">
+        {topRowCategories.map((category) => (
+          <div 
+            key={`cat-top-${category.id}`} 
+            className="snap-start shrink-0 aspect-square"
+            style={{ width: 'calc((100% - (3 * 12px)) / 3.5)' }}
+          >
+            <CategoryCard category={category} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  {/* Bottom Row */}
+  <div>
+    <div className="overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4">
+      <div className="flex gap-3">
+        {bottomRowCategories.map((category) => (
+          <div 
+            key={`cat-bot-${category.id}`} 
+            className="snap-start shrink-0 aspect-square"
+            style={{ width: 'calc((100% - (3 * 12px)) / 3.5)' }}
+          >
+            <CategoryCard category={category} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
+
+      </>
+    ) : (
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+        {[
+          { icon: '📚', name: 'Textbooks' },
+          { icon: '💻', name: 'Electronics' },
+          { icon: '✏️', name: 'Stationery' },
+          { icon: '🎒', name: 'Campus Gear' },
+          { icon: '📖', name: 'Courses' },
+        ].map((category, index) => (
+          <div key={index} className="category-card">
+            <div className="category-image-area">
+              <div className="text-4xl">{category.icon}</div>
+            </div>
+            <div className="category-text-area">
+              <h4 className="category-title font-medium text-student-primary">
+                {category.name}
+              </h4>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
 
       {/* Featured Products */}
       <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
