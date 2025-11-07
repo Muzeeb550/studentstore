@@ -129,12 +129,13 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
         function proceedWithAuth() {
             try {
                 const authenticationParameters = imagekit.getAuthenticationParameters();
-                
+             if (process.env.NODE_ENV !== 'production') {
                 console.log('🔐 ImageKit auth params generated for:', usage, {
                     token: authenticationParameters.token.substring(0, 10) + '...',
                     expire: authenticationParameters.expire,
                     signature: authenticationParameters.signature.substring(0, 10) + '...'
-                });
+                });F
+             }
                 
                 res.json(authenticationParameters);
             } catch (error) {

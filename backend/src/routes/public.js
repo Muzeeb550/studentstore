@@ -554,10 +554,11 @@ router.get('/search', searchCache, async (req, res) => {
     `;
 
 
-    console.log('🔍 Search query:', query);
-    console.log('📊 WHERE clause:', whereClause);
-    console.log('📦 Search params:', searchParams);
-
+  if (process.env.NODE_ENV !== 'production') {
+  console.log('🔍 Search query:', query);
+  console.log('🔍 WHERE clause:', whereClause);
+  console.log('🔍 Search params:', searchParams);
+}
 
     // Execute queries in parallel
     const [searchResult, countResult, categoriesResult] = await Promise.all([

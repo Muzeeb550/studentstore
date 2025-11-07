@@ -55,7 +55,7 @@ router.post('/add', async (req, res) => {
             [user_id, parseInt(skill_id, 10)]
         );
 
-        console.log(`✅ Bookmark added: User ${user_id} → Skill ${skill_id}`);
+        console.log('✅ Bookmark added successfully');
 
         res.json({
             status: 'success',
@@ -96,7 +96,7 @@ router.delete('/remove/:skillId', async (req, res) => {
             });
         }
 
-        console.log(`🗑️ Bookmark removed: User ${user_id} → Skill ${skill_id}`);
+        console.log('✅ Bookmark removed successfully');
 
         res.json({
             status: 'success',

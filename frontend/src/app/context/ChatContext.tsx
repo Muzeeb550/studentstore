@@ -356,9 +356,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      console.log('👋 User logged out - chat cleared');
     };
-
     window.addEventListener('user-logout', handleLogout);
     
     return () => {
