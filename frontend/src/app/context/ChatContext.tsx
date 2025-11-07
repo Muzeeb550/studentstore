@@ -97,27 +97,28 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // STATE - MESSAGES
   // ============================================
   
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    // Only run on client side
-    if (typeof window === 'undefined') return [];
-    
-    try {
-      const saved = localStorage.getItem(`chat_${sessionId}`);
-      if (saved) {
-        const parsedMessages = JSON.parse(saved);
-        console.log(`📂 Loaded ${parsedMessages.length} messages from localStorage`);
-        return parsedMessages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading chat from localStorage:', error);
-    }
-    return [];
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+const [loading, setLoading] = useState(false);
+
+// ✅ Load messages from localStorage only on mount
+useEffect(() => {
+  if (typeof window === 'undefined') return;
   
-  const [loading, setLoading] = useState(false);
+  try {
+    const saved = localStorage.getItem(`chat_${sessionId}`);
+    if (saved) {
+      const parsedMessages = JSON.parse(saved);
+      console.log(`📂 Loaded ${parsedMessages.length} messages from localStorage`);
+      setMessages(parsedMessages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      })));
+    }
+  } catch (error) {
+    console.error('Error loading chat from localStorage:', error);
+  }
+}, [sessionId]);
+
 
   // ============================================
   // AUTO-SAVE TO localStorage
