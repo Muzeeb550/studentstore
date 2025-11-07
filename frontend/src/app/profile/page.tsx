@@ -46,31 +46,32 @@ export default function ProfilePage() {
     reviewsWritten: 0
   });
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('studentstore_user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser) as User;
-        logger.debug('User data loaded');
-        setUser(parsedUser);
-        
-        if (parsedUser.profile_picture) {
-          setProfilePicture(parsedUser.profile_picture);
-        }
-        
-        fetchUserProfile();
-        fetchUserStats();
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        router.push('/');
-        return;
+ useEffect(() => {
+  const storedUser = localStorage.getItem('studentstore_user');
+  if (storedUser) {
+    try {
+      const parsedUser = JSON.parse(storedUser) as User;
+      logger.debug('User data loaded');
+      setUser(parsedUser);
+      
+      if (parsedUser.profile_picture) {
+        setProfilePicture(parsedUser.profile_picture);
       }
-    } else {
+      
+      fetchUserProfile();
+      fetchUserStats();
+    } catch (error) {
+      console.error('Error parsing user data:', error);
       router.push('/');
       return;
     }
-    setLoading(false);
-  }, [router]);
+  } else {
+    router.push('/');
+    return;
+  }
+  setLoading(false);
+}, []); // ← EMPTY ARRAY: Only run ONCE on component mount
+
 
   const fetchUserProfile = async () => {
     try {
