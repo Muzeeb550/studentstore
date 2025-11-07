@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import imageCompression from 'browser-image-compression'; // 🔥 NEW: Add 
+import imageCompression from 'browser-image-compression';
 import logger from '../utils/logger';
 
 interface User {
@@ -36,13 +36,11 @@ export default function ProfilePage() {
     resetTime: null
   });
   
-  // 🔥 NEW: Add compression tracking states
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [compressionStatus, setCompressionStatus] = useState<string>('');
   
   const router = useRouter();
 
-  // ✅ Real student stats from API
   const [studentStats, setStudentStats] = useState({
     wishlistItems: 0,
     reviewsWritten: 0
@@ -53,18 +51,14 @@ export default function ProfilePage() {
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser) as User;
-        logger.debug('User data loaded'); // Removed user object for security
+        logger.debug('User data loaded');
         setUser(parsedUser);
         
-        // Set existing profile picture if available
         if (parsedUser.profile_picture) {
           setProfilePicture(parsedUser.profile_picture);
         }
         
-        // Fetch fresh user data from backend
         fetchUserProfile();
-        
-        // ✅ Fetch real stats
         fetchUserStats();
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -95,7 +89,7 @@ export default function ProfilePage() {
         const result = await response.json();
         if (result.status === 'success') {
           const userData = result.data;
-          logger.debug('User profile fetched'); // Removed user data for security
+          logger.debug('User profile fetched');
           
           if (user) {
             setUser({
@@ -106,7 +100,6 @@ export default function ProfilePage() {
             });
           }
           
-          // BETTER: Only set profile picture if it's a valid URL
           if (userData.profile_picture && 
               typeof userData.profile_picture === 'string' && 
               userData.profile_picture.trim() !== '' &&
@@ -114,10 +107,9 @@ export default function ProfilePage() {
                userData.profile_picture.startsWith('https://'))) {
             setProfilePicture(userData.profile_picture);
           } else {
-            setProfilePicture(''); // Explicitly use initials
+            setProfilePicture('');
           }
           
-          // Update localStorage with complete user data
           const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
           const updatedUser = { ...currentUser, ...userData };
           localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
@@ -130,7 +122,6 @@ export default function ProfilePage() {
     }
   };
 
-  // ✅ Fetch real user stats
   const fetchUserStats = async () => {
     try {
       const token = localStorage.getItem('studentstore_token');
@@ -148,9 +139,8 @@ export default function ProfilePage() {
         const result = await response.json();
         if (result.status === 'success') {
           const stats = result.data.stats;
-          logger.debug('User stats fetched'); // Removed stats for security
+          logger.debug('User stats fetched');
 
-          // Update with real data
           setStudentStats({
             wishlistItems: stats.wishlist_count || 0,
             reviewsWritten: stats.total_reviews || 0
@@ -164,19 +154,16 @@ export default function ProfilePage() {
     }
   };
 
-  // 🔥 UPDATED: Image upload with CLIENT-SIDE COMPRESSION (10MB limit)
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Enhanced frontend validation
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
       alert('Invalid file type. Please select a JPG, PNG, GIF, or WebP image.');
       return;
     }
 
-    // 🔥 NEW: Check if file is absurdly large (> 50MB) - reject before compression
     if (file.size > 50 * 1024 * 1024) {
       alert(
         `⚠️ File Too Large\n\n` +
@@ -187,7 +174,6 @@ export default function ProfilePage() {
       return;
     }
 
-    // Check rate limit before attempting upload
     if (rateLimitInfo.remaining <= 0 && rateLimitInfo.resetTime && rateLimitInfo.resetTime > new Date()) {
       alert(`Upload limit reached. Please wait until ${rateLimitInfo.resetTime.toLocaleTimeString()} before trying again.`);
       return;
@@ -198,33 +184,27 @@ export default function ProfilePage() {
     setCompressionStatus('');
 
     try {
-      // 🔥 NEW: Warn about very large files (15-50MB)
       if (file.size > 15 * 1024 * 1024) {
         setCompressionStatus(`⏳ Large file detected, compression may take 10-15 seconds...`);
       }
 
-      // Log original file info
       console.log(`📸 Original profile image: ${file.name}`);
       console.log(`   Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
       console.log(`   Type: ${file.type}`);
 
-      // Update progress for compression phase (0-30%)
       setUploadProgress(10);
       setCompressionStatus(`Processing image...`);
 
-      // 🔥 NEW: CLIENT-SIDE COMPRESSION
       let compressedFile = file;
       
-      // Only compress if file is larger than 500KB (profile pictures should be smaller)
       if (file.size > 500 * 1024) {
         try {
           setCompressionStatus(`Compressing ${file.name}...`);
           setUploadProgress(20);
           
-          // 🔥 Profile-specific compression (smaller target for faster loading)
           const compressionOptions = {
-            maxSizeMB: file.size > 5 * 1024 * 1024 ? 0.5 : 1, // Smaller for profile pics
-            maxWidthOrHeight: 800,    // Profile pics don't need to be huge
+            maxSizeMB: file.size > 5 * 1024 * 1024 ? 0.5 : 1,
+            maxWidthOrHeight: 800,
             useWebWorker: true,
             initialQuality: file.size > 5 * 1024 * 1024 ? 0.7 : 0.8,
             fileType: file.type
@@ -257,8 +237,7 @@ export default function ProfilePage() {
         setUploadProgress(30);
       }
 
-      // 🔥 UPDATED: Validate compressed file size - NOW 10MB LIMIT!
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 10 * 1024 * 1024;
       if (compressedFile.size > maxSize) {
         const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
         const originalSizeMB = (file.size / 1024 / 1024).toFixed(2);
@@ -273,16 +252,13 @@ export default function ProfilePage() {
         return;
       }
 
-      // ✅ Size is good! Log it
       console.log(`✅ Compressed file size OK: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB (within 10MB limit)`);
 
-      // Update progress for authentication phase (30-50%)
       setUploadProgress(40);
       setCompressionStatus(`Authenticating upload...`);
 
       const token = localStorage.getItem('studentstore_token');
-      logger.debug('Token validation'); // Removed token check for security
-
+      logger.debug('Token validation');
       
       console.log('📡 Calling ImageKit auth endpoint...');
       
@@ -293,12 +269,10 @@ export default function ProfilePage() {
       
       console.log('📡 Auth response status:', authResponse.status);
       
-      // IMPROVED: Better rate limit handling for auth endpoint
       if (authResponse.status === 429) {
         const errorData = await authResponse.json();
         console.log('⚠️ Rate limit hit on auth endpoint:', errorData);
         
-        // Update rate limit info
         if (errorData.retryAfter) {
           const retryTime = new Date(Date.now() + (errorData.retryAfter * 1000));
           setRateLimitInfo({ remaining: 0, resetTime: retryTime });
@@ -320,7 +294,6 @@ export default function ProfilePage() {
         expire: authResult.expire
       });
       
-      // Update rate limit info from headers
       const remaining = authResponse.headers.get('X-RateLimit-Remaining');
       const resetTime = authResponse.headers.get('X-RateLimit-Reset');
       if (remaining && resetTime) {
@@ -338,26 +311,22 @@ export default function ProfilePage() {
         throw new Error('Upload configuration missing. Please contact support.');
       }
 
-      // Update progress for upload phase (50-90%)
       setUploadProgress(60);
       setCompressionStatus(`Uploading profile picture...`);
       
-      // 🔥 Upload compressed file
       const uploadData = new FormData();
       const timestamp = Date.now();
       const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       
-      uploadData.append('file', compressedFile); // 🔥 Using compressed file
+      uploadData.append('file', compressedFile);
       uploadData.append('fileName', `profile_${user?.id}_${timestamp}_${sanitizedFileName}`);
       uploadData.append('folder', '/studentstore/profiles');
       
-      // Use EXACT auth parameters from ImageKit
       uploadData.append('token', authResult.token);
       uploadData.append('signature', authResult.signature);
       uploadData.append('expire', authResult.expire.toString());
       uploadData.append('publicKey', publicKey);
 
-      // Enhanced tags with compression info
       const compressionTag = compressedFile.size < file.size ? 'compressed' : 'original';
       uploadData.append('tags', `user_${user?.id},profile_picture,${compressionTag}`);
       
@@ -394,13 +363,11 @@ export default function ProfilePage() {
         
         setProfilePicture(uploadResult.url);
         
-        // Save profile picture to backend
         await saveProfilePicture(uploadResult.url);
         
         setUploadProgress(100);
         setCompressionStatus(`Profile picture updated! ✅`);
         
-        // Update rate limit info (decrease remaining)
         setRateLimitInfo(prev => ({
           ...prev,
           remaining: Math.max(0, prev.remaining - 1)
@@ -420,10 +387,8 @@ export default function ProfilePage() {
         fullError: error
       });
       
-      // Handle errors with better messaging
       let errorMessage = 'Unknown error occurred.';
       
-      // Handle rate limiting specifically
       if (error.message.includes('rate limit') || error.message.includes('Rate limit') || 
           (error.code && error.code.includes('RATE_LIMIT'))) {
         
@@ -435,7 +400,6 @@ export default function ProfilePage() {
           errorMessage = 'Upload limit reached. Please wait before trying again.';
         }
       }
-      // Handle specific error codes
       else if (error.code) {
         switch (error.code) {
           case 'INVALID_FILE_TYPE':
@@ -451,7 +415,6 @@ export default function ProfilePage() {
             errorMessage = error.message || 'An error occurred while uploading.';
         }
       }
-      // Handle general errors
       else if (error.message && error.message.includes('Unable to compress')) {
         errorMessage = `The selected image is too large even after compression.\n\nPlease choose a smaller photo or try a different image.`;
       } else {
@@ -463,7 +426,6 @@ export default function ProfilePage() {
     } finally {
       setUploading(false);
       setUploadProgress(0);
-      // Keep compression status visible for 3 seconds
       setTimeout(() => setCompressionStatus(''), 3000);
     }
   };
@@ -482,7 +444,6 @@ export default function ProfilePage() {
         body: JSON.stringify({ profile_picture: imageUrl })
       });
 
-      // IMPROVED: Better rate limit handling
       if (response.status === 429) {
         const errorData = await response.json();
         console.log('⚠️ Rate limit hit while saving:', errorData);
@@ -492,19 +453,16 @@ export default function ProfilePage() {
       if (response.ok) {
         const result = await response.json();
         if (result.status === 'success') {
-          // Update localStorage
           const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
           const updatedUser = { ...currentUser, profile_picture: imageUrl };
           localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
           
-          // Update user state
           if (user) {
             setUser({ ...user, profile_picture: imageUrl });
           }
           
           console.log('💾 Profile picture saved to database');
           
-          // Trigger navbar update
           window.dispatchEvent(new CustomEvent('profile-updated'));
         }
       } else {
@@ -542,9 +500,8 @@ export default function ProfilePage() {
     return null;
   };
 
-  // 🔥 NEW: Enhanced progress indicator
   const ProgressIndicator = () => (
-    <div className="space-y-2 mt-3">
+    <div className="space-y-2 mt-2 sm:mt-3">
       <div className="w-full bg-student-light rounded-full h-2">
         <div 
           className="bg-gradient-to-r from-student-blue to-student-green h-2 rounded-full transition-all duration-300"
@@ -552,7 +509,9 @@ export default function ProfilePage() {
         />
       </div>
       {compressionStatus && (
-        <p className="text-xs text-student-secondary text-center">{compressionStatus}</p>
+        <p className="text-xs sm:text-sm text-student-secondary text-center leading-snug px-1">
+          {compressionStatus}
+        </p>
       )}
     </div>
   );
@@ -561,10 +520,12 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-student-page">
         <Navbar />
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-16 sm:py-20">
           <div className="text-center">
-            <div className="loading-shimmer rounded-full h-16 w-16 mx-auto mb-4"></div>
-            <p className="text-student-secondary font-medium">Loading your profile...</p>
+            <div className="loading-shimmer rounded-full h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4"></div>
+            <p className="text-student-secondary font-medium text-sm sm:text-base">
+              Loading your profile...
+            </p>
           </div>
         </div>
       </div>
@@ -579,214 +540,238 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-student-page">
       <Navbar />
       
-      {/* Breadcrumb */}
-      <div className="max-w-4xl mx-auto px-4 pt-8">
-        <nav className="flex items-center space-x-2 text-sm text-student-secondary mb-6 bg-student-card rounded-xl p-4 shadow-md">
-          <a href="/" className="hover:text-student-blue transition-colors font-medium">
+      {/* Breadcrumb - MOBILE RESPONSIVE */}
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-4 pt-4 sm:pt-6 md:pt-8">
+        <nav className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-student-secondary mb-4 sm:mb-6 bg-student-card rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 shadow-md overflow-x-auto">
+          <a href="/" className="hover:text-student-blue transition-colors font-medium whitespace-nowrap flex-shrink-0">
             🏠 StudentStore
           </a>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-student-blue font-semibold flex items-center">
+          <span className="text-student-blue font-semibold whitespace-nowrap flex-shrink-0">
             👤 My Profile
           </span>
         </nav>
       </div>
 
-      {/* Enhanced Header */}
-      <section className="max-w-4xl mx-auto px-4 pb-12">
-        <div className="bg-student-card rounded-2xl p-8 shadow-xl border border-border-light mb-8">
+      {/* Header - MOBILE RESPONSIVE */}
+      <section className="max-w-4xl mx-auto px-3 sm:px-4 md:px-4 pb-6 sm:pb-8 md:pb-12">
+        <div className="bg-student-card rounded-lg sm:rounded-xl lg:rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl border border-border-light mb-6 sm:mb-8">
           <div className="text-center">
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-student-blue to-student-green rounded-2xl flex items-center justify-center mr-4 shadow-lg">
-                <span className="text-2xl text-white">👤</span>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-br from-student-blue to-student-green rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <span className="text-lg sm:text-xl md:text-2xl">👤</span>
               </div>
-              <div className="text-left">
-                <h1 className="text-4xl md:text-5xl font-bold text-student-primary">Student Profile</h1>
-                <p className="text-student-secondary">Manage your StudentStore account & preferences</p>
+              <div className="text-center sm:text-left">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-student-primary">
+                  Student Profile
+                </h1>
+                <p className="text-xs sm:text-sm md:text-base text-student-secondary">
+                  Manage your StudentStore account & preferences
+                </p>
               </div>
             </div>
 
-            {/* ✅ Updated Student Stats - Only 2 stats with real data */}
-            <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
+            {/* Stats - MOBILE RESPONSIVE */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-md mx-auto">
               <div className="text-center">
-                <div className="text-2xl font-bold text-student-blue">{studentStats.wishlistItems}</div>
-                <div className="text-student-secondary text-sm">Saved Products</div>
+                <div className="text-xl sm:text-2xl font-bold text-student-blue">
+                  {studentStats.wishlistItems}
+                </div>
+                <div className="text-xs sm:text-sm text-student-secondary">
+                  Saved Products
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-student-green">{studentStats.reviewsWritten}</div>
-                <div className="text-student-secondary text-sm">Reviews Written</div>
+                <div className="text-xl sm:text-2xl font-bold text-student-green">
+                  {studentStats.reviewsWritten}
+                </div>
+                <div className="text-xs sm:text-sm text-student-secondary">
+                  Reviews Written
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Enhanced Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <div className="bg-student-card rounded-2xl shadow-xl p-6 border border-border-light">
-              {/* Profile Picture */}
-              <div className="text-center mb-6">
+        {/* Main Grid - MOBILE RESPONSIVE */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+          {/* Sidebar - MOBILE RESPONSIVE */}
+          <div className="md:col-span-1">
+            <div className="bg-student-card rounded-lg sm:rounded-xl lg:rounded-2xl shadow-xl p-3 sm:p-4 md:p-6 border border-border-light">
+              {/* Profile Picture - MOBILE RESPONSIVE */}
+              <div className="text-center mb-4 sm:mb-6">
                 {profilePicture && profilePicture.trim() !== '' ? (
                   <img
                     src={profilePicture}
                     alt={getDisplayName()}
-                    className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-student-blue/20 shadow-lg"
+                    className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full mx-auto mb-2 sm:mb-3 md:mb-4 object-cover border-4 border-student-blue/20 shadow-lg"
                     onError={(e) => {
-                      e.currentTarget.onerror = null; // Prevent infinite loop
-                      setProfilePicture(''); // Reset to initials on error
+                      e.currentTarget.onerror = null;
+                      setProfilePicture('');
                     }}
                   />
                 ) : (
-                  <div className="w-24 h-24 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-lg">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-lg sm:text-xl md:text-2xl font-bold mx-auto mb-2 sm:mb-3 md:mb-4 shadow-lg flex-shrink-0">
                     {getInitials(user.email)}
                   </div>
                 )}
-                <h3 className="font-semibold text-student-primary">{getDisplayName()}</h3>
-                <p className="text-sm text-student-secondary">{user.email}</p>
+                <h3 className="text-sm sm:text-base font-semibold text-student-primary break-words">
+                  {getDisplayName()}
+                </h3>
+                <p className="text-xs sm:text-sm text-student-secondary break-words">
+                  {user.email}
+                </p>
                 <div className="mt-2">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                  <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                     user.role === 'admin' 
                       ? 'bg-student-orange/20 text-student-orange' 
                       : 'bg-student-blue/20 text-student-blue'
-                    }`}>
+                  }`}>
                     {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
                   </span>
                 </div>
               </div>
 
-              {/* Navigation Tabs */}
-              <nav className="space-y-2">
+              {/* Navigation - MOBILE RESPONSIVE */}
+              <nav className="space-y-1 sm:space-y-2">
                 <button
                   onClick={() => setActiveTab('general')}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 ${
+                  className={`w-full text-left px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 text-xs sm:text-sm md:text-base ${
                     activeTab === 'general'
                       ? 'bg-student-blue text-white font-medium shadow-md'
                       : 'text-student-primary hover:bg-student-light border border-border-light'
                   }`}
                 >
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    Profile Settings
+                    <span className="truncate">Profile</span>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('account')}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 ${
+                  className={`w-full text-left px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 text-xs sm:text-sm md:text-base ${
                     activeTab === 'account'
                       ? 'bg-student-green text-white font-medium shadow-md'
                       : 'text-student-primary hover:bg-student-light border border-border-light'
                   }`}
                 >
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
-                    Account & Security
+                    <span className="truncate">Account</span>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('activity')}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 ${
+                  className={`w-full text-left px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 text-xs sm:text-sm md:text-base ${
                     activeTab === 'activity'
                       ? 'bg-student-orange text-white font-medium shadow-md'
                       : 'text-student-primary hover:bg-student-light border border-border-light'
                   }`}
                 >
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
-                    Student Activity
+                    <span className="truncate">Activity</span>
                   </div>
                 </button>
               </nav>
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-student-card rounded-2xl shadow-xl p-8 border border-border-light">
+          {/* Main Content - MOBILE RESPONSIVE */}
+          <div className="md:col-span-3">
+            <div className="bg-student-card rounded-lg sm:rounded-xl lg:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 border border-border-light">
               
-              {/* Profile Settings Tab */}
+              {/* Profile Settings Tab - MOBILE RESPONSIVE */}
               {activeTab === 'general' && (
-                <div className="space-y-8">
+                <div className="space-y-4 sm:space-y-6 md:space-y-8">
                   <div>
-                    <h2 className="text-2xl font-bold text-student-primary mb-4">Profile Settings</h2>
-                    <p className="text-student-secondary mb-6">Customize your StudentStore profile and manage your personal information</p>
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-student-primary mb-1 sm:mb-2 md:mb-4">
+                      Profile Settings
+                    </h2>
+                    <p className="text-xs sm:text-sm md:text-base text-student-secondary">
+                      Customize your StudentStore profile and manage your personal information
+                    </p>
                   </div>
 
-                  {/* Rate Limit Warning */}
+                  {/* Rate Limit Warning - MOBILE RESPONSIVE */}
                   {getRateLimitMessage() && (
-                    <div className="p-4 border border-student-orange/30 bg-student-orange/10 rounded-xl">
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 text-student-orange mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="p-2.5 sm:p-3 md:p-4 border border-student-orange/30 bg-student-orange/10 rounded-lg sm:rounded-xl">
+                      <div className="flex items-start gap-2">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-student-orange mr-1 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                         </svg>
-                        <p className="text-sm text-student-primary">{getRateLimitMessage()}</p>
+                        <p className="text-xs sm:text-sm text-student-primary">
+                          {getRateLimitMessage()}
+                        </p>
                       </div>
                     </div>
                   )}
 
-                  {/* Display Name (Read-only) */}
+                  {/* Display Name - MOBILE RESPONSIVE */}
                   <div>
-                    <label className="block text-sm font-medium text-student-primary mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-student-primary mb-1.5 sm:mb-2">
                       Display Name
                     </label>
-                    <div className="w-full px-4 py-3 border border-border-light rounded-xl bg-student-light text-student-primary">
+                    <div className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 border border-border-light rounded-lg sm:rounded-xl bg-student-light text-student-primary text-xs sm:text-sm md:text-base break-words">
                       {getDisplayName()}
                     </div>
-                    <p className="text-sm text-student-secondary mt-1">
+                    <p className="text-xs text-student-secondary mt-1">
                       🔒 This is your name from Google account and cannot be changed here.
                     </p>
                   </div>
 
-                  {/* Profile Picture Upload with Compression */}
+                  {/* Profile Picture Upload - MOBILE RESPONSIVE */}
                   <div>
-                    <label className="block text-sm font-medium text-student-primary mb-4">
+                    <label className="block text-xs sm:text-sm font-medium text-student-primary mb-2 sm:mb-3 md:mb-4">
                       Profile Picture
                     </label>
                     
-                    {/* 🔥 NEW: Upload Progress */}
                     {uploading && (
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-student-blue">
+                      <div className="mb-3 sm:mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+                          <span className="text-xs sm:text-sm font-medium text-student-blue">
                             Processing image... {uploadProgress}%
                           </span>
-                          <span className="text-sm text-student-secondary">Please wait</span>
+                          <span className="text-xs sm:text-sm text-student-secondary">
+                            Please wait
+                          </span>
                         </div>
                         <ProgressIndicator />
                       </div>
                     )}
                     
-                    <div className="flex items-center space-x-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 md:gap-6">
                       {/* Current Picture */}
                       <div className="flex-shrink-0">
                         {profilePicture && profilePicture.trim() !== '' ? (
                           <img
                             src={profilePicture}
                             alt={getDisplayName()}
-                            className="w-20 h-20 rounded-full object-cover border-4 border-student-blue/20 shadow-lg"
+                            className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full object-cover border-4 border-student-blue/20 shadow-lg"
                             onError={(e) => {
-                              e.currentTarget.onerror = null; // Prevent infinite loop
-                              setProfilePicture(''); // Reset to initials on error
+                              e.currentTarget.onerror = null;
+                              setProfilePicture('');
                             }}
                           />
                         ) : (
-                          <div className="w-20 h-20 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                          <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gradient-to-br from-student-blue to-student-green rounded-full flex items-center justify-center text-white text-lg sm:text-xl md:text-2xl font-bold shadow-lg flex-shrink-0">
                             {getInitials(user.email)}
                           </div>
                         )}
                       </div>
 
-                      {/* Upload Section */}
-                      <div className="flex-1">
+                      {/* Upload Section - MOBILE RESPONSIVE */}
+                      <div className="flex-1 min-w-0">
                         <input
                           type="file"
                           accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
@@ -797,7 +782,7 @@ export default function ProfilePage() {
                         />
                         <label
                           htmlFor="profile-upload"
-                          className={`inline-flex items-center px-6 py-3 border border-border-light rounded-xl font-medium transition-all duration-200 cursor-pointer shadow-md ${
+                          className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 border border-border-light rounded-lg sm:rounded-xl font-medium transition-all duration-200 cursor-pointer shadow-md text-xs sm:text-sm md:text-base w-full sm:w-auto ${
                             uploading || (rateLimitInfo.remaining <= 0)
                               ? 'bg-student-light text-student-secondary cursor-not-allowed' 
                               : 'bg-student-card text-student-primary hover:bg-student-light hover:shadow-lg hover:scale-[1.02]'
@@ -805,27 +790,29 @@ export default function ProfilePage() {
                         >
                           {uploading ? (
                             <>
-                              <div className="loading-shimmer rounded-full h-4 w-4 mr-2"></div>
-                              Processing... {uploadProgress}%
+                              <div className="loading-shimmer rounded-full h-3 w-3 flex-shrink-0"></div>
+                              <span className="truncate">Processing... {uploadProgress}%</span>
                             </>
                           ) : rateLimitInfo.remaining <= 0 ? (
                             <>
-                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 0h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                               </svg>
-                              Upload Limit Reached
+                              <span className="truncate">Upload Limit Reached</span>
                             </>
                           ) : (
                             <>
-                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                               </svg>
-                              {profilePicture ? 'Change Picture' : 'Upload Picture'}
+                              <span className="truncate">
+                                {profilePicture ? 'Change Picture' : 'Upload Picture'}
+                              </span>
                             </>
                           )}
                         </label>
-                        <p className="text-sm text-student-secondary mt-2">
-                          📸 JPG, PNG, GIF, WebP up to 50MB • ✨ Auto-compressed to under 10MB • 🔒 Rate limited (5/hour)
+                        <p className="text-xs text-student-secondary mt-1 leading-snug">
+                          📸 JPG, PNG, GIF, WebP • ✨ Auto-compressed • 🔒 Rate limited (5/hr)
                         </p>
                       </div>
                     </div>
@@ -833,145 +820,173 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Account & Security Tab */}
+              {/* Account & Security Tab - MOBILE RESPONSIVE */}
               {activeTab === 'account' && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-5 md:space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-student-primary mb-4">Account & Security</h2>
-                    <p className="text-student-secondary mb-6">View your account information and security status</p>
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-student-primary mb-1 sm:mb-2 md:mb-4">
+                      Account & Security
+                    </h2>
+                    <p className="text-xs sm:text-sm md:text-base text-student-secondary">
+                      View your account information and security status
+                    </p>
                   </div>
 
-                  {/* Account Info */}
-                  <div className="bg-student-light rounded-xl p-6 border border-border-light">
-                    <h3 className="font-medium text-student-primary mb-4 flex items-center">
+                  {/* Account Info - MOBILE RESPONSIVE */}
+                  <div className="bg-student-light rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border border-border-light">
+                    <h3 className="font-medium text-student-primary mb-2 sm:mb-3 md:mb-4 flex items-center gap-1.5 text-xs sm:text-sm md:text-base">
                       📋 Account Information
                     </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
+                    <div className="space-y-1.5 sm:space-y-2 md:space-y-3 text-xs sm:text-sm md:text-base">
+                      <div className="flex justify-between gap-2">
                         <span className="text-student-secondary">Name:</span>
-                        <span className="font-medium text-student-primary">{getDisplayName()}</span>
+                        <span className="font-medium text-student-primary break-words text-right">
+                          {getDisplayName()}
+                        </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-student-secondary">Email:</span>
-                        <span className="font-medium text-student-primary">{user.email}</span>
+                        <span className="font-medium text-student-primary break-all text-right">
+                          {user.email}
+                        </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-student-secondary">Account Type:</span>
-                        <span className={`font-medium ${user.role === 'admin' ? 'text-student-orange' : 'text-student-blue'}`}>
+                        <span className={`font-medium ${user.role === 'admin' ? 'text-student-orange' : 'text-student-blue'} whitespace-nowrap`}>
                           {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-student-secondary">Student ID:</span>
-                        <span className="font-medium text-student-primary">#{user.id}</span>
+                        <span className="font-medium text-student-primary whitespace-nowrap">
+                          #{user.id}
+                        </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-student-secondary">Login Method:</span>
-                        <span className="font-medium text-student-green">🔐 Google OAuth</span>
+                        <span className="font-medium text-student-green whitespace-nowrap">
+                          🔐 Google OAuth
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Security Status */}
-                  <div className="bg-student-green/10 border border-student-green/20 rounded-xl p-6">
-                    <h3 className="font-medium text-student-primary mb-4 flex items-center">
+                  {/* Security Status - MOBILE RESPONSIVE */}
+                  <div className="bg-student-green/10 border border-student-green/20 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6">
+                    <h3 className="font-medium text-student-primary mb-2 sm:mb-3 md:mb-4 flex items-center gap-1.5 text-xs sm:text-sm md:text-base">
                       🛡️ Security Status
                     </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center text-student-green">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="space-y-1.5 sm:space-y-2 md:space-y-3 text-xs sm:text-sm md:text-base">
+                      <div className="flex items-start gap-1.5 text-student-green">
+                        <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Account is secure and verified
+                        <span>Account is secure and verified</span>
                       </div>
-                      <div className="flex items-center text-student-green">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-start gap-1.5 text-student-green">
+                        <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 0h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        Rate limiting active for uploads
+                        <span>Rate limiting active for uploads</span>
                       </div>
-                      <div className="flex items-center text-student-green">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-start gap-1.5 text-student-green">
+                        <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        All uploads are compressed & validated
+                        <span>All uploads are compressed & validated</span>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Student Activity Tab */}
+              {/* Student Activity Tab - MOBILE RESPONSIVE */}
               {activeTab === 'activity' && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-5 md:space-y-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-student-primary mb-4">Student Activity</h2>
-                    <p className="text-student-secondary mb-6">Your StudentStore activity and achievements</p>
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-student-primary mb-1 sm:mb-2 md:mb-4">
+                      Student Activity
+                    </h2>
+                    <p className="text-xs sm:text-sm md:text-base text-student-secondary">
+                      Your StudentStore activity and achievements
+                    </p>
                   </div>
 
-                  {/* ✅ Updated Activity Stats - Only 2 cards with real data */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-student-blue/10 border border-student-blue/20 rounded-xl p-6">
-                      <h3 className="font-medium text-student-blue mb-4 flex items-center">
+                  {/* Activity Stats - MOBILE RESPONSIVE */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+                    <div className="bg-student-blue/10 border border-student-blue/20 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6">
+                      <h3 className="font-medium text-student-blue mb-2 sm:mb-3 md:mb-4 flex items-center gap-1.5 text-xs sm:text-sm md:text-base">
                         💖 Wishlist Activity
                       </h3>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm md:text-base">
                         <div className="flex justify-between">
                           <span className="text-student-secondary">Saved Products:</span>
-                          <span className="font-bold text-student-blue">{studentStats.wishlistItems}</span>
+                          <span className="font-bold text-student-blue">
+                            {studentStats.wishlistItems}
+                          </span>
                         </div>
-                        <div className="text-sm text-student-secondary">
+                        <div className="text-xs text-student-secondary leading-snug">
                           Keep saving products to build your dream shopping list!
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-student-green/10 border border-student-green/20 rounded-xl p-6">
-                      <h3 className="font-medium text-student-green mb-4 flex items-center">
+                    <div className="bg-student-green/10 border border-student-green/20 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6">
+                      <h3 className="font-medium text-student-green mb-2 sm:mb-3 md:mb-4 flex items-center gap-1.5 text-xs sm:text-sm md:text-base">
                         ⭐ Review Contributions
                       </h3>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm md:text-base">
                         <div className="flex justify-between">
                           <span className="text-student-secondary">Reviews Written:</span>
-                          <span className="font-bold text-student-green">{studentStats.reviewsWritten}</span>
+                          <span className="font-bold text-student-green">
+                            {studentStats.reviewsWritten}
+                          </span>
                         </div>
-                        <div className="text-sm text-student-secondary">
+                        <div className="text-xs text-student-secondary leading-snug">
                           Help fellow students with your honest reviews!
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Quick Actions */}
-                  <div className="bg-student-light rounded-xl p-6 border border-border-light">
-                    <h3 className="font-medium text-student-primary mb-4">🚀 Quick Actions</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Quick Actions - MOBILE RESPONSIVE */}
+                  <div className="bg-student-light rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border border-border-light">
+                    <h3 className="font-medium text-student-primary mb-2 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base">
+                      🚀 Quick Actions
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
                       <a
                         href="/wishlist"
-                        className="p-4 border border-border-light rounded-xl hover:bg-student-card transition-all duration-200 hover:shadow-md"
+                        className="p-2 sm:p-3 md:p-4 border border-border-light rounded-lg sm:rounded-xl hover:bg-student-card transition-all duration-200 hover:shadow-md text-xs sm:text-sm md:text-base"
                       >
-                        <h4 className="font-medium text-student-primary mb-1 flex items-center">
+                        <h4 className="font-medium text-student-primary mb-0.5 sm:mb-1 flex items-center gap-1">
                           💖 My Wishlist
                         </h4>
-                        <p className="text-sm text-student-secondary">View your saved products</p>
+                        <p className="text-xs text-student-secondary">
+                          View saved products
+                        </p>
                       </a>
                       <a
                         href="/my-reviews"
-                        className="p-4 border border-border-light rounded-xl hover:bg-student-card transition-all duration-200 hover:shadow-md"
+                        className="p-2 sm:p-3 md:p-4 border border-border-light rounded-lg sm:rounded-xl hover:bg-student-card transition-all duration-200 hover:shadow-md text-xs sm:text-sm md:text-base"
                       >
-                        <h4 className="font-medium text-student-primary mb-1 flex items-center">
+                        <h4 className="font-medium text-student-primary mb-0.5 sm:mb-1 flex items-center gap-1">
                           ⭐ My Reviews
                         </h4>
-                        <p className="text-sm text-student-secondary">Manage your reviews</p>
+                        <p className="text-xs text-student-secondary">
+                          Manage your reviews
+                        </p>
                       </a>
                       <a
                         href="/dashboard"
-                        className="p-4 border border-border-light rounded-xl hover:bg-student-card transition-all duration-200 hover:shadow-md"
+                        className="p-2 sm:p-3 md:p-4 border border-border-light rounded-lg sm:rounded-xl hover:bg-student-card transition-all duration-200 hover:shadow-md text-xs sm:text-sm md:text-base"
                       >
-                        <h4 className="font-medium text-student-primary mb-1 flex items-center">
+                        <h4 className="font-medium text-student-primary mb-0.5 sm:mb-1 flex items-center gap-1">
                           📊 Dashboard
                         </h4>
-                        <p className="text-sm text-student-secondary">View detailed stats</p>
+                        <p className="text-xs text-student-secondary">
+                          View detailed stats
+                        </p>
                       </a>
                     </div>
                   </div>

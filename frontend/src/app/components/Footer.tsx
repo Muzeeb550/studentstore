@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function Footer() {
   return (
     <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white mt-20 relative overflow-hidden">
@@ -9,7 +11,8 @@ export default function Footer() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-16 relative z-10">
-        {/* Hero Section - Direct and Bold */}
+        {/* All your existing sections remain the same... */}
+        {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
             <span className="bg-gradient-to-r from-student-orange to-red-500 bg-clip-text text-transparent">
@@ -46,7 +49,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Why StudentStore Works - Checklist */}
+        {/* Why StudentStore Works */}
         <div className="mb-16">
           <h2 className="text-3xl md:text-4xl font-black text-center mb-8">
             <span className="bg-gradient-to-r from-student-green to-student-blue bg-clip-text text-transparent">
@@ -63,7 +66,7 @@ export default function Footer() {
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <h3 className="text-lg md:text-xl font-bold text-white">Only student reviews from real student experiences</h3>
+                <h3 className="text-lg md:text-xl font-bold text-white">student reviews from real student experiences</h3>
               </div>
             </div>
             
@@ -80,17 +83,6 @@ export default function Footer() {
             
             <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-slate-700 shadow-xl">
               <div className="flex items-start">
-                <div className="bg-gradient-to-r from-student-blue to-student-green rounded-full p-2 mr-4 mt-1">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <h3 className="text-lg md:text-xl font-bold text-white">Exclusive student discounts you can't find elsewhere</h3>
-              </div>
-            </div>
-            
-            <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-slate-700 shadow-xl">
-              <div className="flex items-start">
                 <div className="bg-gradient-to-r from-student-green to-student-orange rounded-full p-2 mr-4 mt-1">
                   <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -102,7 +94,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* The Difference - Comparison */}
+        {/* The Difference */}
         <div className="mb-16">
           <h2 className="text-3xl md:text-4xl font-black text-center mb-8">
             <span className="text-white">The</span>{" "}
@@ -112,7 +104,6 @@ export default function Footer() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-            {/* Regular Students */}
             <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 border border-red-500/30 shadow-xl">
               <div className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
@@ -123,7 +114,6 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* StudentStore Users */}
             <div className="bg-gradient-to-r from-student-blue/20 to-student-green/20 backdrop-blur-sm rounded-2xl p-6 border border-student-green/40 shadow-xl">
               <div className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-r from-student-blue to-student-green rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
@@ -155,7 +145,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Ready to Shop Smarter - CTA */}
+        {/* Ready to Shop Smarter */}
         <div className="mb-12">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-black mb-8">
@@ -192,12 +182,91 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-slate-700 pt-6">
-          <div className="text-center">
-            <p className="text-gray-300 font-medium flex items-center justify-center">
-              <span className="mr-2">©</span> 2025 StudentStore. Made with 
-              <span className="mx-2 text-red-400 text-lg">❤️</span> by students, for students everywhere.
+        {/* ✅ UPDATED: Bottom Section with Links */}
+        <div className="border-t border-slate-700 pt-8">
+          {/* Quick Links & Social */}
+          <div className="max-w-5xl mx-auto mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-center sm:text-left">
+              {/* Quick Links */}
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">Quick Links</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href="/about" className="text-gray-300 hover:text-student-blue transition-colors text-sm sm:text-base">
+                      About Us
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/privacy" className="text-gray-300 hover:text-student-blue transition-colors text-sm sm:text-base">
+                      Privacy Policy
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/terms" className="text-gray-300 hover:text-student-blue transition-colors text-sm sm:text-base">
+                      Terms of Service
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Connect With Us */}
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">Connect With Us</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <a 
+                      href="https://instagram.com/studentstore.official" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-gray-300 hover:text-student-orange transition-colors flex items-center justify-center sm:justify-start text-sm sm:text-base"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                      Instagram
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="mailto:support@studentstore.app"
+                      className="text-gray-300 hover:text-student-green transition-colors flex items-center justify-center sm:justify-start text-sm sm:text-base"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Support Email
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* For Students */}
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">For Students</h4>
+                <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+                  Smart shopping decisions, student-tested products, career guidance – all in one place.
+                </p>
+              </div>
+
+              {/* Affiliate Disclosure */}
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">Disclosure</h4>
+                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                  We may earn a small commission from purchases through our links. This helps keep StudentStore free for students!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="text-center border-t border-slate-700 pt-6">
+            <p className="text-gray-300 font-medium text-sm sm:text-base flex flex-col sm:flex-row items-center justify-center">
+              <span className="flex items-center mb-2 sm:mb-0">
+                <span className="mr-2">©</span> 2025 StudentStore.
+              </span>
+              <span className="flex items-center">
+                Made with <span className="mx-2 text-red-400 text-lg">❤️</span> by students, for students everywhere.
+              </span>
             </p>
           </div>
         </div>

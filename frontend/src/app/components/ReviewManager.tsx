@@ -149,23 +149,36 @@ export default function ReviewManager({ productId, productName, onReviewSubmitte
     );
   }
 
-  // Always show "Write a Review" button - users can write unlimited reviews
-  return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-      <div className="text-center space-y-4">
-        <h3 className="text-xl font-bold text-gray-900">Share Your Experience</h3>
-        <p className="text-gray-600">Help other students by writing a review for this product</p>
-        <div className="text-center">
-          <div className="text-2xl mb-2">⭐</div>
-          <p className="text-sm text-gray-500 mb-4">You can write multiple reviews to share different experiences!</p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-        >
-          Write a Review
-        </button>
+   // Always show "Write a Review" button - users can write unlimited reviews
+return (
+  <div className="bg-white rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 p-3 sm:p-4 md:p-5 lg:p-6 w-full">
+    <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
+      {/* Heading - Responsive */}
+      <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 px-2 break-words">
+        Share Your Experience
+      </h3>
+      
+      {/* Description - Responsive */}
+      <p className="text-xs sm:text-sm md:text-base text-gray-600 px-2 leading-relaxed">
+        Help other students by writing a review for this product
+      </p>
+      
+      {/* Icon & Message - Responsive */}
+      <div className="text-center px-2">
+        <div className="text-2xl sm:text-3xl md:text-4xl mb-1 sm:mb-2">⭐</div>
+        <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3 md:mb-4 leading-snug px-1">
+          You can write multiple reviews to share different experiences!
+        </p>
       </div>
+      
+      {/* Button - Responsive */}
+      <button
+        onClick={() => setShowForm(true)}
+        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 sm:py-3 md:py-4 px-4 sm:px-5 md:px-6 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base md:text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-95"
+      >
+        ✍️ Write a Review
+      </button>
     </div>
-  );
+  </div>
+);
 }

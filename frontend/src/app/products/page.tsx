@@ -481,43 +481,51 @@ function ProductsPageContent() {
       </div>
 
       {/* Page Header */}
-      <section className="max-w-7xl mx-auto px-4 mb-12">
-        <div className="bg-student-card rounded-2xl p-8 shadow-xl border border-border-light">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-student-blue to-student-green rounded-2xl mb-6 shadow-lg">
-              <span className="text-3xl text-white">🛍️</span>
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl font-bold text-student-primary mb-4">
-              Browse All Products
-            </h1>
-            
-            <p className="text-xl text-student-secondary max-w-3xl mx-auto mb-6 leading-relaxed">
-              Explore our complete collection of student-verified products, carefully curated to meet all your academic and lifestyle needs
-            </p>
-            
-            {/* Stats */}
-            <div className="flex items-center justify-center space-x-8 text-sm">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-student-blue">{data.pagination.total}</div>
-                <div className="text-student-secondary">Total Products</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-student-green">{categories.length}</div>
-                <div className="text-student-secondary">Categories</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-student-orange">
-                  {productsPerPage}
-                </div>
-                <div className="text-student-secondary">Per Page</div>
-              </div>
-            </div>
+<section className="max-w-7xl mx-auto px-4 mb-8 lg:mb-12">
+  <div className="bg-student-card rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-xl border border-border-light">
+    <div className="text-center mb-6 lg:mb-8">
+      {/* Icon */}
+      <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-student-blue to-student-green rounded-xl lg:rounded-2xl mb-4 lg:mb-6 shadow-lg">
+        <span className="text-2xl sm:text-3xl text-white">🛍️</span>
+      </div>
+      
+      {/* Title */}
+      <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-student-primary mb-3 lg:mb-4 px-2">
+        Browse All Products
+      </h1>
+      
+      {/* Description */}
+      <p className="text-sm sm:text-base md:text-lg lg:text-xl text-student-secondary max-w-3xl mx-auto mb-6 leading-relaxed px-2">
+        Explore our complete collection of student-verified products, carefully curated to meet all your academic and lifestyle needs
+      </p>
+      
+      {/* Stats */}
+      <div className="flex items-center justify-center gap-4 sm:gap-6 lg:gap-8 text-xs sm:text-sm flex-wrap">
+        <div className="text-center">
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-student-blue">
+            {data.pagination.total}
           </div>
-          
-          <div className="bg-gradient-to-r from-student-blue to-student-green h-1 w-24 mx-auto rounded-full"></div>
+          <div className="text-student-secondary text-xs sm:text-sm">Total Products</div>
         </div>
-      </section>
+        <div className="text-center">
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-student-green">
+            {categories.length}
+          </div>
+          <div className="text-student-secondary text-xs sm:text-sm">Categories</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-student-orange">
+            {productsPerPage}
+          </div>
+          <div className="text-student-secondary text-xs sm:text-sm">Per Page</div>
+        </div>
+      </div>
+    </div>
+    
+    {/* Divider */}
+    <div className="bg-gradient-to-r from-student-blue to-student-green h-0.5 sm:h-1 w-16 sm:w-20 lg:w-24 mx-auto rounded-full"></div>
+  </div>
+</section>
 
       {/* Filters and Controls */}
       <section className="max-w-7xl mx-auto px-4 mb-8">

@@ -896,25 +896,43 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
           </div>
 
 
-            <div className="bg-student-card rounded-xl p-4 border border-border-light shadow-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center">
+            <div className="bg-student-card rounded-lg md:rounded-xl p-3 sm:p-4 md:p-6 border border-border-light shadow-md">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+                {/* Left: Rating & Reviews */}
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    {/* Stars */}
                     <StarRating 
                       rating={getSafeRating(product.rating_average)} 
                       showRatingText={false}
                       size="sm"
                     />
-                    <span className="ml-2 font-semibold text-student-primary">{getSafeRatingDisplay(product.rating_average)}</span>
-                    <span className="ml-1 text-student-secondary">({product.review_count} student reviews)</span>
+                    
+                    {/* Rating Number */}
+                    <span className="text-lg sm:text-xl md:text-2xl font-bold text-student-primary whitespace-nowrap">
+                      {getSafeRatingDisplay(product.rating_average)}
+                    </span>
+                    
+                    {/* Review Count - Stack on mobile */}
+                    <span className="text-xs sm:text-sm md:text-base text-student-secondary whitespace-nowrap">
+                      ({product.review_count} reviews)
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center text-student-secondary">
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                
+                {/* Divider - Hidden on mobile */}
+                <div className="hidden sm:block h-8 w-px bg-border-light"></div>
+                
+                {/* Right: Views - Stack on mobile */}
+                <div className="flex items-center gap-2 sm:gap-3 text-student-secondary text-xs sm:text-sm md:text-base whitespace-nowrap">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
-                  <span>{product.views_count.toLocaleString()} students viewed</span>
+                  <span className="font-medium text-student-primary">
+                    {product.views_count.toLocaleString()}
+                  </span>
+                  <span className="hidden sm:inline">students viewed</span>
                 </div>
               </div>
             </div>
@@ -953,9 +971,6 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
                 </p>
               </div>
             </div>
-
-
-
 
             <div className="space-y-4 bg-student-card rounded-xl p-6 border border-border-light shadow-md">
               <h3 className="text-lg font-semibold text-student-primary mb-4 flex items-center">
@@ -1075,23 +1090,34 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
         <ReviewEncouragementBanner variant="detailed" />
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 mb-16" id="reviews-section">
-        <div className="bg-student-card rounded-2xl p-6 border border-border-light shadow-xl">
-          <h2 className="text-2xl md:text-3xl font-bold text-student-primary mb-6 flex items-center">
-            💬 Student Reviews & Opinions
+      <section className="max-w-7xl mx-auto px-4 mb-8 md:mb-12 lg:mb-16" id="reviews-section">
+        <div className="bg-student-card rounded-lg sm:rounded-xl lg:rounded-2xl p-4 sm:p-5 md:p-6 border border-border-light shadow-xl">
+          {/* Header - Responsive */}
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-student-primary mb-2 sm:mb-3 md:mb-4 lg:mb-6 flex items-center gap-2 flex-wrap">
+            <span>💬</span>
+            <span className="break-words">Student Reviews & Opinions</span>
           </h2>
-          <p className="text-student-secondary mb-8">Real feedback from fellow students who've used this product</p>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <ReviewManager
-                productId={product.id}
-                productName={product.name}
-                onReviewSubmitted={handleReviewUpdate}
-              />
+          {/* Description - Responsive */}
+          <p className="text-xs sm:text-sm md:text-base text-student-secondary mb-4 sm:mb-6 md:mb-8 leading-relaxed">
+            Real feedback from fellow students who've used this product
+          </p>
+          
+          {/* Grid - Responsive Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
+            {/* ReviewManager - Left Column */}
+            <div className="md:col-span-1">
+              <div className="sticky top-20 md:top-24">
+                <ReviewManager
+                  productId={product.id}
+                  productName={product.name}
+                  onReviewSubmitted={handleReviewUpdate}
+                />
+              </div>
             </div>
 
-            <div className="lg:col-span-2">
+            {/* ReviewList - Right Column */}
+            <div className="md:col-span-2">
               <ReviewList
                 productId={product.id}
                 key={`${product.id}-${reviewRefreshKey}`}
@@ -1101,6 +1127,7 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
           </div>
         </div>
       </section>
+
 
       {related_products.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 mb-16">

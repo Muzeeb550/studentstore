@@ -31,8 +31,6 @@ export default function ReviewForm({
   const [reviewImages, setReviewImages] = useState<string[]>(existingReview?.review_images || []);
   const [imageUploading, setImageUploading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  
-  // 🚀 ENHANCED: Loading states with compression tracking
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [compressionStatus, setCompressionStatus] = useState<string>('');
@@ -56,15 +54,12 @@ export default function ReviewForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  // 🚀 Cache invalidation helper
   const invalidateProductCaches = useCallback((productId: number) => {
     console.log(`🔄 Invalidating caches for product ${productId}`);
     
-    // Clear product details cache
     const productCacheKey = `studentstore_product_${productId}`;
     localStorage.removeItem(productCacheKey);
     
-    // Clear all search caches (product ratings changed)
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -74,16 +69,13 @@ export default function ReviewForm({
     }
     keys.forEach(key => localStorage.removeItem(key));
     
-    // Clear homepage caches (featured products might be affected)
     localStorage.removeItem('studentstore_cache_products');
     localStorage.removeItem('studentstore_cache_trending');
     
     console.log(`✅ Cleared ${keys.length + 3} cache entries for product ${productId}`);
   }, []);
 
-  // 🚀 Dispatch cache invalidation events
   const dispatchCacheInvalidation = useCallback((productId: number, type: 'create' | 'update' | 'delete') => {
-    // Dispatch admin update event for other components
     window.dispatchEvent(new CustomEvent('adminUpdate', {
       detail: { 
         type: 'review', 
@@ -93,7 +85,6 @@ export default function ReviewForm({
       }
     }));
     
-    // Dispatch specific review update event
     window.dispatchEvent(new CustomEvent('reviewUpdate', {
       detail: { 
         productId, 
@@ -105,7 +96,6 @@ export default function ReviewForm({
     console.log(`📢 Dispatched ${type} review events for product ${productId}`);
   }, []);
 
-  // 🚀 Handle form submission with cache invalidation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -123,18 +113,13 @@ export default function ReviewForm({
     try {
       console.log(`📝 Submitting ${existingReview ? 'updated' : 'new'} review for product ${productId}`);
       
-      // Submit the review
       await onSubmit(reviewData);
       
-      // Immediate cache invalidation
       invalidateProductCaches(productId);
-      
-      // Dispatch events for real-time updates
       dispatchCacheInvalidation(productId, existingReview ? 'update' : 'create');
       
       console.log(`✅ Review ${existingReview ? 'updated' : 'submitted'} successfully with cache invalidation`);
       
-      // Show success notification
       if (typeof window !== 'undefined') {
         const event = new CustomEvent('showToast', {
           detail: {
@@ -149,7 +134,6 @@ export default function ReviewForm({
     } catch (error) {
       console.error('❌ Review submission error:', error);
       
-      // Show error notification
       if (typeof window !== 'undefined') {
         const event = new CustomEvent('showToast', {
           detail: {
@@ -165,12 +149,10 @@ export default function ReviewForm({
     }
   };
 
-  // 🚀 UPDATED: Image upload with 10MB LIMIT and CLIENT-SIDE COMPRESSION
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    // Limit to 3 images max
     if (reviewImages.length + files.length > 3) {
       alert('Maximum 3 images allowed per review');
       return;
@@ -187,19 +169,16 @@ export default function ReviewForm({
       for (let i = 0; i < totalFiles; i++) {
         const file = files[i];
         
-        // Update progress for compression phase (0-40%)
         const compressionProgress = Math.round(((i) / totalFiles) * 40);
         setUploadProgress(compressionProgress);
         setCompressionStatus(`Processing image ${i + 1} of ${totalFiles}...`);
 
-        // Validate file type
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
           alert('Invalid file type. Please select JPG, PNG, GIF, or WebP images.');
           continue;
         }
 
-        // 🔥 NEW: Check if file is absurdly large (> 50MB) - reject before compression
         if (file.size > 50 * 1024 * 1024) {
           alert(
             `⚠️ File Too Large\n\n` +
@@ -210,31 +189,26 @@ export default function ReviewForm({
           continue;
         }
 
-        // 🔥 NEW: Warn about very large files (15-50MB)
         if (file.size > 15 * 1024 * 1024) {
           setCompressionStatus(`⏳ Large file detected, compression may take 10-15 seconds...`);
         }
 
-        // Log original file info
         console.log(`📸 Original image: ${file.name}`);
         console.log(`   Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
         console.log(`   Type: ${file.type}`);
 
-        // 🚀 CLIENT-SIDE COMPRESSION
         let compressedFile = file;
         
-        // Only compress if file is larger than 1MB
         if (file.size > 1024 * 1024) {
           try {
             setCompressionStatus(`Compressing ${file.name}...`);
             
-            // 🔥 ENHANCED: More aggressive compression for very large files (>10MB)
             const compressionOptions = {
-              maxSizeMB: file.size > 10 * 1024 * 1024 ? 1.5 : 2,  // 1.5MB for huge files, 2MB otherwise
-              maxWidthOrHeight: file.size > 10 * 1024 * 1024 ? 1600 : 1920, // Smaller resolution for huge files
-              useWebWorker: true,        // Non-blocking compression
-              initialQuality: file.size > 10 * 1024 * 1024 ? 0.75 : 0.85, // Lower quality for huge files
-              fileType: file.type        // Preserve original format
+              maxSizeMB: file.size > 10 * 1024 * 1024 ? 1.5 : 2,
+              maxWidthOrHeight: file.size > 10 * 1024 * 1024 ? 1600 : 1920,
+              useWebWorker: true,
+              initialQuality: file.size > 10 * 1024 * 1024 ? 0.75 : 0.85,
+              fileType: file.type
             };
 
             console.log(`🔄 Compressing ${file.name}...`);
@@ -262,8 +236,7 @@ export default function ReviewForm({
           setCompressionStatus(`Image already optimized`);
         }
 
-        // 🔥 UPDATED: Validate compressed file size - NOW 10MB LIMIT!
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 10 * 1024 * 1024;
         if (compressedFile.size > maxSize) {
           const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
           const originalSizeMB = (file.size / 1024 / 1024).toFixed(2);
@@ -278,15 +251,12 @@ export default function ReviewForm({
           continue;
         }
 
-        // ✅ Size is good! Log it
         console.log(`✅ Compressed file size OK: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB (within 10MB limit)`);
 
-        // Update progress for authentication phase (40-60%)
         const authStartProgress = 40 + Math.round(((i) / totalFiles) * 20);
         setUploadProgress(authStartProgress);
         setCompressionStatus(`Authenticating upload ${i + 1}...`);
 
-        // 🚀 Retry logic with exponential backoff
         let authResult;
         let retryCount = 0;
         const maxRetries = 3;
@@ -341,12 +311,10 @@ export default function ReviewForm({
           throw new Error('Upload configuration missing. Please contact support.');
         }
 
-        // Update progress for upload phase (60-100%)
         const uploadStartProgress = 60 + Math.round(((i) / totalFiles) * 30);
         setUploadProgress(uploadStartProgress);
         setCompressionStatus(`Uploading image ${i + 1}...`);
 
-        // Upload compressed file
         const uploadData = new FormData();
         const timestamp = Date.now();
         const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -359,7 +327,6 @@ export default function ReviewForm({
         uploadData.append('expire', authResult.expire.toString());
         uploadData.append('publicKey', publicKey);
         
-        // Enhanced tags with compression info
         const compressionTag = compressedFile.size < file.size ? 'compressed' : 'original';
         uploadData.append('tags', `product_${productId},review_image,user_upload,uploaded_${timestamp},${compressionTag}`);
         
@@ -380,7 +347,6 @@ export default function ReviewForm({
           throw new Error('Invalid response from image upload service');
         }
 
-        // Enhanced error handling
         if (uploadResponse.ok && uploadResult.url) {
           setReviewImages(prev => [...prev, uploadResult.url]);
           console.log(`✅ Image ${i + 1}/${totalFiles} uploaded successfully:`, {
@@ -409,11 +375,9 @@ export default function ReviewForm({
           throw new Error(errorMessage);
         }
 
-        // Update final progress for this file
         const finalProgress = Math.round(((i + 1) / totalFiles) * 100);
         setUploadProgress(finalProgress);
 
-        // Small delay between uploads
         if (i < totalFiles - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
@@ -433,7 +397,6 @@ export default function ReviewForm({
         errorMessage = error;
       }
 
-      // Enhanced error handling with user-friendly messages
       if (errorMessage.includes('Invalid custom metadata')) {
         alert('📸 Image upload configuration error. Please try again or contact support.');
       } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
@@ -456,7 +419,6 @@ export default function ReviewForm({
     } finally {
       setImageUploading(false);
       setUploadProgress(0);
-      // Keep compression status visible for 3 seconds
       setTimeout(() => setCompressionStatus(''), 3000);
     }
   };
@@ -471,7 +433,6 @@ export default function ReviewForm({
     return 'text-gray-500';
   };
 
-  // 🚀 Enhanced progress indicator with compression status
   const ProgressIndicator = () => (
     <div className="space-y-2">
       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -481,38 +442,38 @@ export default function ReviewForm({
         />
       </div>
       {compressionStatus && (
-        <p className="text-xs text-gray-600 text-center">{compressionStatus}</p>
+        <p className="text-xs sm:text-sm text-gray-600 text-center px-2 leading-snug">{compressionStatus}</p>
       )}
     </div>
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+    <div className="bg-white rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-5 md:p-6 max-w-2xl mx-auto w-full">
+      {/* Header - Responsive */}
+      <div className="mb-4 sm:mb-6">
+        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 break-words">
           {existingReview ? '✏️ Edit Your Review' : '✨ Write a Review'}
         </h3>
-        <p className="text-gray-600">
-          Share your experience with <span className="font-semibold text-indigo-600">{productName}</span>
+        <p className="text-sm sm:text-base text-gray-600 break-words">
+          Share your experience with <span className="font-semibold text-indigo-600 break-words">{productName}</span>
         </p>
         
-        {/* Real-time feedback indicator */}
-        <div className="mt-2 flex items-center text-sm text-green-600">
-          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+        {/* Real-time feedback indicator - Responsive */}
+        <div className="mt-2 sm:mt-3 flex items-start sm:items-center text-xs sm:text-sm text-green-600 gap-2">
+          <svg className="w-4 h-4 flex-shrink-0 mt-0.5 sm:mt-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
-          <span>Your review will update product ratings instantly</span>
+          <span className="leading-snug">Your review will update product ratings instantly</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Rating Section */}
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
+        {/* Rating Section - Responsive */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-3">
+          <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">
             Your Rating *
           </label>
-          <div className="flex items-center space-x-4 mb-2">
+          <div className="flex items-center gap-2 sm:gap-4 mb-1 sm:mb-2 overflow-x-auto pb-2">
             <StarRating
               rating={rating}
               interactive={true}
@@ -522,13 +483,13 @@ export default function ReviewForm({
             />
           </div>
           {errors.rating && (
-            <p className="text-red-500 text-sm mt-1">{errors.rating}</p>
+            <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.rating}</p>
           )}
         </div>
 
-        {/* Review Text */}
+        {/* Review Text - Responsive */}
         <div>
-          <label htmlFor="reviewText" className="block text-sm font-semibold text-gray-900 mb-3">
+          <label htmlFor="reviewText" className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">
             Your Review *
           </label>
           <div className="relative">
@@ -536,61 +497,61 @@ export default function ReviewForm({
               id="reviewText"
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="💭 Share details about your experience with this product. What did you like or dislike? How did it help with your studies? Be specific to help other students!"
-              rows={6}
+              placeholder="💭 Share details about your experience with this product. What did you like or dislike? Be specific!"
+              rows={5}
               maxLength={1000}
-              className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 ${
+              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all duration-200 text-sm sm:text-base ${
                 errors.reviewText ? 'border-red-500 ring-red-500' : ''
               }`}
               disabled={loading || submitting}
             />
-            <div className={`absolute bottom-3 right-3 text-xs font-medium ${getCharacterCountColor()}`}>
+            <div className={`absolute bottom-2 sm:bottom-3 right-2 sm:right-3 text-xs font-medium ${getCharacterCountColor()}`}>
               {reviewText.length}/1000
             </div>
           </div>
           {errors.reviewText && (
-            <p className="text-red-500 text-sm mt-1 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-start gap-1">
+              <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              {errors.reviewText}
+              <span>{errors.reviewText}</span>
             </p>
           )}
         </div>
 
-        {/* Image Upload - Enhanced with 10MB Compression */}
+        {/* Image Upload - Responsive */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-3">
+          <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3">
             📸 Add Photos (Optional)
           </label>
           
-          {/* Upload Progress with Compression Status */}
+          {/* Upload Progress */}
           {imageUploading && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-indigo-600">
+            <div className="mb-3 sm:mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-2">
+                <span className="text-xs sm:text-sm font-medium text-indigo-600">
                   Processing images... {uploadProgress}%
                 </span>
-                <span className="text-sm text-gray-500">Please wait</span>
+                <span className="text-xs sm:text-sm text-gray-500">Please wait</span>
               </div>
               <ProgressIndicator />
             </div>
           )}
           
-          {/* Current Images */}
+          {/* Current Images - Responsive Grid */}
           {reviewImages.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
               {reviewImages.map((imageUrl, index) => (
                 <div key={index} className="relative group">
                   <img
                     src={imageUrl}
                     alt={`Review image ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-lg border border-gray-200 shadow-sm transition-all duration-200 group-hover:shadow-md"
+                    className="w-full h-16 sm:h-20 md:h-24 object-cover rounded-md sm:rounded-lg border border-gray-200 shadow-sm transition-all duration-200 group-hover:shadow-md"
                   />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 shadow-lg"
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 shadow-lg"
                     disabled={imageUploading || submitting}
                   >
                     ×
@@ -600,7 +561,7 @@ export default function ReviewForm({
             </div>
           )}
 
-          {/* Upload Button */}
+          {/* Upload Button - Responsive */}
           {reviewImages.length < 3 && (
             <div>
               <input
@@ -614,7 +575,7 @@ export default function ReviewForm({
               />
               <label
                 htmlFor="review-images"
-                className={`inline-flex items-center px-4 py-3 border border-gray-300 rounded-lg font-medium transition-all duration-200 cursor-pointer shadow-sm ${
+                className={`inline-flex items-center justify-center sm:justify-start px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg font-medium transition-all duration-200 cursor-pointer shadow-sm text-xs sm:text-sm w-full sm:w-auto ${
                   imageUploading || loading || submitting
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-white text-gray-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600'
@@ -622,52 +583,52 @@ export default function ReviewForm({
               >
                 {imageUploading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-indigo-600 border-t-transparent mr-2"></div>
-                    Processing... {uploadProgress}%
+                    <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-indigo-600 border-t-transparent mr-2"></div>
+                    <span className="truncate">Processing... {uploadProgress}%</span>
                   </>
                 ) : (
                   <>
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    📷 Add Photos ({reviewImages.length}/3)
+                    <span className="truncate">📷 Add Photos ({reviewImages.length}/3)</span>
                   </>
                 )}
               </label>
-              <p className="text-sm text-gray-500 mt-2">
-                <span className="font-medium">Supported:</span> JPG, PNG, GIF, WebP up to 50MB. Max 3 photos.<br/>
-                <span className="text-indigo-600 font-medium">✨ Smart Compression:</span> Large images automatically compressed to under 10MB!
+              <p className="text-xs sm:text-sm text-gray-500 mt-2 leading-relaxed">
+                <span className="font-medium block">Supported:</span> JPG, PNG, GIF, WebP . Max 3 photos.<br/>
+                <span className="text-indigo-600 font-medium">✨ Smart Compression:</span> Large images auto-compressed to &lt;10MB!
               </p>
             </div>
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-100">
+        {/* Action Buttons - Responsive & Stacking */}
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 md:gap-4 pt-4 sm:pt-5 md:pt-6 border-t border-gray-100 mt-4 sm:mt-5 md:mt-6">
           <button
             type="button"
             onClick={onCancel}
             disabled={loading || submitting || imageUploading}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 text-gray-700 rounded-lg sm:rounded-xl font-medium hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm sm:text-base"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading || submitting || rating === 0 || imageUploading}
-            className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02]"
+            className="w-full sm:w-auto px-4 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] text-sm sm:text-base"
           >
             {submitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2 inline-block"></div>
-                {existingReview ? 'Updating...' : 'Submitting...'}
+                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent mr-2 inline-block"></div>
+                <span className="truncate">{existingReview ? 'Updating...' : 'Submitting...'}</span>
               </>
             ) : (
               <>
-                <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                {existingReview ? '✏️ Update Review' : '🚀 Submit Review'}
+                <span className="truncate">{existingReview ? '✏️ Update' : '🚀 Submit'}</span>
               </>
             )}
           </button>
