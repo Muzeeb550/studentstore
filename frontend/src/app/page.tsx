@@ -801,7 +801,7 @@ export default function HomePage() {
         <div className="trending-live-indicator ml-6 sm:ml-7 mt-2 sm:mt-3">
           <div className="flex items-center text-xs sm:text-sm text-student-orange">
             <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping"></div>
-            <span className="font-medium">Live trending data • Updated every 5 minutes</span>
+            <span className="font-medium">Live trending data • Updates every 5 minutes</span>
           </div>
         </div>
       </div>
