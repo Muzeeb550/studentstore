@@ -13,6 +13,9 @@ const chatRoutes = require('./routes/chat'); // ✅ ADD THIS LINE
 const skillstoreAdminRoutes = require('./routes/skillstore-admin');
 const skillstorePublicRoutes = require('./routes/skillstore-public');
 const skillstoreBookmarksRoutes = require('./routes/skillstore-bookmarks');
+const feedbackRoutes = require('./routes/feedback'); // ✅ ADD THIS
+const adminFeedbackRoutes = require('./routes/admin/feedback'); // ✅ ADD THIS
+
 
 require('dotenv').config();
 
@@ -180,14 +183,12 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes); 
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/chat', chatRoutes); // ✅ ADD THIS LINE
+app.use('/api/chat', chatRoutes); // ✅ ADD THIS 
+app.use('/api/feedback', feedbackRoutes); // ✅ ADD THIS
+app.use('/api/admin/feedback', adminFeedbackRoutes); // ✅ ADD THIS
 app.use('/api/admin/skillstore', skillstoreAdminRoutes);
 app.use('/api/skillstore/bookmarks', skillstoreBookmarksRoutes);
 app.use('/api/skillstore', skillstorePublicRoutes);
-
-
-
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {

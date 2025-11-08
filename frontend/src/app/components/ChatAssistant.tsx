@@ -4,6 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useChat } from '../context/ChatContext';
 import { MessageCircle, X, Send, ChevronDown } from 'lucide-react';
+import RateAppModal from './modals/RateAppModal';
+import RecommendModal from './modals/RecommendModal';
+
 
 export default function ChatAssistant() {
   // ============================================
@@ -14,6 +17,8 @@ export default function ChatAssistant() {
   const [input, setInput] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [showRecommendModal, setShowRecommendModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -280,36 +285,64 @@ export default function ChatAssistant() {
                         bottom-0 right-0 w-full h-full max-h-screen rounded-none
                         bg-white shadow-2xl flex flex-col z-50 overflow-hidden">
           
-          {/* Header - Responsive */}
-          <div className="bg-gradient-to-r from-student-blue to-student-green text-white p-3 md:p-4 md:rounded-t-2xl flex justify-between items-center">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="bg-white/20 rounded-full p-1.5 md:p-2">
-                <MessageCircle size={18} className="md:w-5 md:h-5" />
+          {/* ✅ UPDATED Header - Buttons Below Title */}
+          <div className="bg-gradient-to-r from-student-blue to-student-green text-white p-3 md:p-4 md:rounded-t-2xl">
+            {/* Top Row: Icon, Title, Clear, Close */}
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="bg-white/20 rounded-full p-1.5 md:p-2">
+                  <MessageCircle size={18} className="md:w-5 md:h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base md:text-lg">Shopping Assistant</h3>
+                  <p className="text-[10px] md:text-xs text-white/80">Always here to help! 🎓</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-base md:text-lg">Shopping Assistant</h3>
-                <p className="text-[10px] md:text-xs text-white/80 hidden sm:block">Always here to help! 🎓</p>
+              
+              <div className="flex items-center gap-1 md:gap-2">
+                {/* Clear Chat Button */}
+                <button
+                  onClick={() => clearChat()}
+                  className="hover:bg-white/20 p-2 rounded-lg transition text-white min-w-[36px] md:min-w-[44px] min-h-[36px] md:min-h-[44px] flex items-center justify-center"
+                  title="Clear chat and start fresh"
+                >
+                  <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="hover:bg-white/20 p-2 rounded-lg transition text-white min-w-[36px] md:min-w-[44px] min-h-[36px] md:min-h-[44px] flex items-center justify-center"
+                >
+                  <X size={18} className="md:w-5 md:h-5" />
+                </button>
               </div>
             </div>
-            
-            {/* Clear Chat Button - Larger Touch Target */}
-            <button
-              onClick={() => clearChat()}
-              className="hover:bg-white/20 p-2 rounded-lg transition text-white mr-1 md:mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
-              title="Clear chat and start fresh"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
 
-            {/* Close Button - Larger Touch Target */}
-            <button
-              onClick={() => setIsOpen(false)}
-              className="hover:bg-white/20 p-2 rounded-lg transition text-white min-w-[44px] min-h-[44px] flex items-center justify-center"
-            >
-              <X size={20} />
-            </button>
+            {/* Bottom Row: Rate & Recommend Buttons */}
+            <div className="flex gap-2">
+              {/* Rate App Button */}
+              <button
+                onClick={() => setShowRateModal(true)}
+                className="flex-1 bg-white/20 hover:bg-white/30 py-2 px-3 rounded-lg transition text-white text-xs md:text-sm font-medium flex items-center justify-center gap-1.5 min-h-[40px]"
+                title="Rate our app"
+              >
+                <span className="text-base">⭐</span>
+                <span>Rate App</span>
+              </button>
+
+              {/* Recommend Button */}
+              <button
+                onClick={() => setShowRecommendModal(true)}
+                className="flex-1 bg-white/20 hover:bg-white/30 py-2 px-3 rounded-lg transition text-white text-xs md:text-sm font-medium flex items-center justify-center gap-1.5 min-h-[40px]"
+                title="Recommend a product"
+              >
+                <span className="text-base">🎁</span>
+                <span>Recommend</span>
+              </button>
+            </div>
           </div>
 
           {/* Messages Container - Responsive Padding */}
@@ -496,7 +529,6 @@ export default function ChatAssistant() {
               className="absolute bottom-20 right-4 bg-student-blue text-white rounded-full p-2 shadow-lg hover:bg-student-blue/90 hover:shadow-xl transition-all animate-bounce z-10"
               title="Scroll to latest message"
             >
-
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
@@ -529,6 +561,19 @@ export default function ChatAssistant() {
           </form>
         </div>
       )}
+
+      {/* Rate App Modal */}
+      <RateAppModal 
+        isOpen={showRateModal} 
+        onClose={() => setShowRateModal(false)} 
+      />
+
+      {/* Recommend Product Modal */}
+      <RecommendModal 
+        isOpen={showRecommendModal} 
+        onClose={() => setShowRecommendModal(false)} 
+      />
+
     </>
   );
 }
