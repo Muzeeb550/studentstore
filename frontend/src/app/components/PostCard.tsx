@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { usePosts } from '../context/PostsContext';
 
 interface Post {
@@ -28,91 +28,81 @@ interface UserProfile {
   member_since?: string;
 }
 
-// ✅ Move cache outside component to persist across re-renders
-const profileLoadingCache = new Set<string>();
+// Global in-memory cache for profiles to persist between renders/components
+const profileCache: Record<string, UserProfile> = {};
+
+function useUserProfile(email: string, fallbackUsername: string): [UserProfile | null, boolean] {
+  const [profile, setProfile] = useState<UserProfile | null>(() => profileCache[email] || null);
+  const [loading, setLoading] = useState(!profile);
+
+  useEffect(() => {
+    if (!email) {
+      setProfile({ display_name: fallbackUsername, profile_picture: null, exists: false });
+      setLoading(false);
+      return;
+    }
+
+    if (profileCache[email]) {
+      setProfile(profileCache[email]);
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    async function fetchProfile() {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile-by-email/${encodeURIComponent(email)}`);
+        const result = await response.json();
+        if (isMounted) {
+          if (result.status === 'success') {
+            profileCache[email] = result.data;
+            setProfile(result.data);
+          } else {
+            const fallback = { display_name: fallbackUsername, profile_picture: null, exists: false };
+            profileCache[email] = fallback;
+            setProfile(fallback);
+          }
+          setLoading(false);
+        }
+      } catch {
+        if (isMounted) {
+          const fallback = { display_name: fallbackUsername, profile_picture: null, exists: false };
+          profileCache[email] = fallback;
+          setProfile(fallback);
+          setLoading(false);
+        }
+      }
+    }
+    fetchProfile();
+
+    return () => { isMounted = false; };
+  }, [email, fallbackUsername]);
+
+  return [profile, loading];
+}
 
 const PostCard = memo(({ post }: { post: Post }) => {
   const { reactToPost } = usePosts();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [userProfile, loadingProfile] = useUserProfile(post.user_email, post.username);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
-
-  // ✅ Fetch profile from localStorage or API (just like SkillstoreNavbar)
-  useEffect(() => {
-    // ✅ Check if we're already loading this profile
-    const cacheKey = `post_profile_${post.user_email}`;
-    if (profileLoadingCache.has(cacheKey)) return;
-    profileLoadingCache.add(cacheKey);
-
-    const fetchUserProfile = async () => {
-      try {
-        // ✅ Check localStorage first
-        const cached = localStorage.getItem(cacheKey);
-        
-        if (cached) {
-          try {
-            const parsedProfile = JSON.parse(cached);
-            // Check if cache is less than 1 hour old
-            if (Date.now() - parsedProfile.timestamp < 3600000) {
-              setUserProfile(parsedProfile.data);
-              setLoadingProfile(false);
-              return;
-            }
-          } catch {
-            // Invalid cache, continue to fetch
-          }
-        }
-
-        // ✅ Fetch from API
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-        const response = await fetch(
-          `${apiUrl}/api/users/profile-by-email/${encodeURIComponent(post.user_email)}`
-        );
-        
-        const result = await response.json();
-
-        if (result.status === 'success') {
-          setUserProfile(result.data);
-          localStorage.setItem(cacheKey, JSON.stringify({
-            data: result.data,
-            timestamp: Date.now()
-          }));
-        } else {
-          const fallbackProfile = {
-            display_name: post.username,
-            profile_picture: null,
-            exists: false
-          };
-          setUserProfile(fallbackProfile);
-          localStorage.setItem(cacheKey, JSON.stringify({
-            data: fallbackProfile,
-            timestamp: Date.now()
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
-        const fallbackProfile = {
-          display_name: post.username,
-          profile_picture: null,
-          exists: false
-        };
-        setUserProfile(fallbackProfile);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-
-    fetchUserProfile();
-  }, [post.user_email, post.username]);
+  const [reactionDisabled, setReactionDisabled] = useState(false);
 
   const handleReaction = async (reactionType: 'like' | 'dislike') => {
+    if (reactionDisabled) return;  // prevent rapid clicks
     const token = localStorage.getItem('studentstore_token');
     if (!token) {
       alert('Please sign in to react to posts');
       return;
     }
-    await reactToPost(post.id, reactionType);
+    setReactionDisabled(true);
+    try {
+      await reactToPost(post.id, reactionType);
+    } catch (e) {
+      // Optionally handle error feedback here
+    } finally {
+      setTimeout(() => setReactionDisabled(false), 1000); // 1 second cooldown
+    }
   };
 
   const displayName = userProfile?.display_name || post.username;
@@ -123,15 +113,11 @@ const PostCard = memo(({ post }: { post: Post }) => {
   };
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === post.product_images.length - 1 ? 0 : prev + 1
-    );
+    setCurrentImageIndex(prev => (prev === post.product_images.length - 1 ? 0 : prev + 1));
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === 0 ? post.product_images.length - 1 : prev - 1
-    );
+    setCurrentImageIndex(prev => (prev === 0 ? post.product_images.length - 1 : prev - 1));
   };
 
   return (
@@ -255,6 +241,7 @@ const PostCard = memo(({ post }: { post: Post }) => {
         {/* Reactions */}
         <div className="flex items-center gap-3">
           <button
+            disabled={reactionDisabled}
             onClick={() => handleReaction('like')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
               post.user_reaction === 'like'
@@ -267,6 +254,7 @@ const PostCard = memo(({ post }: { post: Post }) => {
           </button>
           
           <button
+            disabled={reactionDisabled}
             onClick={() => handleReaction('dislike')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
               post.user_reaction === 'dislike'

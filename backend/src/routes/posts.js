@@ -8,8 +8,8 @@ const router = express.Router();
 
 // Rate limiting for post operations (10 per 15 minutes per user)
 const postLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,                  // allow 30 requests instead of 10
   keyGenerator: (req) => `user:${req.user.id}`,
   message: {
     status: 'error',
