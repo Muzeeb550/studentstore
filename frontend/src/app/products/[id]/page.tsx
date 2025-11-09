@@ -1411,9 +1411,6 @@ const ReviewEncouragementBanner = ({ variant = 'compact' }: { variant?: 'compact
     </div>
   </div>
 )}
-
-
-
       <Footer />
     </div>
   );

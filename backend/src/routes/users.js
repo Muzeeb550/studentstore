@@ -621,4 +621,76 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
 });
 
 
+// ✅ NEW: Get user profile by email (public endpoint for posts)
+router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    // Validate email format
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid email format'
+      });
+    }
+
+    logger.debug('Fetching profile by email');
+
+    const result = await pool.query(
+      `SELECT 
+        id, 
+        display_name, 
+        profile_picture,
+        created_at
+      FROM Users 
+      WHERE email = $1 AND is_active = true`,
+      [email.toLowerCase().trim()]
+    );
+
+    if (result.rows.length === 0) {
+      // Return default profile if user not found
+      const fallbackName = email.split('@')[0].replace(/[._-]/g, ' ');
+      
+      logger.debug('User not found by email, returning fallback profile');
+      
+      return res.json({
+        status: 'success',
+        data: {
+          display_name: fallbackName,
+          profile_picture: null,
+          exists: false
+        }
+      });
+    }
+
+    // ✅ Optimize profile picture URL before returning
+    const user = result.rows[0];
+    const optimizedProfilePicture = user.profile_picture 
+      ? addDefaultTransformations(user.profile_picture, 'profile')
+      : null;
+
+    logger.debug('User profile fetched by email successfully');
+
+    res.json({
+      status: 'success',
+      data: {
+        display_name: user.display_name,
+        profile_picture: optimizedProfilePicture,
+        exists: true,
+        member_since: user.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Get profile by email error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch user profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+module.exports = router;
+
+
 module.exports = router;

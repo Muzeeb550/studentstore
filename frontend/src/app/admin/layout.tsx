@@ -157,6 +157,12 @@ export default function AdminLayout({
                   {usersOpen && (
                     <div className="absolute left-0 mt-0 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                       <a
+                        href="/admin/posts"
+                        className="block px-4 py-2 text-gray-700 hover:bg-red-50 hover:text-red-600"
+                      >
+                        📝 Posts
+                      </a>
+                      <a
                         href="/admin/ratings"
                         className="block px-4 py-2 text-gray-700 hover:bg-red-50 hover:text-red-600"
                       >

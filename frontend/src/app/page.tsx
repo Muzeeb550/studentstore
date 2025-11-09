@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Navbar from './components/Navbar';
 import CategoryCard from './components/CategoryCard';
 import ProductCard from './components/ProductCard';
+import PostCard from './components/PostCard';
 import Footer from './components/Footer';
 import { getRecentlyViewed } from './utils/recentlyViewed';
 import RecentlyViewedCard from './components/RecentlyViewedCard';
@@ -11,11 +12,11 @@ import TrendingCard from './components/TrendingCard';
 import Link from 'next/link';
 import { optimizeBannerImage, optimizeProductImage, getFirstImageOrPlaceholder } from './utils/imageOptimizer';
 import { useWishlist } from './context/WishlistContext';
-// ✅ REMOVED React Slick for Banners (but kept for Categories below)
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import logger from './utils/logger';
+import { PostsProvider, usePosts } from './context/PostsContext';
 
 interface Banner {
   id: number;
@@ -55,21 +56,18 @@ const MAX_RECENTLY_VIEWED = 10;
 const MAX_TRENDING_PRODUCTS = 10;
 const MAX_FEATURED_PRODUCTS = 12;
 
-// ✅ Cache configuration - optimized intervals
 const CACHE_CONFIG = {
-  banners: 5 * 60 * 1000,      // 5 minutes
-  categories: 10 * 60 * 1000,  // 10 minutes
-  products: 5 * 60 * 1000,     // 5 minutes
-  trending: 5 * 60 * 1000,     // 5 minutes
+  banners: 5 * 60 * 1000,
+  categories: 10 * 60 * 1000,
+  products: 5 * 60 * 1000,
+  trending: 5 * 60 * 1000,
 };
 
-// ✅ Cache check interval - reduced to 2 minutes
 const CACHE_CHECK_INTERVAL = 2 * 60 * 1000;
 
-// ✅ NEW: Banner carousel configuration
 const BANNER_CONFIG = {
-  INTERVAL: 6000,           // 6 seconds ✅ CHANGED FROM 4500ms
-  TRANSITION_SPEED: 500,    // 500ms fade transition
+  INTERVAL: 6000,
+  TRANSITION_SPEED: 500,
 };
 
 export default function HomePage() {
@@ -81,8 +79,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<'products' | 'posts'>('products');
 
-  // ✅ NEW: Banner carousel states
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [timerKey, setTimerKey] = useState(0);
   const [isHoveringBanner, setIsHoveringBanner] = useState(false);
@@ -93,12 +91,10 @@ export default function HomePage() {
   const recentRowDesktopRef = useRef<HTMLDivElement>(null);
   const trendingRowDesktopRef = useRef<HTMLDivElement>(null);
 
-  // ✅ NEW: Touch/swipe detection for banners
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const SWIPE_THRESHOLD = 50;
 
-  // ✅ Get optimized banner based on screen size
   const getOptimizedBanner = useCallback((url: string) => {
     if (typeof window === 'undefined') return optimizeBannerImage(url, 'desktop');
     
@@ -108,19 +104,16 @@ export default function HomePage() {
     return optimizeBannerImage(url, 'desktop');
   }, []);
 
-  // ✅ Get optimized product image
   const getProductImage = useCallback((imageUrls: string) => {
     const firstImage = getFirstImageOrPlaceholder(imageUrls, '/placeholder-product.jpg');
     return optimizeProductImage(firstImage, 'small');
   }, []);
 
-  // ✅ Initialize homepage
   useEffect(() => {
     initializeHomepage();
     loadRecentlyViewed();
   }, []);
 
-  // ✅ Background cache refresh
   useEffect(() => {
     const interval = setInterval(() => {
       checkAndRefreshExpiredCache();
@@ -130,7 +123,6 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // ✅ Listen for admin updates
   useEffect(() => {
     const handleAdminUpdate = () => {
       forceRefresh();
@@ -140,7 +132,6 @@ export default function HomePage() {
     return () => window.removeEventListener('adminUpdate' as any, handleAdminUpdate);
   }, []);
 
-  // ✅ NEW: Auto-slide banner with timer reset capability
   useEffect(() => {
     if (banners.length <= 1 || isHoveringBanner) return;
 
@@ -270,13 +261,11 @@ export default function HomePage() {
         saveToLocalCache('trending', trendingList);
       }
 
-      // ✅ BATCH CHECK WISHLIST STATUS FOR ALL PRODUCTS (ONE API CALL!)
       const allProductIds = [
         ...(productsData.status === 'success' ? productsData.data.products.map((p: Product) => p.id) : []),
         ...(trendingData.status === 'success' ? (trendingData.data.products?.slice(0, MAX_TRENDING_PRODUCTS).map((p: Product) => p.id) || []) : []),
       ];
       
-      // Remove duplicates
       const uniqueProductIds = [...new Set(allProductIds)];
       
       if (uniqueProductIds.length > 0) {
@@ -339,14 +328,12 @@ export default function HomePage() {
     setRecentlyViewed(recentProducts.slice(0, MAX_RECENTLY_VIEWED));
   }, []);
 
-  // ✅ NEW: Handle dot click - changes banner AND resets timer
   const handleBannerDotClick = useCallback((index: number) => {
     setCurrentBannerIndex(index);
-    setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+    setTimerKey((prev) => prev + 1);
     console.log(`🔄 Banner changed to index ${index}, timer reset`);
   }, []);
 
-  // ✅ NEW: Handle banner swipe
   const handleBannerTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     touchStartX.current = e.changedTouches[0].clientX;
     touchStartY.current = e.changedTouches[0].clientY;
@@ -359,38 +346,33 @@ export default function HomePage() {
     const distX = Math.abs(touchEndX - touchStartX.current);
     const distY = Math.abs(touchEndY - touchStartY.current);
 
-    // Only consider horizontal swipes
     if (distX > SWIPE_THRESHOLD && distX > distY) {
       if (touchEndX < touchStartX.current) {
-        // Swiped LEFT - next banner
         const nextIndex = (currentBannerIndex + 1) % banners.length;
         setCurrentBannerIndex(nextIndex);
-        setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+        setTimerKey((prev) => prev + 1);
         console.log('➡️ Swiped left, next banner, timer reset');
       } else {
-        // Swiped RIGHT - previous banner
         const prevIndex = (currentBannerIndex - 1 + banners.length) % banners.length;
         setCurrentBannerIndex(prevIndex);
-        setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+        setTimerKey((prev) => prev + 1);
         console.log('⬅️ Swiped right, previous banner, timer reset');
       }
     }
   }, [currentBannerIndex, banners.length]);
 
-  // ✅ NEW: Banner keyboard navigation
   const handleBannerKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'ArrowRight') {
       const nextIndex = (currentBannerIndex + 1) % banners.length;
       setCurrentBannerIndex(nextIndex);
-      setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+      setTimerKey((prev) => prev + 1);
     } else if (e.key === 'ArrowLeft') {
       const prevIndex = (currentBannerIndex - 1 + banners.length) % banners.length;
       setCurrentBannerIndex(prevIndex);
-      setTimerKey((prev) => prev + 1); // 🔑 RESET TIMER
+      setTimerKey((prev) => prev + 1);
     }
   }, [currentBannerIndex, banners.length]);
 
-  // ✅ Memoized category settings (unchanged)
   const categoryDesktopSettings = useMemo(() => ({
     dots: false,
     arrows: false,
@@ -434,7 +416,6 @@ export default function HomePage() {
     ],
   }), []);
 
-  // ✅ Split categories into two rows
   const { topRowCategories, bottomRowCategories } = useMemo(() => {
     const mid = Math.ceil(categories.length / 2);
     return {
@@ -442,6 +423,35 @@ export default function HomePage() {
       bottomRowCategories: categories.slice(mid),
     };
   }, [categories]);
+
+function PostsTabContent() {
+  const { posts, loading, error, fetchPosts, currentPage, totalPages } = usePosts();
+
+  if (loading) return <div className="p-4 text-center">Loading posts...</div>;
+  if (error) return <div className="p-4 text-center text-red-600">{error}</div>;
+  if (posts.length === 0) return <div className="p-4 text-center">No posts yet. Check back soon!</div>;
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {posts.map(post => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
+
+      {currentPage < totalPages && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={() => fetchPosts(currentPage + 1)}
+            className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
+          >
+            Load More
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
 
   const LoadingSection = () => (
     <div className="animate-pulse">
@@ -470,32 +480,48 @@ export default function HomePage() {
     <div className="min-h-screen bg-student-page">
       <Navbar />
 
-      {/* Error Banner */}
-      {error && (
-        <div className="max-w-7xl mx-auto px-4 mt-4">
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-md">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start flex-1">
-                <span className="text-yellow-500 mr-3 text-xl flex-shrink-0">⚠️</span>
-                <div className="flex-1">
-                  <p className="text-yellow-800 text-sm font-medium">{error}</p>
-                  <p className="text-yellow-700 text-xs mt-1">
-                    This might be due to server startup delay (free hosting).
-                  </p>
+      <div className="max-w-7xl mx-auto px-4 mt-8 flex justify-center gap-6">
+        <button
+          onClick={() => setActiveTab('products')}
+          className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'products' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+        >
+          Products
+        </button>
+        <button
+          onClick={() => setActiveTab('posts')}
+          className={`px-4 py-2 rounded-lg font-semibold ${activeTab === 'posts' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+        >
+          Posts
+        </button>
+      </div>
+
+      {activeTab === 'products' ? (
+        <>
+          {/* Error Banner */}
+          {error && (
+            <div className="max-w-7xl mx-auto px-4 mt-4">
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-md">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start flex-1">
+                    <span className="text-yellow-500 mr-3 text-xl flex-shrink-0">⚠️</span>
+                    <div className="flex-1">
+                      <p className="text-yellow-800 text-sm font-medium">{error}</p>
+                      <p className="text-yellow-700 text-xs mt-1">
+                        This might be due to server startup delay (hosting).
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={forceRefresh}
+                    className="ml-4 px-3 py-1.5 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 transition-colors flex-shrink-0"
+                  >
+                    Retry
+                  </button>
                 </div>
               </div>
-              <button 
-                onClick={forceRefresh}
-                className="ml-4 px-3 py-1.5 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 transition-colors flex-shrink-0"
-              >
-                Retry
-              </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ✅ CUSTOM Banner Section - RESPONSIVE ASPECT RATIO */}
+          )}
+{/* ✅ CUSTOM Banner Section - RESPONSIVE ASPECT RATIO */}
 {/* ✅ OPTIMIZED: 16:9 mobile, 2:1 tablet, 3:1 desktop */}
 <section className="banner-section w-full">
   <div className="max-w-7xl mx-auto px-0 lg:px-4">
@@ -512,7 +538,7 @@ export default function HomePage() {
               /* Desktop: 3:1 */
               lg:!aspect-[3/1]"
             style={{
-              aspectRatio: '16 / 9', // Default: mobile 16:9
+              aspectRatio: '16 / 9',
               touchAction: 'pan-y',
             }}
             onTouchStart={handleBannerTouchStart}
@@ -524,7 +550,6 @@ export default function HomePage() {
             role="region"
             aria-label="Banner carousel"
           >
-            {/* ✅ Render all banners with fade transition */}
             {banners.map((banner, idx) => {
               const isInternalLink = banner.link_url.includes('studentstore-zeta.vercel.app') || 
                                      banner.link_url.startsWith('/') ||
@@ -591,11 +616,9 @@ export default function HomePage() {
               );
             })}
 
-            {/* ✅ Hover overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           </div>
 
-          {/* ✅ Banner Navigation Dots - Proper Spacing */}
           {banners.length > 1 && (
             <div className="flex justify-center gap-2 mt-3 sm:mt-4 lg:mt-5 pb-2 lg:pb-0">
               {banners.map((_, index) => (
@@ -614,7 +637,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* ✅ Previous/Next Buttons - Hidden on mobile, visible on hover desktop */}
           {banners.length > 1 && (
             <>
               <button
@@ -648,11 +670,8 @@ export default function HomePage() {
       ) : (
         <div 
           className="flex items-center justify-center w-full rounded-none lg:rounded-2xl bg-gradient-to-br from-student-blue to-student-green
-            /* Mobile: 16:9 */
             sm:!aspect-video
-            /* Tablet: 2:1 */
             md:!aspect-[2/1]
-            /* Desktop: 3:1 */
             lg:!aspect-[3/1]"
         >
           <div className="text-center text-white px-4">
@@ -667,8 +686,6 @@ export default function HomePage() {
   </div>
 </section>
 
-
-      {/* Recently Viewed Section - With Blue Background */}
 {recentlyViewed.length > 0 && (
   <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
     <div className="recently-viewed-section">
@@ -681,7 +698,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Mobile View */}
       <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
         <div className="flex gap-3">
           {recentlyViewed.map((item, idx) => (
@@ -719,7 +735,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Tablet View */}
       <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
         <div className="flex gap-3">
           {recentlyViewed.map((item) => (
@@ -734,9 +749,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ✅ Desktop View - With Arrows */}
       <div className="hidden lg:block relative px-12">
-        {/* Previous Arrow */}
         <button
           onClick={() => {
             if (recentRowDesktopRef.current) {
@@ -752,7 +765,6 @@ export default function HomePage() {
           </svg>
         </button>
 
-        {/* Carousel */}
         <div ref={recentRowDesktopRef} className="overflow-x-auto snap-x snap-mandatory scroll-smooth">
           <div className="flex gap-4">
             {recentlyViewed.map((item) => (
@@ -767,7 +779,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Next Arrow */}
         <button
           onClick={() => {
             if (recentRowDesktopRef.current) {
@@ -787,7 +798,6 @@ export default function HomePage() {
   </section>
 )}
 
-{/* ✅ Trending Section - With Orange Background */}
 {trendingProducts.length > 0 && (
   <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
     <div className="trending-section">
@@ -806,7 +816,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Mobile View */}
       <div className="block sm:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
         <div className="flex gap-3">
           {trendingProducts.map((product, index) => (
@@ -821,7 +830,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Tablet View */}
       <div className="hidden sm:block lg:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory scroll-smooth">
         <div className="flex gap-3">
           {trendingProducts.map((product, index) => (
@@ -836,9 +844,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ✅ Desktop View - With Arrows */}
       <div className="hidden lg:block relative px-12">
-        {/* Previous Arrow */}
         <button
           onClick={() => {
             if (trendingRowDesktopRef.current) {
@@ -854,7 +860,6 @@ export default function HomePage() {
           </svg>
         </button>
 
-        {/* Carousel */}
         <div ref={trendingRowDesktopRef} className="overflow-x-auto snap-x snap-mandatory scroll-smooth">
           <div className="flex gap-4">
             {trendingProducts.map((product, index) => (
@@ -869,7 +874,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Next Arrow */}
         <button
           onClick={() => {
             if (trendingRowDesktopRef.current) {
@@ -889,7 +893,6 @@ export default function HomePage() {
   </section>
 )}
 
-      {/* Category Section */}
 <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
   <div className="category-section">
     <div className="mb-6 lg:mb-8 text-center">
@@ -903,9 +906,7 @@ export default function HomePage() {
 
     {categories.length > 0 ? (
       <>
-        {/* Desktop */}
         <div className="hidden xl:block relative">
-          {/* Previous Arrow - Left */}
           <button
             onClick={() => categorySliderRef.current?.slickPrev()}
             className="absolute -left-16 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white hover:bg-white/90 flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
@@ -916,7 +917,6 @@ export default function HomePage() {
             </svg>
           </button>
 
-          {/* Carousel */}
           <Slider {...categoryDesktopSettings} ref={categorySliderRef}>
             {categories.map((category) => (
               <div key={category.id} className="px-1">
@@ -925,7 +925,6 @@ export default function HomePage() {
             ))}
           </Slider>
 
-          {/* Next Arrow - Right */}
           <button
             onClick={() => categorySliderRef.current?.slickNext()}
             className="absolute -right-16 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white hover:bg-white/90 flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200"
@@ -937,43 +936,39 @@ export default function HomePage() {
           </button>
         </div>
 
-       {/* Mobile/Tablet - Two Rows */}
-<div className="block xl:hidden">
-  {/* Top Row */}
-  <div className="mb-3 sm:mb-4">  {/* ← Changed from mb-6 to mb-3 on mobile, mb-4 on tablet */}
-    <div className="overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4">
-      <div className="flex gap-3">
-        {topRowCategories.map((category) => (
-          <div 
-            key={`cat-top-${category.id}`} 
-            className="snap-start shrink-0 aspect-square"
-            style={{ width: 'calc((100% - (3 * 12px)) / 3.5)' }}
-          >
-            <CategoryCard category={category} />
+        <div className="block xl:hidden">
+          <div className="mb-3 sm:mb-4">
+            <div className="overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4">
+              <div className="flex gap-3">
+                {topRowCategories.map((category) => (
+                  <div 
+                    key={`cat-top-${category.id}`} 
+                    className="snap-start shrink-0 aspect-square"
+                    style={{ width: 'calc((100% - (3 * 12px)) / 3.5)' }}
+                  >
+                    <CategoryCard category={category} />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
-    </div>
-  </div>
 
-  {/* Bottom Row */}
-  <div>
-    <div className="overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4">
-      <div className="flex gap-3">
-        {bottomRowCategories.map((category) => (
-          <div 
-            key={`cat-bot-${category.id}`} 
-            className="snap-start shrink-0 aspect-square"
-            style={{ width: 'calc((100% - (3 * 12px)) / 3.5)' }}
-          >
-            <CategoryCard category={category} />
+          <div>
+            <div className="overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4">
+              <div className="flex gap-3">
+                {bottomRowCategories.map((category) => (
+                  <div 
+                    key={`cat-bot-${category.id}`} 
+                    className="snap-start shrink-0 aspect-square"
+                    style={{ width: 'calc((100% - (3 * 12px)) / 3.5)' }}
+                  >
+                    <CategoryCard category={category} />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
-    </div>
-  </div>
-</div>
-
+        </div>
       </>
     ) : (
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
@@ -1000,53 +995,58 @@ export default function HomePage() {
   </div>
 </section>
 
+<section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
+  <div className="text-center mb-8 lg:mb-12">
+    <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-4">
+      Featured Products
+    </h3>
+    <p className="text-student-secondary text-base lg:text-lg max-w-2xl mx-auto">
+      Handpicked products that students love, with the best deals and reviews
+    </p>
+  </div>
 
-      {/* Featured Products */}
-      <section className="max-w-7xl mx-auto mt-8 lg:mt-16 px-4">
-        <div className="text-center mb-8 lg:mb-12">
-          <h3 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-student-primary mb-4">
-            Featured Products
-          </h3>
-          <p className="text-student-secondary text-base lg:text-lg max-w-2xl mx-auto">
-            Handpicked products that students love, with the best deals and reviews
-          </p>
-        </div>
+  {products.length > 0 ? (
+    <div className="product-grid">
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  ) : (
+    <div className="text-center py-16">
+      <div className="text-6xl mb-4">📦</div>
+      <h4 className="text-xl font-semibold text-student-primary mb-2">
+        No products available
+      </h4>
+      <p className="text-student-secondary">
+        Check back soon for amazing student deals!
+      </p>
+    </div>
+  )}
+</section>
 
-        {products.length > 0 ? (
-          <div className="product-grid">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">📦</div>
-            <h4 className="text-xl font-semibold text-student-primary mb-2">
-              No products available
-            </h4>
-            <p className="text-student-secondary">
-              Check back soon for amazing student deals!
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* See All Products Button */}
-      {products.length >= MAX_FEATURED_PRODUCTS && (
-        <div className="text-center mt-12 mb-16">
-          <Link 
-            href="/products"
-            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-student-blue to-cyan-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-          >
-            <span>See All Products</span>
-            <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-            <span className="ml-3 px-2.5 py-0.5 bg-white/20 rounded-full text-xs">
-              {products.length}+ Products
-            </span>
-          </Link>
-        </div>
+{products.length >= MAX_FEATURED_PRODUCTS && (
+  <div className="text-center mt-12 mb-16">
+    <Link 
+      href="/products"
+      className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-student-blue to-cyan-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+    >
+      <span>See All Products</span>
+      <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>
+      <span className="ml-3 px-2.5 py-0.5 bg-white/20 rounded-full text-xs">
+        {products.length}+ Products
+      </span>
+    </Link>
+  </div>
+)}
+        </>
+      ) : (
+        <section className="max-w-7xl mx-auto mt-8 px-4">
+          <PostsProvider>
+            <PostsTabContent />
+          </PostsProvider>
+        </section>
       )}
 
       <Footer />
