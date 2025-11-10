@@ -25,6 +25,20 @@ interface ApiError {
   retryAfter?: number;
 }
 
+// ✅ NEW: Post interface
+interface UserPost {
+  id: number;
+  product_name: string;
+  product_review: string;
+  product_images: string;
+  product_price: string;
+  likes_count: number;
+  dislikes_count: number;
+  created_at: string;
+  recommendation_id?: number;
+  recommended_at?: string;
+}
+
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [profilePicture, setProfilePicture] = useState<string>('');
@@ -46,32 +60,35 @@ export default function ProfilePage() {
     reviewsWritten: 0
   });
 
- useEffect(() => {
-  const storedUser = localStorage.getItem('studentstore_user');
-  if (storedUser) {
-    try {
-      const parsedUser = JSON.parse(storedUser) as User;
-      logger.debug('User data loaded');
-      setUser(parsedUser);
-      
-      if (parsedUser.profile_picture) {
-        setProfilePicture(parsedUser.profile_picture);
+  // ✅ NEW: My Posts state
+  const [myPosts, setMyPosts] = useState<UserPost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('studentstore_user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser) as User;
+        logger.debug('User data loaded');
+        setUser(parsedUser);
+        
+        if (parsedUser.profile_picture) {
+          setProfilePicture(parsedUser.profile_picture);
+        }
+        
+        fetchUserProfile();
+        fetchUserStats();
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        router.push('/');
+        return;
       }
-      
-      fetchUserProfile();
-      fetchUserStats();
-    } catch (error) {
-      console.error('Error parsing user data:', error);
+    } else {
       router.push('/');
       return;
     }
-  } else {
-    router.push('/');
-    return;
-  }
-  setLoading(false);
-}, []); // ← EMPTY ARRAY: Only run ONCE on component mount
-
+    setLoading(false);
+  }, []);
 
   const fetchUserProfile = async () => {
     try {
@@ -154,6 +171,44 @@ export default function ProfilePage() {
       console.error('Error fetching user stats:', error);
     }
   };
+
+  // ✅ NEW: Fetch user's posts
+  const fetchMyPosts = async () => {
+    setPostsLoading(true);
+    try {
+      const token = localStorage.getItem('studentstore_token');
+      if (!token) return;
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/posts/my-posts`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          setMyPosts(result.data.posts);
+          logger.debug('User posts fetched:', result.data.total);
+        }
+      } else {
+        console.error('Failed to fetch user posts:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  // ✅ NEW: Fetch posts when My Posts tab is opened
+  useEffect(() => {
+    if (activeTab === 'myposts' && myPosts.length === 0) {
+      fetchMyPosts();
+    }
+  }, [activeTab]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -536,7 +591,6 @@ export default function ProfilePage() {
   if (!user) {
     return null;
   }
-
   return (
     <div className="min-h-screen bg-student-page">
       <Navbar />
@@ -682,6 +736,28 @@ export default function ProfilePage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                     <span className="truncate">Activity</span>
+                  </div>
+                </button>
+
+                {/* ✅ NEW: My Posts Tab Button */}
+                <button
+                  onClick={() => setActiveTab('myposts')}
+                  className={`w-full text-left px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl transition-all duration-200 text-xs sm:text-sm md:text-base ${
+                    activeTab === 'myposts'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium shadow-md'
+                      : 'text-student-primary hover:bg-student-light border border-border-light'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
+                    <span className="truncate">My Posts</span>
+                    {myPosts.length > 0 && (
+                      <span className="ml-auto bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                        {myPosts.length}
+                      </span>
+                    )}
                   </div>
                 </button>
               </nav>
@@ -991,6 +1067,167 @@ export default function ProfilePage() {
                       </a>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* ✅ NEW: My Posts Tab - CARD GRID */}
+              {activeTab === 'myposts' && (
+                <div className="space-y-4 sm:space-y-5 md:space-y-6">
+                  {/* Summary Stats */}
+                      <div className="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg sm:rounded-xl p-4 border border-purple-200">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                          <div className="text-center flex-1 min-w-[100px]">
+                            <div className="text-2xl font-bold text-purple-600">
+                              {myPosts.length}
+                            </div>
+                            <div className="text-xs text-student-secondary">
+                              Total Posts
+                            </div>
+                          </div>
+                          <div className="text-center flex-1 min-w-[100px]">
+                            <div className="text-2xl font-bold text-green-600">
+                              {myPosts.reduce((sum, post) => sum + post.likes_count, 0)}
+                            </div>
+                            <div className="text-xs text-student-secondary">
+                              Total Likes
+                            </div>
+                          </div>
+                          <div className="text-center flex-1 min-w-[100px]">
+                            <div className="text-2xl font-bold text-orange-600">
+                              {myPosts.reduce((sum, post) => sum + post.dislikes_count, 0)}
+                            </div>
+                            <div className="text-xs text-student-secondary">
+                              Total Dislikes
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                  <div>
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-student-primary mb-1 sm:mb-2 md:mb-4">
+                      My Posts
+                    </h2>
+                    <p className="text-xs sm:text-sm md:text-base text-student-secondary">
+                      Posts created from your product recommendations
+                    </p>
+                  </div>
+
+                  {postsLoading ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                      <p className="text-student-secondary">Loading your posts...</p>
+                    </div>
+                  ) : myPosts.length === 0 ? (
+                    <div className="text-center py-12 bg-student-light rounded-lg sm:rounded-xl border border-border-light">
+                      <div className="text-5xl mb-4">📱</div>
+                      <h3 className="text-lg font-semibold text-student-primary mb-2">
+                        No Posts Yet
+                      </h3>
+                      <p className="text-student-secondary mb-4">
+                        When admin creates posts from your recommendations, they'll appear here!
+                      </p>
+                      <a
+                        href="/recommend"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-student-blue text-white rounded-lg hover:bg-student-blue/90 transition"
+                      >
+                        <span>➕ Recommend a Product</span>
+                      </a>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Posts Grid - Instagram Style */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        {myPosts.map((post) => {
+                          let images: string[] = [];
+                          try {
+                            images = JSON.parse(post.product_images);
+                          } catch {
+                            images = [];
+                          }
+
+                          return (
+                            <div
+                              key={post.id}
+                              onClick={() => router.push('/posts')}
+                              className="bg-white rounded-lg sm:rounded-xl border border-border-light overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                            >
+                              {/* Product Image */}
+                              <div className="relative aspect-square overflow-hidden bg-student-light">
+                                {images.length > 0 ? (
+                                  <img
+                                    src={images[0]}
+                                    alt={post.product_name}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-4xl">
+                                    📦
+                                  </div>
+                                )}
+                                
+                                {/* Hover Overlay */}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                  <div className="text-white text-center">
+                                    <p className="text-sm mb-2">Click to view on Posts page</p>
+                                    <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Post Info */}
+                              <div className="p-3 sm:p-4">
+                                <h3 className="font-semibold text-student-primary text-sm sm:text-base mb-2 line-clamp-2">
+                                  {post.product_name}
+                                </h3>
+                                
+                                <p className="text-xs sm:text-sm text-student-secondary line-clamp-2 mb-3">
+                                  {post.product_review}
+                                </p>
+
+                                {/* Stats */}
+                                <div className="flex items-center justify-between text-xs sm:text-sm">
+                                  <div className="flex items-center gap-3">
+                                    <span className="flex items-center gap-1 text-student-green">
+                                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558-.641 1.038-1.09 1.408-.558.482-1.2.879-1.915 1.164-1.299.518-2.582 1.184-3.736 1.966.35.485.611 1.026.76 1.604.149.579.195 1.185.14 1.785-.13 1.434-.65 2.768-1.5 3.846a4.488 4.488 0 01-3.393 1.536z" />
+                                      </svg>
+                                      {post.likes_count}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-student-orange">
+                                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M15.73 5.25h1.035A7.465 7.465 0 0118 9.375a7.465 7.465 0 01-1.235 4.125h-.148c-.806 0-1.534.446-2.031 1.08a9.04 9.04 0 01-2.861 2.4c-.723.384-1.35.956-1.653 1.715a4.498 4.498 0 00-.322 1.672V21a.75.75 0 01-.75.75 2.25 2.25 0 01-2.25-2.25c0-1.152.26-2.243.723-3.218C7.74 15.724 7.366 15.246 7.003 14.82c-.558-.65-1.086-1.338-1.564-2.07-1.073-1.644-1.689-3.627-1.689-5.733 0-1.152.26-2.243.723-3.218.266-.558.641-1.038 1.09-1.408.558-.482 1.2-.879 1.915-1.164C8.777 1.709 10.06 1.043 11.214.26c.35-.243.759-.382 1.179-.382h1.035z" />
+                                      </svg>
+                                      {post.dislikes_count}
+                                    </span>
+                                  </div>
+                                  
+                                  <span className="text-student-secondary">
+                                    ₹{parseFloat(post.product_price).toFixed(0)}
+                                  </span>
+                                </div>
+
+                                {/* Date */}
+                                <div className="mt-2 pt-2 border-t border-border-light">
+                                  <p className="text-xs text-student-secondary">
+                                    Posted {new Date(post.created_at).toLocaleDateString('en-IN', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      
+                    </>
+                  )}
                 </div>
               )}
             </div>

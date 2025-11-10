@@ -176,13 +176,54 @@ router.post('/:postId/reaction', authenticateToken, postLimit, async (req, res) 
 });
 
 // ============================================
+// GET USER'S POSTS (My Posts - for profile)
+// ✅ NEW: Shows posts created from user's recommendations
+// ============================================
+
+router.get('/my-posts', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+
+    // Get posts created from user's recommendations OR posts with user's email
+    const result = await pool.query(`
+      SELECT 
+        sp.*,
+        pr.created_at as recommended_at,
+        u.display_name as admin_name
+      FROM student_posts sp
+      LEFT JOIN product_recommendations pr ON sp.recommendation_id = pr.id
+      LEFT JOIN Users u ON sp.admin_id = u.id
+      WHERE (pr.user_id = $1 OR sp.user_email = $2)
+        AND sp.is_approved = true
+      ORDER BY sp.created_at DESC
+    `, [userId, userEmail]);
+
+    res.json({
+      status: 'success',
+      message: 'Your posts retrieved successfully',
+      data: {
+        posts: result.rows,
+        total: result.rows.length
+      }
+    });
+  } catch (error) {
+    console.error('Get user posts error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve your posts',
+      error: error.message
+    });
+  }
+});
+
+// ============================================
 // ADMIN ROUTES (Protected by requireAdmin middleware)
 // ============================================
 
 // Admin: Get all posts (including unapproved, with pagination)
 router.get('/admin', requireAdmin, async (req, res) => {
   try {
-    // ✅ FIXED: Remove pagination for admin panel - get ALL posts
     const result = await pool.query(`
       SELECT sp.*, u.display_name as admin_name
       FROM student_posts sp
@@ -211,12 +252,21 @@ router.get('/admin', requireAdmin, async (req, res) => {
   }
 });
 
-
 // Admin: Create new post
 router.post('/admin', requireAdmin, async (req, res) => {
   try {
-    // ✅ UPDATED: Accept username and user_email from request body
-    const { username, user_email, product_name, product_review, product_images, product_price, buy_link, buy_button_text } = req.body;
+    // ✅ UPDATED: Accept recommendation_id from request body
+    const { 
+      username, 
+      user_email, 
+      product_name, 
+      product_review, 
+      product_images, 
+      product_price, 
+      buy_link, 
+      buy_button_text,
+      recommendation_id  // ✅ NEW: Optional link to recommendation
+    } = req.body;
 
     // Validation
     if (!username || !user_email || !product_name || !product_review || !product_price || !buy_link) {
@@ -237,13 +287,14 @@ router.post('/admin', requireAdmin, async (req, res) => {
     // Optimize images URLs
     const optimizedImages = product_images.map(img => addDefaultTransformations(img, 'product'));
 
+    // ✅ UPDATED: Insert with recommendation_id
     const result = await pool.query(`
       INSERT INTO student_posts (username, user_email, product_name, product_review, product_images,
-        product_price, buy_link, buy_button_text, likes_count, dislikes_count, is_approved, admin_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,0,true,$9)
+        product_price, buy_link, buy_button_text, likes_count, dislikes_count, is_approved, admin_id, recommendation_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,0,true,$9,$10)
       RETURNING *
     `, [username.trim(), user_email.trim(), product_name.trim(), product_review.trim(), JSON.stringify(optimizedImages),
-      priceNum, buy_link.trim(), buyButtonTextFinal, req.user.id]);
+      priceNum, buy_link.trim(), buyButtonTextFinal, req.user.id, recommendation_id || null]);
 
     // Invalidate cache
     try {
@@ -251,6 +302,10 @@ router.post('/admin', requireAdmin, async (req, res) => {
     } catch (e) {
       console.warn('Cache invalidation warning:', e.message || e);
     }
+
+    // ✅ NEW: Log with recommendation link info
+    const linkInfo = recommendation_id ? `(linked to recommendation #${recommendation_id})` : '(manual post)';
+    console.log(`✅ Post created: "${product_name}" by ${username} ${linkInfo}`);
 
     res.status(201).json({ status: 'success', message: 'Post created successfully', data: result.rows[0] });
 
@@ -266,8 +321,19 @@ router.put('/admin/:postId', requireAdmin, async (req, res) => {
     const postId = parseInt(req.params.postId, 10);
     if (isNaN(postId)) return res.status(400).json({ status: 'error', message: 'Invalid post ID' });
 
-    // ✅ UPDATED: Accept username and user_email from request body
-    const { username, user_email, product_name, product_review, product_images, product_price, buy_link, buy_button_text, is_approved } = req.body;
+    // ✅ UPDATED: Accept recommendation_id
+    const { 
+      username, 
+      user_email, 
+      product_name, 
+      product_review, 
+      product_images, 
+      product_price, 
+      buy_link, 
+      buy_button_text, 
+      is_approved,
+      recommendation_id  // ✅ NEW: Optional
+    } = req.body;
 
     // Validation
     if (!username || !user_email || !product_name || !product_review || !product_price || !buy_link) {
@@ -290,6 +356,7 @@ router.put('/admin/:postId', requireAdmin, async (req, res) => {
     // Optimize images URLs
     const optimizedImages = product_images.map(img => addDefaultTransformations(img, 'product'));
 
+    // ✅ UPDATED: Update with recommendation_id
     const result = await pool.query(`
       UPDATE student_posts SET
         username = $1,
@@ -301,11 +368,12 @@ router.put('/admin/:postId', requireAdmin, async (req, res) => {
         buy_link = $7,
         buy_button_text = $8,
         is_approved = $9,
+        recommendation_id = $10,
         updated_at = NOW()
-      WHERE id = $10
+      WHERE id = $11
       RETURNING *
     `, [username.trim(), user_email.trim(), product_name.trim(), product_review.trim(), JSON.stringify(optimizedImages),
-      priceNum, buy_link.trim(), buyButtonTextFinal, approved, postId]);
+      priceNum, buy_link.trim(), buyButtonTextFinal, approved, recommendation_id || null, postId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ status: 'error', message: 'Post not found' });

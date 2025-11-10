@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Recommendation {
   id: number;
@@ -13,53 +14,52 @@ interface Recommendation {
   price: number | null;
   created_at: string;
   add_to_posts: boolean | null;          // User's choice (read-only badge)
-  added_to_products: boolean;            // ✅ NEW: Admin added to products
-  added_to_posts: boolean;               // ✅ NEW: Admin added to posts
+  added_to_products: boolean;            // Admin added to products
+  added_to_posts: boolean;               // Admin added to posts
   products_added_at?: string | null;
   posts_added_at?: string | null;
 }
 
 export default function AdminRecommendationsPage() {
+  const router = useRouter();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [filteredRecommendations, setFilteredRecommendations] = useState<Recommendation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<{ id: number; field: 'products' | 'posts' } | null>(null); // ✅ Track which checkbox is updating
+  const [updatingId, setUpdatingId] = useState<{ id: number; field: 'products' | 'posts' } | null>(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
   const fetchRecommendations = async () => {
-  setLoading(true);
-  try {
-    const token = localStorage.getItem('studentstore_token');
-    const res = await fetch(`${apiUrl}/api/admin/feedback/recommendations`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('studentstore_token');
+      const res = await fetch(`${apiUrl}/api/admin/feedback/recommendations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
 
-    if (data.status === 'success') {
-      // ✅ Normalize data to ensure boolean values (default to false)
-      const normalizedData = data.data.recommendations.map((rec: any) => ({
-        ...rec,
-        added_to_products: rec.added_to_products ?? false,  // Default to false if null/undefined
-        added_to_posts: rec.added_to_posts ?? false,        // Default to false if null/undefined
-      }));
-      
-      setRecommendations(normalizedData);
-      setFilteredRecommendations(normalizedData);
-    } else {
-      alert('Failed to fetch recommendations');
+      if (data.status === 'success') {
+        const normalizedData = data.data.recommendations.map((rec: any) => ({
+          ...rec,
+          added_to_products: rec.added_to_products ?? false,
+          added_to_posts: rec.added_to_posts ?? false,
+        }));
+        
+        setRecommendations(normalizedData);
+        setFilteredRecommendations(normalizedData);
+      } else {
+        alert('Failed to fetch recommendations');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error fetching recommendations');
+    } finally {
+      setLoading(false);
     }
-  } catch (e) {
-    console.error(e);
-    alert('Error fetching recommendations');
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -81,7 +81,6 @@ export default function AdminRecommendationsPage() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedRecommendations = filteredRecommendations.slice(startIndex, endIndex);
 
-  // ✅ NEW: Toggle admin checkboxes
   const toggleAdminMark = async (
     id: number, 
     field: 'products' | 'posts', 
@@ -109,7 +108,6 @@ export default function AdminRecommendationsPage() {
       const data = await res.json();
 
       if (data.status === 'success') {
-        // Update local state
         setRecommendations(prev => 
           prev.map(rec => 
             rec.id === id ? { ...rec, ...data.data } : rec
@@ -147,6 +145,24 @@ export default function AdminRecommendationsPage() {
       console.error(e);
       alert('Error deleting recommendation');
     }
+  };
+
+  // ✅ NEW: Create post from recommendation
+  const createPostFromRecommendation = (rec: Recommendation) => {
+    // Navigate to posts page with recommendation data
+    const params = new URLSearchParams({
+      from: 'recommendation',
+      rec_id: rec.id.toString(),
+      rec_name: rec.user_name,
+      rec_email: rec.user_email,
+      rec_product: rec.product_name,
+      rec_review: rec.review_text || '',
+      rec_price: rec.price?.toString() || '',
+      rec_link: rec.product_link,
+      rec_images: rec.product_images,
+    });
+
+    router.push(`/admin/posts?${params.toString()}`);
   };
 
   useEffect(() => {
@@ -283,38 +299,37 @@ export default function AdminRecommendationsPage() {
 
               return (
                 <li key={rec.id} className="border rounded-lg p-4 shadow-sm flex flex-col sm:flex-row gap-4 bg-white hover:shadow-md transition">
-                  {/* ✅ NEW: TWO Checkboxes - Products & Posts */}
+                  {/* TWO Checkboxes - Products & Posts */}
                   <div className="flex-shrink-0 flex flex-col gap-3 pt-2">
                     {/* Products Checkbox */}
-<label className="flex items-center cursor-pointer group" title="Mark as added to Products page">
-  <input
-    type="checkbox"
-    checked={rec.added_to_products ?? false}  // ✅ Fallback to false
-    onChange={() => toggleAdminMark(rec.id, 'products', rec.added_to_products ?? false)}
-    disabled={isUpdatingProducts}
-    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-  />
-  <span className="ml-2 text-xs font-medium text-gray-700">Products</span>
-  {isUpdatingProducts && (
-    <div className="ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-  )}
-</label>
+                    <label className="flex items-center cursor-pointer group" title="Mark as added to Products page">
+                      <input
+                        type="checkbox"
+                        checked={rec.added_to_products ?? false}
+                        onChange={() => toggleAdminMark(rec.id, 'products', rec.added_to_products ?? false)}
+                        disabled={isUpdatingProducts}
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <span className="ml-2 text-xs font-medium text-gray-700">Products</span>
+                      {isUpdatingProducts && (
+                        <div className="ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                      )}
+                    </label>
 
-{/* Posts Checkbox */}
-<label className="flex items-center cursor-pointer group" title="Mark as added to Posts page">
-  <input
-    type="checkbox"
-    checked={rec.added_to_posts ?? false}  // ✅ Fallback to false
-    onChange={() => toggleAdminMark(rec.id, 'posts', rec.added_to_posts ?? false)}
-    disabled={isUpdatingPosts}
-    className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-  />
-  <span className="ml-2 text-xs font-medium text-gray-700">Posts</span>
-  {isUpdatingPosts && (
-    <div className="ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
-  )}
-</label>
-
+                    {/* Posts Checkbox */}
+                    <label className="flex items-center cursor-pointer group" title="Mark as added to Posts page">
+                      <input
+                        type="checkbox"
+                        checked={rec.added_to_posts ?? false}
+                        onChange={() => toggleAdminMark(rec.id, 'posts', rec.added_to_posts ?? false)}
+                        disabled={isUpdatingPosts}
+                        className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <span className="ml-2 text-xs font-medium text-gray-700">Posts</span>
+                      {isUpdatingPosts && (
+                        <div className="ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+                      )}
+                    </label>
                   </div>
 
                   {/* Images */}
@@ -381,8 +396,15 @@ export default function AdminRecommendationsPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
+                  {/* ✅ UPDATED: Actions - Added "Create Post" Button */}
                   <div className="flex-shrink-0 flex flex-col justify-center items-center gap-2">
+                    <button
+                      onClick={() => createPostFromRecommendation(rec)}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium text-sm shadow-sm hover:shadow-md flex items-center gap-2"
+                      title="Create Post from this Recommendation"
+                    >
+                      ➕ Create Post
+                    </button>
                     <button
                       onClick={() => deleteRecommendation(rec.id)}
                       className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium text-sm shadow-sm hover:shadow-md"

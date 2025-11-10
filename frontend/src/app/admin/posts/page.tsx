@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ImageUploadWidget from '@/app/components/ImageUploadWidget';
 
 interface Post {
@@ -18,9 +19,11 @@ interface Post {
   created_at: string;
   admin_name?: string;
   updated_at?: string;
+  recommendation_id?: number | null;  // ✅ NEW
 }
 
 export default function AdminPostsPage() {
+  const searchParams = useSearchParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +32,6 @@ export default function AdminPostsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
 
-  // ✅ NEW: Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const POSTS_PER_PAGE = 20;
 
@@ -42,15 +44,47 @@ export default function AdminPostsPage() {
     buy_link: '',
     buy_button_text: 'Buy Now',
     product_images: [] as string[],
+    recommendation_id: null as number | null,  // ✅ NEW
   });
 
   const [submitting, setSubmitting] = useState(false);
+
+  // ✅ NEW: Check if coming from recommendations page
+  useEffect(() => {
+    const fromRecommendation = searchParams.get('from');
+    if (fromRecommendation === 'recommendation') {
+      // Get recommendation data from URL params
+      const recId = searchParams.get('rec_id');
+      const recName = searchParams.get('rec_name');
+      const recEmail = searchParams.get('rec_email');
+      const recProduct = searchParams.get('rec_product');
+      const recReview = searchParams.get('rec_review');
+      const recPrice = searchParams.get('rec_price');
+      const recLink = searchParams.get('rec_link');
+      const recImages = searchParams.get('rec_images');
+
+      if (recId && recName && recEmail && recProduct) {
+        // Pre-fill form with recommendation data
+        setFormData({
+          username: decodeURIComponent(recName),
+          user_email: decodeURIComponent(recEmail),
+          product_name: decodeURIComponent(recProduct),
+          product_review: recReview ? decodeURIComponent(recReview) : '',
+          product_price: recPrice || '',
+          buy_link: recLink ? decodeURIComponent(recLink) : '',
+          buy_button_text: 'Buy Now',
+          product_images: recImages ? JSON.parse(decodeURIComponent(recImages)) : [],
+          recommendation_id: parseInt(recId),
+        });
+        setShowCreateForm(true);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchPosts();
   }, []);
 
-  // Filter posts when search query or posts change
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredPosts(posts);
@@ -63,10 +97,9 @@ export default function AdminPostsPage() {
       );
       setFilteredPosts(filtered);
     }
-    setCurrentPage(1); // ✅ Reset to first page when filtering
+    setCurrentPage(1);
   }, [searchQuery, posts]);
 
-  // ✅ NEW: Calculate paginated posts
   const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
   const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
   const endIndex = startIndex + POSTS_PER_PAGE;
@@ -112,6 +145,7 @@ export default function AdminPostsPage() {
 
       const method = editingPost ? 'PUT' : 'POST';
 
+      // ✅ UPDATED: Include recommendation_id in request
       const response = await fetch(url, {
         method,
         headers: {
@@ -124,7 +158,12 @@ export default function AdminPostsPage() {
       const result = await response.json();
 
       if (result.status === 'success') {
-        alert(editingPost ? 'Post updated successfully!' : 'Post created successfully!');
+        const successMessage = editingPost 
+          ? 'Post updated successfully!' 
+          : formData.recommendation_id 
+            ? 'Post created from recommendation successfully!' 
+            : 'Post created successfully!';
+        alert(successMessage);
         resetForm();
         fetchPosts();
       } else {
@@ -181,6 +220,7 @@ export default function AdminPostsPage() {
       buy_link: post.buy_link,
       buy_button_text: post.buy_button_text,
       product_images: images,
+      recommendation_id: post.recommendation_id || null,  // ✅ NEW
     });
     setShowCreateForm(true);
   };
@@ -195,6 +235,7 @@ export default function AdminPostsPage() {
       buy_link: '',
       buy_button_text: 'Buy Now',
       product_images: [],
+      recommendation_id: null,  // ✅ NEW
     });
     setEditingPost(null);
     setShowCreateForm(false);
@@ -218,7 +259,6 @@ export default function AdminPostsPage() {
     setSearchQuery('');
   };
 
-  // ✅ NEW: Pagination handlers
   const goToPage = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -262,6 +302,17 @@ export default function AdminPostsPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
           ⚠️ {error}
+        </div>
+      )}
+
+      {/* ✅ NEW: Info banner when creating from recommendation */}
+      {showCreateForm && formData.recommendation_id && !editingPost && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+          <span className="text-xl">🔗</span>
+          <div>
+            <p className="font-semibold">Creating post from recommendation</p>
+            <p className="text-sm">This post will be linked to recommendation #{formData.recommendation_id}</p>
+          </div>
         </div>
       )}
 
@@ -482,12 +533,21 @@ export default function AdminPostsPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {/* ✅ Use paginatedPosts instead of filteredPosts */}
             {paginatedPosts.map((post) => (
               <tr key={post.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">{post.product_name}</div>
-                  <div className="text-sm text-gray-500">by {post.username}</div>
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{post.product_name}</div>
+                      <div className="text-sm text-gray-500">by {post.username}</div>
+                    </div>
+                    {/* ✅ NEW: Show link icon if from recommendation */}
+                    {post.recommendation_id && (
+                      <span className="text-blue-500" title={`Linked to recommendation #${post.recommendation_id}`}>
+                        🔗
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700">
                   ₹{parseFloat(post.product_price).toFixed(2)}
@@ -542,7 +602,7 @@ export default function AdminPostsPage() {
         )}
       </div>
 
-      {/* ✅ NEW: Pagination Controls */}
+      {/* Pagination Controls */}
       {filteredPosts.length > 0 && (
         <div className="mt-6 flex items-center justify-between bg-white rounded-lg shadow-md p-4 border border-gray-200">
           <div className="text-sm text-gray-600">
@@ -550,7 +610,6 @@ export default function AdminPostsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Previous Button */}
             <button
               onClick={goToPrevPage}
               disabled={currentPage === 1}
@@ -563,16 +622,13 @@ export default function AdminPostsPage() {
               ← Previous
             </button>
 
-            {/* Page Numbers */}
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                // Show first page, last page, current page, and pages around current
                 const showPage = 
                   page === 1 || 
                   page === totalPages || 
                   (page >= currentPage - 1 && page <= currentPage + 1);
 
-                // Show ellipsis
                 const showEllipsis = 
                   (page === currentPage - 2 && currentPage > 3) ||
                   (page === currentPage + 2 && currentPage < totalPages - 2);
@@ -599,7 +655,6 @@ export default function AdminPostsPage() {
               })}
             </div>
 
-            {/* Next Button */}
             <button
               onClick={goToNextPage}
               disabled={currentPage === totalPages}
