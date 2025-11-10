@@ -84,6 +84,9 @@ export default function HomePage() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [timerKey, setTimerKey] = useState(0);
   const [isHoveringBanner, setIsHoveringBanner] = useState(false);
+    // ✅ NEW: Scroll to top button state
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
 
   const { checkMultipleProducts } = useWishlist();
 
@@ -141,6 +144,28 @@ export default function HomePage() {
 
     return () => clearInterval(interval);
   }, [banners.length, timerKey, isHoveringBanner]);
+
+  // ✅ NEW: Handle scroll to show/hide button
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // ✅ NEW: Scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   const initializeHomepage = async () => {
     try {
@@ -425,31 +450,111 @@ export default function HomePage() {
   }, [categories]);
 
 function PostsTabContent() {
-  const { posts, loading, error, fetchPosts, currentPage, totalPages } = usePosts();
+  const { posts, loading, error, fetchPosts, currentPage, totalPages, hasMore } = usePosts();
 
-  if (loading) return <div className="p-4 text-center">Loading posts...</div>;
-  if (error) return <div className="p-4 text-center text-red-600">{error}</div>;
-  if (posts.length === 0) return <div className="p-4 text-center">No posts yet. Check back soon!</div>;
+  // Initial loading state (first page)
+  if (loading && posts.length === 0) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading posts...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Error state with no posts loaded
+  if (error && posts.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <div className="text-red-600 mb-4">
+          <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-lg font-semibold">{error}</p>
+        </div>
+        <button
+          onClick={() => fetchPosts(1)}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+  
+  // Empty state
+  if (posts.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <div className="text-gray-400 mb-4">
+          <svg className="w-20 h-20 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <p className="text-xl font-semibold text-gray-600">No posts yet</p>
+          <p className="text-gray-500 mt-2">Check back soon for new content!</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
+    <div className="space-y-8">
+      {/* Posts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {posts.map(post => (
           <PostCard key={post.id} post={post} />
         ))}
       </div>
 
-      {currentPage < totalPages && (
-        <div className="flex justify-center mt-6">
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="flex flex-col items-center gap-4 mt-12 mb-8">
           <button
             onClick={() => fetchPosts(currentPage + 1)}
-            className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
+            disabled={loading}
+            className={`px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 ${
+              loading 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 hover:-translate-y-1'
+            }`}
           >
-            Load More
+            {loading ? (
+              <span className="flex items-center gap-3">
+                <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Loading More Posts...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                Load More Posts
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            )}
           </button>
+          
+          <p className="text-sm text-gray-500">
+            Showing {posts.length} posts • Page {currentPage} of {totalPages}
+          </p>
         </div>
       )}
-    </>
+
+      {/* End of Posts Message */}
+      {!hasMore && posts.length > 0 && (
+        <div className="text-center py-12 border-t border-gray-200">
+          <div className="text-gray-500">
+            <p className="text-2xl mb-2">🎉</p>
+            <p className="text-lg font-semibold text-gray-700">You've reached the end!</p>
+            <p className="text-sm text-gray-500 mt-2">You've seen all {posts.length} posts. Check back later for new content.</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1048,6 +1153,30 @@ function PostsTabContent() {
           </PostsProvider>
         </section>
       )}
+
+      {/* Scroll to Top Button - RIGHT BOTTOM */}
+{showScrollTop && (
+  <button
+    onClick={scrollToTop}
+    className="fixed bottom-6 right-6 z-50 p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 group"
+    aria-label="Scroll to top"
+  >
+    <svg 
+      className="w-6 h-6 transform group-hover:-translate-y-0.5 transition-transform" 
+      fill="none" 
+      stroke="currentColor" 
+      viewBox="0 0 24 24"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth={2.5} 
+        d="M5 10l7-7m0 0l7 7m-7-7v18" 
+      />
+    </svg>
+  </button>
+)}
+
 
       <Footer />
     </div>

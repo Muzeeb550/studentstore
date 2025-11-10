@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 interface Post {
- id: number;
+  id: number;
   username: string;
   user_email: string;
   product_name: string;
@@ -40,7 +40,7 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const hasFetched = useRef(false); // ✅ Prevent double fetch
+  const hasFetched = useRef(false);
 
   const parseProductImages = useCallback((images: string[] | string): string[] => {
     if (Array.isArray(images)) return images;
@@ -56,7 +56,6 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchPosts = useCallback(async (page = 1) => {
-    // ✅ Prevent duplicate fetches in development
     if (loading) return;
     
     setLoading(true);
@@ -75,7 +74,8 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${apiUrl}/api/posts?page=${page}&limit=12`, { 
+      // ✅ CHANGED: limit=20 instead of 12
+      const response = await fetch(`${apiUrl}/api/posts?page=${page}&limit=20`, { 
         headers,
         credentials: 'include'
       });
@@ -92,11 +92,12 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
           product_images: parseProductImages(post.product_images)
         }));
 
-        setPosts(parsedPosts);
+        // ✅ KEY CHANGE: Append posts when page > 1, replace when page = 1
+        setPosts(prevPosts => page === 1 ? parsedPosts : [...prevPosts, ...parsedPosts]);
         setCurrentPage(result.data.pagination.current_page);
         setTotalPages(result.data.pagination.total_pages);
         
-        console.log(`📝 Loaded ${parsedPosts.length} posts (page ${page}/${result.data.pagination.total_pages})`);
+        console.log(`📝 Loaded ${parsedPosts.length} posts (page ${page}/${result.data.pagination.total_pages}), Total posts on screen: ${page === 1 ? parsedPosts.length : posts.length + parsedPosts.length}`);
       } else {
         setError(result.message || 'Failed to fetch posts');
       }
@@ -107,7 +108,7 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [parseProductImages]); // ✅ Remove 'loading' from dependencies
+  }, [parseProductImages]);
 
   const reactToPost = useCallback(async (postId: number, reactionType: 'like' | 'dislike') => {
     try {
@@ -172,15 +173,16 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshPosts = useCallback(async () => {
-    await fetchPosts(currentPage);
-  }, [fetchPosts, currentPage]);
+    setPosts([]); // Clear existing posts
+    setCurrentPage(1);
+    await fetchPosts(1);
+  }, [fetchPosts]);
 
-  // ✅ Fetch posts only once on mount
   useEffect(() => {
-    if (hasFetched.current) return; // Prevent double fetch in dev mode
+    if (hasFetched.current) return;
     hasFetched.current = true;
     fetchPosts(1);
-  }, []); // ✅ Empty dependencies - only run once
+  }, []);
 
   const hasMore = currentPage < totalPages;
 
