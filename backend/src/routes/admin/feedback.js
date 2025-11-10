@@ -3,12 +3,15 @@ const router = express.Router();
 const { pool } = require('../../config/database');
 const { requireAdmin } = require('../../middleware/adminAuth');
 
+
 // All routes require admin authentication
 router.use(requireAdmin);
+
 
 // ============================================
 // GET ALL APP RATINGS (Admin View)
 // ============================================
+
 
 router.get('/ratings', async (req, res) => {
     try {
@@ -16,6 +19,7 @@ router.get('/ratings', async (req, res) => {
         const limit = parseInt(req.query.limit || '20', 10);
         const sortBy = req.query.sort || 'newest'; // newest, oldest, rating_high, rating_low, updated
         const offset = (page - 1) * limit;
+
 
         // Build sort order
         let orderBy;
@@ -26,6 +30,7 @@ router.get('/ratings', async (req, res) => {
             case 'updated': orderBy = 'ORDER BY updated_at DESC'; break;
             default: orderBy = 'ORDER BY created_at DESC';
         }
+
 
         // Get ratings with pagination
         const ratingsResult = await pool.query(`
@@ -41,9 +46,11 @@ router.get('/ratings', async (req, res) => {
             OFFSET $1 LIMIT $2
         `, [offset, limit]);
 
+
         // Get total count
         const countResult = await pool.query('SELECT COUNT(*) as total FROM app_ratings');
         const total = parseInt(countResult.rows[0].total, 10);
+
 
         // Get statistics
         const statsResult = await pool.query(`
@@ -55,6 +62,7 @@ router.get('/ratings', async (req, res) => {
             FROM app_ratings
         `);
 
+
         // Get rating distribution
         const distributionResult = await pool.query(`
             SELECT rating, COUNT(*) as count
@@ -63,6 +71,7 @@ router.get('/ratings', async (req, res) => {
             ORDER BY rating DESC
         `);
 
+
         const ratingDistribution = {
             '5': 0, '4': 0, '3': 0, '2': 0, '1': 0
         };
@@ -70,7 +79,9 @@ router.get('/ratings', async (req, res) => {
             ratingDistribution[row.rating.toString()] = parseInt(row.count, 10);
         });
 
+
         const totalPages = Math.ceil(total / limit);
+
 
         res.json({
             status: 'success',
@@ -97,6 +108,7 @@ router.get('/ratings', async (req, res) => {
             }
         });
 
+
     } catch (error) {
         console.error('Get admin ratings error:', error);
         res.status(500).json({
@@ -107,9 +119,11 @@ router.get('/ratings', async (req, res) => {
     }
 });
 
+
 // ============================================
 // GET ALL PRODUCT RECOMMENDATIONS (Admin View)
 // ============================================
+
 
 router.get('/recommendations', async (req, res) => {
     try {
@@ -118,6 +132,7 @@ router.get('/recommendations', async (req, res) => {
         const sortBy = req.query.sort || 'newest'; // newest, oldest
         const offset = (page - 1) * limit;
 
+
         // Build sort order
         let orderBy;
         switch (sortBy) {
@@ -125,32 +140,40 @@ router.get('/recommendations', async (req, res) => {
             default: orderBy = 'ORDER BY created_at DESC';
         }
 
-        // Get recommendations with pagination
+
+        // ✅ UPDATED: Include add_to_posts field in SELECT
         const recommendationsResult = await pool.query(`
             SELECT 
                 id, user_id, user_name, user_email, 
                 product_name, review_text, product_link, 
-                product_images, price, created_at
+                product_images, price, created_at, add_to_posts
             FROM product_recommendations
             ${orderBy}
             OFFSET $1 LIMIT $2
         `, [offset, limit]);
 
+
         // Get total count
         const countResult = await pool.query('SELECT COUNT(*) as total FROM product_recommendations');
         const total = parseInt(countResult.rows[0].total, 10);
 
-        // Get statistics
+
+        // ✅ UPDATED: Add statistics for add_to_posts
         const statsResult = await pool.query(`
             SELECT 
                 COUNT(*) as total_recommendations,
                 COUNT(DISTINCT user_id) as unique_users,
                 COUNT(CASE WHEN product_images IS NOT NULL AND product_images != '[]' THEN 1 END) as with_images,
-                AVG(price) as average_price
+                AVG(price) as average_price,
+                COUNT(CASE WHEN add_to_posts = true THEN 1 END) as wants_in_posts,
+                COUNT(CASE WHEN add_to_posts = false THEN 1 END) as declined_posts,
+                COUNT(CASE WHEN add_to_posts IS NULL THEN 1 END) as pending_response
             FROM product_recommendations
         `);
 
+
         const totalPages = Math.ceil(total / limit);
+
 
         res.json({
             status: 'success',
@@ -176,6 +199,7 @@ router.get('/recommendations', async (req, res) => {
             }
         });
 
+
     } catch (error) {
         console.error('Get admin recommendations error:', error);
         res.status(500).json({
@@ -186,13 +210,16 @@ router.get('/recommendations', async (req, res) => {
     }
 });
 
+
 // ============================================
 // DELETE PRODUCT RECOMMENDATION
 // ============================================
 
+
 router.delete('/recommendations/:id', async (req, res) => {
     try {
         const { id } = req.params;
+
 
         if (!id || isNaN(parseInt(id, 10))) {
             return res.status(400).json({
@@ -201,11 +228,13 @@ router.delete('/recommendations/:id', async (req, res) => {
             });
         }
 
+
         // Get recommendation info before deletion
         const recommendationInfo = await pool.query(
             'SELECT product_name, user_name FROM product_recommendations WHERE id = $1',
             [id]
         );
+
 
         if (recommendationInfo.rows.length === 0) {
             return res.status(404).json({
@@ -214,13 +243,16 @@ router.delete('/recommendations/:id', async (req, res) => {
             });
         }
 
+
         const { product_name, user_name } = recommendationInfo.rows[0];
+
 
         // Delete recommendation
         const result = await pool.query(
             'DELETE FROM product_recommendations WHERE id = $1',
             [id]
         );
+
 
         if (result.rowCount === 0) {
             return res.status(404).json({
@@ -229,7 +261,9 @@ router.delete('/recommendations/:id', async (req, res) => {
             });
         }
 
+
         console.log(`🗑️ Recommendation deleted: "${product_name}" by ${user_name} (ID: ${id})`);
+
 
         res.json({
             status: 'success',
@@ -241,6 +275,7 @@ router.delete('/recommendations/:id', async (req, res) => {
             }
         });
 
+
     } catch (error) {
         console.error('Delete recommendation error:', error);
         res.status(500).json({
@@ -251,9 +286,11 @@ router.delete('/recommendations/:id', async (req, res) => {
     }
 });
 
+
 // ============================================
 // GET FEEDBACK DASHBOARD STATS (for Admin Dashboard)
 // ============================================
+
 
 router.get('/stats', async (req, res) => {
     try {
@@ -294,6 +331,7 @@ router.get('/stats', async (req, res) => {
             `)
         ]);
 
+
         res.json({
             status: 'success',
             message: 'Feedback dashboard stats retrieved successfully',
@@ -310,6 +348,7 @@ router.get('/stats', async (req, res) => {
             }
         });
 
+
     } catch (error) {
         console.error('Get feedback stats error:', error);
         res.status(500).json({
@@ -319,5 +358,6 @@ router.get('/stats', async (req, res) => {
         });
     }
 });
+
 
 module.exports = router;
