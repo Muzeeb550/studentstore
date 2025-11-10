@@ -134,7 +134,7 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
                     token: authenticationParameters.token.substring(0, 10) + '...',
                     expire: authenticationParameters.expire,
                     signature: authenticationParameters.signature.substring(0, 10) + '...'
-                });F
+                });
              }
                 
                 res.json(authenticationParameters);
