@@ -182,32 +182,35 @@ router.post('/:postId/reaction', authenticateToken, postLimit, async (req, res) 
 // Admin: Get all posts (including unapproved, with pagination)
 router.get('/admin', requireAdmin, async (req, res) => {
   try {
-    const page = parseInt(req.query.page || '1', 10);
-    const limit = parseInt(req.query.limit || '20', 10);
-    const offset = (page - 1) * limit;
-    
+    // ✅ FIXED: Remove pagination for admin panel - get ALL posts
     const result = await pool.query(`
       SELECT sp.*, u.display_name as admin_name
       FROM student_posts sp
       JOIN Users u ON sp.admin_id = u.id
       ORDER BY sp.created_at DESC
-      OFFSET $1 LIMIT $2
-    `, [offset, limit]);
+    `);
     
-    const countResult = await pool.query('SELECT COUNT(*) as total FROM student_posts');
-    const total = parseInt(countResult.rows[0].total, 10);
-    const totalPages = Math.ceil(total / limit);
+    const total = result.rows.length;
 
     res.json({
       status: 'success',
       message: 'All posts retrieved successfully',
-      data: { posts: result.rows, pagination: { current_page: page, per_page: limit, total, total_pages: totalPages } }
+      data: { 
+        posts: result.rows, 
+        pagination: { 
+          total,
+          total_pages: 1,
+          current_page: 1,
+          per_page: total
+        } 
+      }
     });
   } catch (error) {
     console.error('Admin get posts error:', error);
     res.status(500).json({ status: 'error', message: 'Failed to retrieve posts', error: error.message });
   }
 });
+
 
 // Admin: Create new post
 router.post('/admin', requireAdmin, async (req, res) => {

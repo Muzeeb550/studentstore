@@ -3,15 +3,12 @@ const router = express.Router();
 const { pool } = require('../../config/database');
 const { requireAdmin } = require('../../middleware/adminAuth');
 
-
 // All routes require admin authentication
 router.use(requireAdmin);
-
 
 // ============================================
 // GET ALL APP RATINGS (Admin View)
 // ============================================
-
 
 router.get('/ratings', async (req, res) => {
     try {
@@ -19,7 +16,6 @@ router.get('/ratings', async (req, res) => {
         const limit = parseInt(req.query.limit || '20', 10);
         const sortBy = req.query.sort || 'newest'; // newest, oldest, rating_high, rating_low, updated
         const offset = (page - 1) * limit;
-
 
         // Build sort order
         let orderBy;
@@ -30,7 +26,6 @@ router.get('/ratings', async (req, res) => {
             case 'updated': orderBy = 'ORDER BY updated_at DESC'; break;
             default: orderBy = 'ORDER BY created_at DESC';
         }
-
 
         // Get ratings with pagination
         const ratingsResult = await pool.query(`
@@ -46,11 +41,9 @@ router.get('/ratings', async (req, res) => {
             OFFSET $1 LIMIT $2
         `, [offset, limit]);
 
-
         // Get total count
         const countResult = await pool.query('SELECT COUNT(*) as total FROM app_ratings');
         const total = parseInt(countResult.rows[0].total, 10);
-
 
         // Get statistics
         const statsResult = await pool.query(`
@@ -62,7 +55,6 @@ router.get('/ratings', async (req, res) => {
             FROM app_ratings
         `);
 
-
         // Get rating distribution
         const distributionResult = await pool.query(`
             SELECT rating, COUNT(*) as count
@@ -71,7 +63,6 @@ router.get('/ratings', async (req, res) => {
             ORDER BY rating DESC
         `);
 
-
         const ratingDistribution = {
             '5': 0, '4': 0, '3': 0, '2': 0, '1': 0
         };
@@ -79,9 +70,7 @@ router.get('/ratings', async (req, res) => {
             ratingDistribution[row.rating.toString()] = parseInt(row.count, 10);
         });
 
-
         const totalPages = Math.ceil(total / limit);
-
 
         res.json({
             status: 'success',
@@ -108,7 +97,6 @@ router.get('/ratings', async (req, res) => {
             }
         });
 
-
     } catch (error) {
         console.error('Get admin ratings error:', error);
         res.status(500).json({
@@ -119,19 +107,13 @@ router.get('/ratings', async (req, res) => {
     }
 });
 
-
 // ============================================
 // GET ALL PRODUCT RECOMMENDATIONS (Admin View)
 // ============================================
 
-
 router.get('/recommendations', async (req, res) => {
     try {
-        const page = parseInt(req.query.page || '1', 10);
-        const limit = parseInt(req.query.limit || '20', 10);
         const sortBy = req.query.sort || 'newest'; // newest, oldest
-        const offset = (page - 1) * limit;
-
 
         // Build sort order
         let orderBy;
@@ -140,25 +122,22 @@ router.get('/recommendations', async (req, res) => {
             default: orderBy = 'ORDER BY created_at DESC';
         }
 
-
-        // ✅ UPDATED: Include add_to_posts field in SELECT
+        // ✅ UPDATED: Include new admin tracking fields
         const recommendationsResult = await pool.query(`
             SELECT 
                 id, user_id, user_name, user_email, 
                 product_name, review_text, product_link, 
-                product_images, price, created_at, add_to_posts
+                product_images, price, created_at, 
+                add_to_posts, 
+                added_to_products, added_to_posts,
+                products_added_at, posts_added_at
             FROM product_recommendations
             ${orderBy}
-            OFFSET $1 LIMIT $2
-        `, [offset, limit]);
+        `);
 
+        const total = recommendationsResult.rows.length;
 
-        // Get total count
-        const countResult = await pool.query('SELECT COUNT(*) as total FROM product_recommendations');
-        const total = parseInt(countResult.rows[0].total, 10);
-
-
-        // ✅ UPDATED: Add statistics for add_to_posts
+        // ✅ UPDATED: Add statistics for new fields
         const statsResult = await pool.query(`
             SELECT 
                 COUNT(*) as total_recommendations,
@@ -167,13 +146,12 @@ router.get('/recommendations', async (req, res) => {
                 AVG(price) as average_price,
                 COUNT(CASE WHEN add_to_posts = true THEN 1 END) as wants_in_posts,
                 COUNT(CASE WHEN add_to_posts = false THEN 1 END) as declined_posts,
-                COUNT(CASE WHEN add_to_posts IS NULL THEN 1 END) as pending_response
+                COUNT(CASE WHEN add_to_posts IS NULL THEN 1 END) as pending_response,
+                COUNT(CASE WHEN added_to_products = true THEN 1 END) as added_to_products_count,
+                COUNT(CASE WHEN added_to_posts = true THEN 1 END) as added_to_posts_count,
+                COUNT(CASE WHEN added_to_products = false AND added_to_posts = false THEN 1 END) as pending_admin_action
             FROM product_recommendations
         `);
-
-
-        const totalPages = Math.ceil(total / limit);
-
 
         res.json({
             status: 'success',
@@ -185,12 +163,12 @@ router.get('/recommendations', async (req, res) => {
                     average_price: parseFloat(statsResult.rows[0].average_price || 0).toFixed(2)
                 },
                 pagination: {
-                    current_page: page,
-                    per_page: limit,
+                    current_page: 1,
+                    per_page: total,
                     total,
-                    total_pages: totalPages,
-                    has_next: page < totalPages,
-                    has_prev: page > 1
+                    total_pages: 1,
+                    has_next: false,
+                    has_prev: false
                 }
             },
             meta: {
@@ -198,7 +176,6 @@ router.get('/recommendations', async (req, res) => {
                 sort: sortBy
             }
         });
-
 
     } catch (error) {
         console.error('Get admin recommendations error:', error);
@@ -210,16 +187,15 @@ router.get('/recommendations', async (req, res) => {
     }
 });
 
-
 // ============================================
-// DELETE PRODUCT RECOMMENDATION
+// MARK RECOMMENDATION AS ADDED TO PRODUCTS/POSTS
+// ✅ NEW: Separate admin tracking from user choice
 // ============================================
 
-
-router.delete('/recommendations/:id', async (req, res) => {
+router.patch('/recommendations/:id/mark-added', async (req, res) => {
     try {
         const { id } = req.params;
-
+        const { added_to_products, added_to_posts } = req.body;
 
         if (!id || isNaN(parseInt(id, 10))) {
             return res.status(400).json({
@@ -228,13 +204,115 @@ router.delete('/recommendations/:id', async (req, res) => {
             });
         }
 
+        if (typeof added_to_products !== 'boolean' && typeof added_to_posts !== 'boolean') {
+            return res.status(400).json({
+                status: 'error',
+                message: 'At least one field (added_to_products or added_to_posts) is required'
+            });
+        }
+
+        // Get recommendation info
+        const recInfo = await pool.query(
+            'SELECT product_name, user_name FROM product_recommendations WHERE id = $1',
+            [id]
+        );
+
+        if (recInfo.rows.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Recommendation not found'
+            });
+        }
+
+        const { product_name, user_name } = recInfo.rows[0];
+
+        // Build dynamic update query
+        const updates = [];
+        const values = [];
+        let paramIndex = 1;
+
+        if (typeof added_to_products === 'boolean') {
+            updates.push(`added_to_products = $${paramIndex}`);
+            values.push(added_to_products);
+            paramIndex++;
+
+            if (added_to_products) {
+                updates.push(`products_added_at = NOW()`);
+            } else {
+                updates.push(`products_added_at = NULL`);
+            }
+        }
+
+        if (typeof added_to_posts === 'boolean') {
+            updates.push(`added_to_posts = $${paramIndex}`);
+            values.push(added_to_posts);
+            paramIndex++;
+
+            if (added_to_posts) {
+                updates.push(`posts_added_at = NOW()`);
+            } else {
+                updates.push(`posts_added_at = NULL`);
+            }
+        }
+
+        values.push(id);
+
+        const query = `
+            UPDATE product_recommendations 
+            SET ${updates.join(', ')}
+            WHERE id = $${paramIndex}
+            RETURNING *
+        `;
+
+        const result = await pool.query(query, values);
+
+        // Log the action
+        const actions = [];
+        if (typeof added_to_products === 'boolean') {
+            actions.push(`Products: ${added_to_products ? '✅' : '❌'}`);
+        }
+        if (typeof added_to_posts === 'boolean') {
+            actions.push(`Posts: ${added_to_posts ? '✅' : '❌'}`);
+        }
+
+        console.log(`📌 Marked "${product_name}" by ${user_name} → ${actions.join(', ')}`);
+
+        res.json({
+            status: 'success',
+            message: 'Recommendation marked successfully',
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Mark recommendation error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to mark recommendation',
+            error: error.message
+        });
+    }
+});
+
+// ============================================
+// DELETE PRODUCT RECOMMENDATION
+// ============================================
+
+router.delete('/recommendations/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id || isNaN(parseInt(id, 10))) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid recommendation ID'
+            });
+        }
 
         // Get recommendation info before deletion
         const recommendationInfo = await pool.query(
             'SELECT product_name, user_name FROM product_recommendations WHERE id = $1',
             [id]
         );
-
 
         if (recommendationInfo.rows.length === 0) {
             return res.status(404).json({
@@ -243,16 +321,13 @@ router.delete('/recommendations/:id', async (req, res) => {
             });
         }
 
-
         const { product_name, user_name } = recommendationInfo.rows[0];
-
 
         // Delete recommendation
         const result = await pool.query(
             'DELETE FROM product_recommendations WHERE id = $1',
             [id]
         );
-
 
         if (result.rowCount === 0) {
             return res.status(404).json({
@@ -261,9 +336,7 @@ router.delete('/recommendations/:id', async (req, res) => {
             });
         }
 
-
         console.log(`🗑️ Recommendation deleted: "${product_name}" by ${user_name} (ID: ${id})`);
-
 
         res.json({
             status: 'success',
@@ -275,7 +348,6 @@ router.delete('/recommendations/:id', async (req, res) => {
             }
         });
 
-
     } catch (error) {
         console.error('Delete recommendation error:', error);
         res.status(500).json({
@@ -286,11 +358,9 @@ router.delete('/recommendations/:id', async (req, res) => {
     }
 });
 
-
 // ============================================
 // GET FEEDBACK DASHBOARD STATS (for Admin Dashboard)
 // ============================================
-
 
 router.get('/stats', async (req, res) => {
     try {
@@ -331,7 +401,6 @@ router.get('/stats', async (req, res) => {
             `)
         ]);
 
-
         res.json({
             status: 'success',
             message: 'Feedback dashboard stats retrieved successfully',
@@ -348,7 +417,6 @@ router.get('/stats', async (req, res) => {
             }
         });
 
-
     } catch (error) {
         console.error('Get feedback stats error:', error);
         res.status(500).json({
@@ -358,6 +426,5 @@ router.get('/stats', async (req, res) => {
         });
     }
 });
-
 
 module.exports = router;
