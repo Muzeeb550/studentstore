@@ -165,7 +165,7 @@ router.post('/rating', authenticateToken, ratingLimit, async (req, res) => {
 router.post('/recommend', authenticateToken, recommendationLimit, async (req, res) => {
     try {
         const userId = req.user.id;
-        const { product_name, review_text, product_link, product_images, price } = req.body;
+        const { product_name, review_text, product_link, product_images, price, mode } = req.body; // ✅ Accept mode
 
 
         // Validation
@@ -268,11 +268,19 @@ router.post('/recommend', authenticateToken, recommendationLimit, async (req, re
         }
 
 
-        // Insert recommendation
+        // ✅ NEW: Determine add_to_posts value based on mode
+        let addToPosts = null; // Default: not asked yet
+        if (mode === 'post') {
+            addToPosts = true; // Automatically set to true for "Add Post" mode
+            console.log(`📝 Post mode detected: add_to_posts set to TRUE`);
+        }
+
+
+        // ✅ UPDATED: Insert recommendation with add_to_posts
         const result = await pool.query(`
             INSERT INTO product_recommendations 
-            (user_id, user_name, user_email, product_name, review_text, product_link, product_images, price, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            (user_id, user_name, user_email, product_name, review_text, product_link, product_images, price, add_to_posts, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
             RETURNING *
         `, [
             userId, 
@@ -282,11 +290,13 @@ router.post('/recommend', authenticateToken, recommendationLimit, async (req, re
             review_text.trim(), 
             product_link.trim(),
             JSON.stringify(optimizedImages),
-            price || null
+            price || null,
+            addToPosts // ✅ Add the add_to_posts value
         ]);
 
 
-        console.log(`🎁 New recommendation: "${product_name}" by ${userName} (${userEmail})`);
+        const modeLabel = mode === 'post' ? 'POST' : 'RECOMMENDATION';
+        console.log(`🎁 New ${modeLabel}: "${product_name}" by ${userName} (${userEmail}) - add_to_posts: ${addToPosts}`);
 
 
         res.status(201).json({
@@ -295,7 +305,8 @@ router.post('/recommend', authenticateToken, recommendationLimit, async (req, re
             data: {
                 ...result.rows[0],
                 max_image_size: '3MB',
-                images_count: optimizedImages.length
+                images_count: optimizedImages.length,
+                mode: mode || 'recommend' // ✅ Return mode for frontend reference
             }
         });
 
@@ -312,7 +323,7 @@ router.post('/recommend', authenticateToken, recommendationLimit, async (req, re
 
 
 // ============================================
-// ✅ NEW: UPDATE RECOMMENDATION - ADD TO POSTS CHOICE
+// UPDATE RECOMMENDATION - ADD TO POSTS CHOICE
 // ============================================
 
 
@@ -322,6 +333,7 @@ router.patch('/recommend/:id/add-to-posts', authenticateToken, async (req, res) 
         const recommendationId = parseInt(req.params.id, 10);
         const { add_to_posts } = req.body;
 
+
         // Validate recommendation ID
         if (!recommendationId || isNaN(recommendationId)) {
             return res.status(400).json({
@@ -329,6 +341,7 @@ router.patch('/recommend/:id/add-to-posts', authenticateToken, async (req, res) 
                 message: 'Invalid recommendation ID'
             });
         }
+
 
         // Validate add_to_posts value
         if (typeof add_to_posts !== 'boolean') {
@@ -338,11 +351,13 @@ router.patch('/recommend/:id/add-to-posts', authenticateToken, async (req, res) 
             });
         }
 
+
         // Check if recommendation exists and belongs to user
         const checkResult = await pool.query(
             'SELECT user_id, user_name, product_name FROM product_recommendations WHERE id = $1',
             [recommendationId]
         );
+
 
         if (checkResult.rows.length === 0) {
             return res.status(404).json({
@@ -350,6 +365,7 @@ router.patch('/recommend/:id/add-to-posts', authenticateToken, async (req, res) 
                 message: 'Recommendation not found'
             });
         }
+
 
         // Verify ownership
         if (checkResult.rows[0].user_id !== userId) {
@@ -359,7 +375,9 @@ router.patch('/recommend/:id/add-to-posts', authenticateToken, async (req, res) 
             });
         }
 
+
         const { user_name, product_name } = checkResult.rows[0];
+
 
         // Update add_to_posts field
         const result = await pool.query(
@@ -367,8 +385,10 @@ router.patch('/recommend/:id/add-to-posts', authenticateToken, async (req, res) 
             [add_to_posts, recommendationId]
         );
 
+
         const choice = add_to_posts ? 'YES - Add to Posts' : 'NO - Do not add';
         console.log(`📌 Recommendation ${recommendationId} ("${product_name}" by ${user_name}): ${choice}`);
+
 
         res.json({
             status: 'success',
@@ -379,6 +399,7 @@ router.patch('/recommend/:id/add-to-posts', authenticateToken, async (req, res) 
                 choice_text: choice
             }
         });
+
 
     } catch (error) {
         console.error('Update add_to_posts error:', error);

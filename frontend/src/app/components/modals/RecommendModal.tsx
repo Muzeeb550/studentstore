@@ -6,9 +6,10 @@ import imageCompression from 'browser-image-compression';
 interface RecommendModalProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: 'recommend' | 'post'; // ✅ NEW: Optional mode prop (defaults to 'recommend')
 }
 
-export default function RecommendModal({ isOpen, onClose }: RecommendModalProps) {
+export default function RecommendModal({ isOpen, onClose, mode = 'recommend' }: RecommendModalProps) {
   const [productName, setProductName] = useState('');
   const [reviewText, setReviewText] = useState('');
   const [productLink, setProductLink] = useState('');
@@ -21,14 +22,33 @@ export default function RecommendModal({ isOpen, onClose }: RecommendModalProps)
   const [uploadProgress, setUploadProgress] = useState(0);
   const [compressionStatus, setCompressionStatus] = useState('');
   
-  // ✅ NEW: States for Posts confirmation
+  // For "recommend" mode only
   const [showPostsConfirmation, setShowPostsConfirmation] = useState(false);
   const [recommendationId, setRecommendationId] = useState<number | null>(null);
   const [userName, setUserName] = useState('');
   const [confirmationLoading, setConfirmationLoading] = useState(false);
   const [finalMessage, setFinalMessage] = useState('');
 
-  // ✅ NEW: Get username on mount
+  // ✅ NEW: Dynamic content based on mode
+  const content = {
+    recommend: {
+      icon: '🎁',
+      title: 'Recommend a Product',
+      subtitle: 'Help other students discover great products!',
+      buttonText: 'Submit Recommendation',
+      successMessage: 'Thank you for your recommendation!',
+    },
+    post: {
+      icon: '📝',
+      title: 'Add a Post',
+      subtitle: 'Share your favorite product with the community!',
+      buttonText: 'Add Post',
+      successMessage: "We'll verify and add this POST. We'll notify you after the post is added.",
+    }
+  };
+
+  const currentContent = content[mode];
+
   useEffect(() => {
     if (isOpen) {
       try {
@@ -199,6 +219,7 @@ export default function RecommendModal({ isOpen, onClose }: RecommendModalProps)
       const token = localStorage.getItem('studentstore_token');
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+      // ✅ NEW: Include mode in request
       const response = await fetch(`${apiUrl}/api/feedback/recommend`, {
         method: 'POST',
         headers: {
@@ -211,6 +232,7 @@ export default function RecommendModal({ isOpen, onClose }: RecommendModalProps)
           product_link: productLink.trim(),
           product_images: uploadedImages,
           price: price ? parseFloat(price) : null,
+          mode: mode, // ✅ Send mode to backend
         }),
       });
 
@@ -218,21 +240,33 @@ export default function RecommendModal({ isOpen, onClose }: RecommendModalProps)
 
       if (result.status === 'success') {
         setSuccess(true);
-        setRecommendationId(result.data.id); // ✅ Store recommendation ID
-        setShowPostsConfirmation(true); // ✅ Show confirmation dialog
+        setRecommendationId(result.data.id);
+        
+        // ✅ Different flow based on mode
+        if (mode === 'recommend') {
+          // Show confirmation dialog for recommend mode
+          setShowPostsConfirmation(true);
+        } else {
+          // mode === 'post' - Skip confirmation, show final message directly
+          setFinalMessage(currentContent.successMessage);
+          setTimeout(() => {
+            onClose();
+            resetForm();
+          }, 3000);
+        }
+        
         setError('');
       } else {
-        setError(result.message || 'Failed to submit recommendation');
+        setError(result.message || 'Failed to submit');
       }
     } catch (error) {
-      setError('Failed to submit recommendation. Please try again.');
-      console.error('Submit recommendation error:', error);
+      setError('Failed to submit. Please try again.');
+      console.error('Submit error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ NEW: Handle Posts choice
   const handlePostsChoice = async (choice: boolean) => {
     if (!recommendationId) return;
 
@@ -261,19 +295,9 @@ export default function RecommendModal({ isOpen, onClose }: RecommendModalProps)
         
         setFinalMessage(message);
         
-        // Auto close after 3 seconds
         setTimeout(() => {
           onClose();
-          // Reset all states
-          setProductName('');
-          setReviewText('');
-          setProductLink('');
-          setPrice('');
-          setUploadedImages([]);
-          setSuccess(false);
-          setShowPostsConfirmation(false);
-          setRecommendationId(null);
-          setFinalMessage('');
+          resetForm();
         }, 3000);
       } else {
         setError(result.message || 'Failed to save your choice');
@@ -286,19 +310,32 @@ export default function RecommendModal({ isOpen, onClose }: RecommendModalProps)
     }
   };
 
+  const resetForm = () => {
+    setProductName('');
+    setReviewText('');
+    setProductLink('');
+    setPrice('');
+    setUploadedImages([]);
+    setSuccess(false);
+    setShowPostsConfirmation(false);
+    setRecommendationId(null);
+    setFinalMessage('');
+    setError('');
+  };
+
   if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-      onClick={!showPostsConfirmation ? onClose : undefined}
+      onClick={!showPostsConfirmation && !finalMessage ? onClose : undefined}
     >
       <div
         className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ✅ SHOW POSTS CONFIRMATION DIALOG */}
-        {showPostsConfirmation && !finalMessage ? (
+        {/* Show Posts Confirmation (recommend mode only) */}
+        {showPostsConfirmation && mode === 'recommend' && !finalMessage ? (
           <div className="text-center space-y-4">
             <div className="text-5xl mb-3">🎉</div>
             <h2 className="text-2xl font-bold text-green-600 mb-2">
@@ -337,24 +374,24 @@ export default function RecommendModal({ isOpen, onClose }: RecommendModalProps)
             </div>
           </div>
         ) : finalMessage ? (
-          // ✅ SHOW FINAL MESSAGE
+          // Show Final Message
           <div className="text-center space-y-4 py-8">
             <div className="text-6xl mb-4">✅</div>
             <p className="text-lg font-semibold text-gray-800">{finalMessage}</p>
             <p className="text-sm text-gray-500">Closing automatically...</p>
           </div>
         ) : (
-          // ✅ ORIGINAL FORM
+          // Show Form
           <>
             <div className="text-center mb-6">
-              <div className="text-4xl mb-2">🎁</div>
-              <h2 className="text-2xl font-bold text-student-primary mb-2">Recommend a Product</h2>
-              <p className="text-student-secondary text-sm">Help other students discover great products!</p>
+              <div className="text-4xl mb-2">{currentContent.icon}</div>
+              <h2 className="text-2xl font-bold text-student-primary mb-2">{currentContent.title}</h2>
+              <p className="text-student-secondary text-sm">{currentContent.subtitle}</p>
             </div>
 
-            {success && !showPostsConfirmation && (
+            {success && !showPostsConfirmation && !finalMessage && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-center">
-                <p className="text-green-800 font-semibold">🎉 Thank you for your recommendation!</p>
+                <p className="text-green-800 font-semibold">🎉 {currentContent.successMessage}</p>
               </div>
             )}
 
@@ -504,7 +541,7 @@ export default function RecommendModal({ isOpen, onClose }: RecommendModalProps)
                       Submitting...
                     </span>
                   ) : (
-                    'Submit Recommendation'
+                    currentContent.buttonText
                   )}
                 </button>
               </div>
