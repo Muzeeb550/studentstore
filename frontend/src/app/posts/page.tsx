@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PostsProvider, usePosts } from '../context/PostsContext';
 import PostCard from '../components/PostCard';
 import RecommendModal from '../components/modals/RecommendModal';
@@ -9,20 +10,90 @@ import Footer from '../components/Footer';
 import Link from 'next/link';
 
 function PostsContent() {
+  const searchParams = useSearchParams();
   const { posts, loading, error, fetchPosts, currentPage, totalPages, hasMore } = usePosts();
   
   const [showAddPostModal, setShowAddPostModal] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // ✅ Start with false
-  const [mounted, setMounted] = useState(false); // ✅ NEW: Track if component is mounted
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  // ✅ Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
 
-  // ✅ NEW: Set mounted on client side only
   useEffect(() => {
     setMounted(true);
     const token = localStorage.getItem('studentstore_token');
     setIsAuthenticated(!!token);
-  }, []);
+    
+    // ✅ Auto-fill search from URL param
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchQuery(decodeURIComponent(searchParam));
+    }
+  }, [searchParams]);
 
-  // Initial loading state (first page)
+  // ✅ UPDATED: Priority-based smart filtering
+useEffect(() => {
+  if (!searchQuery.trim()) {
+    setFilteredPosts(posts);
+    return;
+  }
+
+  // Split search query into individual words
+  const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
+  
+  // Create posts with match scores
+  const scoredPosts = posts.map(post => {
+    const username = (post.username || '').toLowerCase();
+    const productName = (post.product_name || '').toLowerCase();
+    
+    let score = 0;
+    let matchedWords = 0;
+    
+    queryWords.forEach(word => {
+      const matchesUsername = username.includes(word);
+      const matchesProductName = productName.includes(word);
+      
+      if (matchesUsername) {
+        score += 2; // Higher priority for username match
+        matchedWords++;
+      }
+      if (matchesProductName) {
+        score += 1; // Product name match
+        matchedWords++;
+      }
+    });
+    
+    return {
+      post,
+      score,
+      matchedWords,
+      isMatch: score > 0
+    };
+  });
+  
+  // Sort by score (highest first), then by number of matched words
+  scoredPosts.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return b.matchedWords - a.matchedWords;
+  });
+  
+  // Separate matched and non-matched posts
+  const matchingPosts = scoredPosts.filter(item => item.isMatch).map(item => item.post);
+  const nonMatchingPosts = scoredPosts.filter(item => !item.isMatch).map(item => item.post);
+  
+  setFilteredPosts([...matchingPosts, ...nonMatchingPosts]);
+}, [searchQuery, posts]);
+
+
+  // ✅ Clear search
+  const clearSearch = () => {
+    setSearchQuery('');
+    window.history.replaceState({}, '', '/posts');
+  };
+
+  // Initial loading state
   if (loading && posts.length === 0) {
     return (
       <div className="flex justify-center items-center py-20">
@@ -34,7 +105,7 @@ function PostsContent() {
     );
   }
   
-  // Error state with no posts loaded
+  // Error state
   if (error && posts.length === 0) {
     return (
       <div className="text-center py-20">
@@ -70,7 +141,6 @@ function PostsContent() {
                 </p>
               </div>
               
-              {/* ✅ Only show button after mount */}
               {mounted && isAuthenticated && (
                 <button
                   onClick={() => setShowAddPostModal(true)}
@@ -93,7 +163,6 @@ function PostsContent() {
             </svg>
             <p className="text-xl font-semibold text-gray-600">No posts yet</p>
             <p className="text-gray-500 mt-2">Be the first to share your favorite product!</p>
-            {/* ✅ Only show button after mount */}
             {mounted && isAuthenticated && (
               <button
                 onClick={() => setShowAddPostModal(true)}
@@ -114,6 +183,20 @@ function PostsContent() {
     );
   }
 
+  // ✅ UPDATED: Match counting with word-based search
+const matchingCount = searchQuery.trim() 
+  ? posts.filter(post => {
+      const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
+      const username = (post.username || '').toLowerCase();
+      const productName = (post.product_name || '').toLowerCase();
+      
+      return queryWords.some(word => 
+        username.includes(word) || productName.includes(word)
+      );
+    }).length 
+  : 0;
+
+
   return (
     <div className="space-y-8">
       {/* Header with description and Add Post button */}
@@ -128,7 +211,6 @@ function PostsContent() {
             </p>
           </div>
           
-          {/* ✅ Only show button after mount */}
           {mounted && isAuthenticated && (
             <button
               onClick={() => setShowAddPostModal(true)}
@@ -143,11 +225,77 @@ function PostsContent() {
         </div>
       </div>
 
+      {/* ✅ Search Bar */}
+      <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by username or product name..."
+              className="w-full pl-11 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm md:text-base"
+            />
+            <svg 
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <div className="text-sm text-gray-600 whitespace-nowrap">
+              {matchingCount} {matchingCount === 1 ? 'match' : 'matches'}
+            </div>
+          )}
+        </div>
+        
+        {/* Search Info */}
+        {searchQuery.trim() && matchingCount > 0 && (
+          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700">
+              🔍 Showing <span className="font-semibold">{matchingCount}</span> matching {matchingCount === 1 ? 'post' : 'posts'} at the top
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Posts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {posts.map(post => (
-          <PostCard key={post.id} post={post} />
-        ))}
+        {filteredPosts.map((post, index) => {
+          // ✅ UPDATED: Word-based match checking
+          const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
+          const username = (post.username || '').toLowerCase();
+          const productName = (post.product_name || '').toLowerCase();
+          
+          const isMatch = searchQuery.trim() && queryWords.some(word => 
+            username.includes(word) || productName.includes(word)
+          );
+          
+          return (
+            <div key={post.id} className="relative">
+              {/* Highlight matching posts */}
+              {isMatch && (
+                <div className="absolute -top-2 -left-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-10">
+                  ✨ Match
+                </div>
+              )}
+              <PostCard post={post} />
+            </div>
+          );
+        })}
       </div>
 
       {/* Load More Button */}

@@ -1148,7 +1148,7 @@ export default function ProfilePage() {
                           return (
                             <div
                               key={post.id}
-                              onClick={() => router.push('/posts')}
+                              onClick={() => router.push(`/posts?search=${encodeURIComponent(post.product_name + ' ' + user?.name || user?.display_name || user?.email.split('@')[0] || '')}`)}
                               className="bg-white rounded-lg sm:rounded-xl border border-border-light overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
                             >
                               {/* Product Image */}
