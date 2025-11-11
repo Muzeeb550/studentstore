@@ -33,37 +33,102 @@ function PostsContent() {
     }
   }, [searchParams]);
 
-  // ✅ UPDATED: Priority-based smart filtering
+  // ✅ FIXED: Proper async handling in useEffect
 useEffect(() => {
+  const highlightedPostId = searchParams.get('highlight');
+  
+  // Mode 1: Highlight specific post (with fetch if needed)
+  if (highlightedPostId && !searchQuery.trim()) {
+    const highlightId = parseInt(highlightedPostId);
+    let highlightedPost = posts.find(p => p.id === highlightId);
+    
+    // If post not found in current posts, fetch it from backend
+    if (!highlightedPost) {
+      const fetchAndHighlight = async () => {
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+          const response = await fetch(`${apiUrl}/api/posts/post/${highlightId}`);
+          const data = await response.json();
+          
+          if (data.status === 'success') {
+            const fetchedPost = data.data.post;
+            // Add to posts and put at top
+            const otherPosts = posts.filter(p => p.id !== highlightId);
+            setFilteredPosts([fetchedPost, ...otherPosts]);
+            
+            // Scroll to top after a brief delay to ensure rendering
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+            return;
+          }
+        } catch (error) {
+          console.error('Error fetching highlighted post:', error);
+          setFilteredPosts(posts);
+        }
+      };
+      
+      fetchAndHighlight();
+      return; // Exit early while fetching
+    }
+    
+    // Normal highlighting (post already in array)
+    const otherPosts = posts.filter(p => p.id !== highlightId);
+    setFilteredPosts([highlightedPost, ...otherPosts]);
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+    return;
+  }
+
+  // Mode 2: Regular search or no filter
   if (!searchQuery.trim()) {
     setFilteredPosts(posts);
     return;
   }
 
-  // Split search query into individual words
-  const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
+  // Mode 3: Smart search with email priority
+  const query = searchQuery.toLowerCase().trim();
+  
+  // Extract user email if present (format: "user:email@example.com")
+  const userMatch = query.match(/user:(\S+)/);
+  const userEmail = userMatch ? userMatch[1] : null;
+  
+  // Remove "user:email" from query to get remaining search terms
+  const cleanQuery = query.replace(/user:\S+/g, '').trim();
+  const queryWords = cleanQuery ? cleanQuery.split(/\s+/) : [];
   
   // Create posts with match scores
   const scoredPosts = posts.map(post => {
     const username = (post.username || '').toLowerCase();
     const productName = (post.product_name || '').toLowerCase();
+    const postEmail = (post.user_email || '').toLowerCase();
     
     let score = 0;
     let matchedWords = 0;
     
-    queryWords.forEach(word => {
-      const matchesUsername = username.includes(word);
-      const matchesProductName = productName.includes(word);
-      
-      if (matchesUsername) {
-        score += 2; // Higher priority for username match
-        matchedWords++;
-      }
-      if (matchesProductName) {
-        score += 1; // Product name match
-        matchedWords++;
-      }
-    });
+    // HIGHEST PRIORITY: Exact user email match
+    const isExactUser = userEmail && postEmail === userEmail;
+    if (isExactUser) {
+      score += 100; // HUGE boost for exact user match
+    }
+    
+    // Check product name matches
+    if (queryWords.length > 0) {
+      queryWords.forEach(word => {
+        const matchesProductName = productName.includes(word);
+        const matchesUsername = username.includes(word);
+        
+        if (matchesProductName) {
+          score += isExactUser ? 50 : 10; // Higher score if it's user's own post
+          matchedWords++;
+        }
+        if (matchesUsername) {
+          score += 5;
+          matchedWords++;
+        }
+      });
+    }
     
     return {
       post,
@@ -73,7 +138,7 @@ useEffect(() => {
     };
   });
   
-  // Sort by score (highest first), then by number of matched words
+  // Sort by score (highest first)
   scoredPosts.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
     return b.matchedWords - a.matchedWords;
@@ -84,7 +149,7 @@ useEffect(() => {
   const nonMatchingPosts = scoredPosts.filter(item => !item.isMatch).map(item => item.post);
   
   setFilteredPosts([...matchingPosts, ...nonMatchingPosts]);
-}, [searchQuery, posts]);
+}, [searchQuery, posts, searchParams]);
 
 
   // ✅ Clear search
@@ -183,19 +248,30 @@ useEffect(() => {
     );
   }
 
-  // ✅ UPDATED: Match counting with word-based search
-const matchingCount = searchQuery.trim() 
-  ? posts.filter(post => {
-      const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
-      const username = (post.username || '').toLowerCase();
-      const productName = (post.product_name || '').toLowerCase();
-      
-      return queryWords.some(word => 
-        username.includes(word) || productName.includes(word)
-      );
-    }).length 
-  : 0;
-
+  // ✅ UPDATED: Match counting with both modes
+  const highlightedPostId = searchParams.get('highlight');
+  const matchingCount = highlightedPostId 
+    ? 1 
+    : searchQuery.trim() 
+      ? posts.filter(post => {
+          const query = searchQuery.toLowerCase().trim();
+          const userMatch = query.match(/user:(\S+)/);
+          const userEmail = userMatch ? userMatch[1] : null;
+          const cleanQuery = query.replace(/user:\S+/g, '').trim();
+          const queryWords = cleanQuery ? cleanQuery.split(/\s+/) : [];
+          
+          const username = (post.username || '').toLowerCase();
+          const productName = (post.product_name || '').toLowerCase();
+          const postEmail = (post.user_email || '').toLowerCase();
+          
+          const matchesUser = userEmail && postEmail === userEmail;
+          const matchesWords = queryWords.length === 0 || queryWords.some(word => 
+            username.includes(word) || productName.includes(word)
+          );
+          
+          return matchesUser || matchesWords;
+        }).length 
+      : 0;
 
   return (
     <div className="space-y-8">
@@ -263,10 +339,17 @@ const matchingCount = searchQuery.trim()
         </div>
         
         {/* Search Info */}
-        {searchQuery.trim() && matchingCount > 0 && (
-          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-700">
-              🔍 Showing <span className="font-semibold">{matchingCount}</span> matching {matchingCount === 1 ? 'post' : 'posts'} at the top
+        {(searchQuery.trim() || highlightedPostId) && matchingCount > 0 && (
+          <div className={`mt-3 p-3 rounded-lg border ${
+            highlightedPostId 
+              ? 'bg-green-50 border-green-200' 
+              : 'bg-blue-50 border-blue-200'
+          }`}>
+            <p className={`text-sm ${highlightedPostId ? 'text-green-700' : 'text-blue-700'}`}>
+              {highlightedPostId 
+                ? '🎯 Your selected post is shown at the top' 
+                : `🔍 Showing ${matchingCount} matching ${matchingCount === 1 ? 'post' : 'posts'} at the top`
+              }
             </p>
           </div>
         )}
@@ -275,21 +358,41 @@ const matchingCount = searchQuery.trim()
       {/* Posts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPosts.map((post, index) => {
-          // ✅ UPDATED: Word-based match checking
-          const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
+          // ✅ UPDATED: Check for both highlight and search match
+          const highlightedPostId = searchParams.get('highlight');
+          const isHighlighted = highlightedPostId && post.id === parseInt(highlightedPostId);
+          
+          // Regular search match
+          const query = searchQuery.toLowerCase().trim();
+          const userMatch = query.match(/user:(\S+)/);
+          const userEmail = userMatch ? userMatch[1] : null;
+          const cleanQuery = query.replace(/user:\S+/g, '').trim();
+          const queryWords = cleanQuery ? cleanQuery.split(/\s+/) : [];
+          
           const username = (post.username || '').toLowerCase();
           const productName = (post.product_name || '').toLowerCase();
+          const postEmail = (post.user_email || '').toLowerCase();
           
-          const isMatch = searchQuery.trim() && queryWords.some(word => 
+          const isExactUser = userEmail && postEmail === userEmail;
+          const matchesWords = queryWords.length === 0 || queryWords.some(word => 
             username.includes(word) || productName.includes(word)
           );
+          
+          const isSearchMatch = searchQuery.trim() && (isExactUser || matchesWords);
+          const isMatch = isHighlighted || isSearchMatch;
           
           return (
             <div key={post.id} className="relative">
               {/* Highlight matching posts */}
               {isMatch && (
-                <div className="absolute -top-2 -left-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-10">
-                  ✨ Match
+                <div className={`absolute -top-2 -left-2 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-10 ${
+                  isHighlighted 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
+                    : isExactUser
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                      : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                }`}>
+                  {isHighlighted || isExactUser ? '🎯 Your Post' : '✨ Match'}
                 </div>
               )}
               <PostCard post={post} />

@@ -418,4 +418,57 @@ router.delete('/admin/:postId', requireAdmin, async (req, res) => {
   }
 });
 
+
+
+// Get single post by ID
+router.get('/post/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      `SELECT 
+        sp.*,
+        u.name as username,
+        u.email as user_email,
+        COALESCE(likes.count, 0) as likes_count,
+        COALESCE(dislikes.count, 0) as dislikes_count
+      FROM student_posts sp
+      LEFT JOIN users u ON sp.user_id = u.id
+      LEFT JOIN (
+        SELECT post_id, COUNT(*) as count
+        FROM post_reactions
+        WHERE reaction_type = 'like'
+        GROUP BY post_id
+      ) likes ON sp.id = likes.post_id
+      LEFT JOIN (
+        SELECT post_id, COUNT(*) as count
+        FROM post_reactions
+        WHERE reaction_type = 'dislike'
+        GROUP BY post_id
+      ) dislikes ON sp.id = dislikes.post_id
+      WHERE sp.id = $1`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Post not found'
+      });
+    }
+    
+    res.json({
+      status: 'success',
+      data: { post: result.rows[0] }
+    });
+  } catch (error) {
+    console.error('Error fetching post:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch post'
+    });
+  }
+});
+
+
 module.exports = router;

@@ -691,6 +691,3 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
 });
 
 module.exports = router;
-
-
-module.exports = router;
