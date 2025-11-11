@@ -626,7 +626,6 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
   try {
     const { email } = req.params;
     
-    // Validate email format
     if (!email || !email.includes('@')) {
       return res.status(400).json({
         status: 'error',
@@ -638,7 +637,7 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
 
     const result = await pool.query(
       `SELECT 
-        id, 
+        id,
         display_name, 
         profile_picture,
         created_at
@@ -648,7 +647,6 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      // Return default profile if user not found
       const fallbackName = email.split('@')[0].replace(/[._-]/g, ' ');
       
       logger.debug('User not found by email, returning fallback profile');
@@ -663,7 +661,6 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
       });
     }
 
-    // ✅ Optimize profile picture URL before returning
     const user = result.rows[0];
     const optimizedProfilePicture = user.profile_picture 
       ? addDefaultTransformations(user.profile_picture, 'profile')
@@ -674,6 +671,7 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
     res.json({
       status: 'success',
       data: {
+        user_id: user.id,  // ✅ ADD THIS
         display_name: user.display_name,
         profile_picture: optimizedProfilePicture,
         exists: true,
@@ -689,5 +687,127 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
     });
   }
 });
+
+
+// ============================================
+// GET PUBLIC PROFILE BY USER ID
+// ============================================
+router.get('/public-profile/:userId', generalApiLimit, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId, 10);
+    
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid user ID'
+      });
+    }
+
+    logger.debug(`Fetching public profile for user ID: ${userId}`);
+
+    // Get user basic info (NO EMAIL)
+    const userResult = await pool.query(`
+      SELECT 
+        id, 
+        display_name, 
+        name,
+        profile_picture,
+        role,
+        created_at
+      FROM Users 
+      WHERE id = $1 AND is_active = true
+    `, [userId]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found or account deactivated'
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Get user's email (for internal queries only, not exposed)
+    const emailResult = await pool.query(
+      'SELECT email FROM Users WHERE id = $1',
+      [userId]
+    );
+    const userEmail = emailResult.rows[0]?.email;
+
+    // Get posts count (from student_posts via email OR recommendation_id)
+    const postsResult = await pool.query(`
+      SELECT COUNT(*) as count
+      FROM student_posts sp
+      LEFT JOIN product_recommendations pr ON sp.recommendation_id = pr.id
+      WHERE (pr.user_id = $1 OR sp.user_email = $2)
+        AND sp.is_approved = true
+    `, [userId, userEmail]);
+
+    // Get reviews count
+    const reviewsResult = await pool.query(
+      'SELECT COUNT(*) as count FROM Reviews WHERE user_id = $1',
+      [userId]
+    );
+
+    // Get total likes/dislikes on user's posts
+    const likesResult = await pool.query(`
+      SELECT 
+        SUM(sp.likes_count) as total_likes,
+        SUM(sp.dislikes_count) as total_dislikes
+      FROM student_posts sp
+      LEFT JOIN product_recommendations pr ON sp.recommendation_id = pr.id
+      WHERE (pr.user_id = $1 OR sp.user_email = $2)
+        AND sp.is_approved = true
+    `, [userId, userEmail]);
+
+    // Get member since info
+    const memberSince = user.created_at;
+    const memberSinceFormatted = memberSince.toISOString().split('T')[0];
+    const daysSinceJoining = Math.floor((new Date().getTime() - memberSince.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Get average rating given by user
+    const avgRatingResult = await pool.query(
+      'SELECT AVG(rating::DECIMAL(3,2)) as avg_rating FROM Reviews WHERE user_id = $1',
+      [userId]
+    );
+
+    // ✅ Optimize profile picture URL
+    const optimizedProfilePicture = user.profile_picture 
+      ? addDefaultTransformations(user.profile_picture, 'profile')
+      : null;
+
+    logger.debug(`Public profile fetched successfully for user ID: ${userId}`);
+
+    res.json({
+      status: 'success',
+      message: 'Public profile retrieved successfully',
+      data: {
+        user: {
+          id: user.id,
+          display_name: user.display_name || user.name,
+          profile_picture: optimizedProfilePicture,
+          role: user.role,
+          member_since: memberSinceFormatted,
+          member_since_days: daysSinceJoining
+        },
+        stats: {
+          posts_count: parseInt(postsResult.rows[0].count) || 0,
+          reviews_count: parseInt(reviewsResult.rows[0].count) || 0,
+          total_likes: parseInt(likesResult.rows[0].total_likes) || 0,
+          total_dislikes: parseInt(likesResult.rows[0].total_dislikes) || 0,
+          average_rating_given: parseFloat(avgRatingResult.rows[0].avg_rating) || 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get public profile error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve public profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
 
 module.exports = router;

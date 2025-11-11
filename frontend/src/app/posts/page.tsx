@@ -19,9 +19,17 @@ function PostsContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mounted, setMounted] = useState(false);
   
+  // ✅ FIX: Prevent hydration mismatch
+  const [isClientLoading, setIsClientLoading] = useState(true);
+  
   // ✅ Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
+
+  // ✅ FIX: Set client loaded
+  useEffect(() => {
+    setIsClientLoading(false);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -159,8 +167,8 @@ function PostsContent() {
     window.history.replaceState({}, '', '/posts');
   };
 
-  // Initial loading state
-  if (loading && posts.length === 0) {
+  // ✅ FIXED: Initial loading state with hydration safety
+  if (isClientLoading || (loading && posts.length === 0)) {
     return (
       <div className="flex justify-center items-center py-20">
         <div className="text-center">

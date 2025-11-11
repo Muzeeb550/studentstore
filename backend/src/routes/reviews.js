@@ -729,4 +729,90 @@ router.get('/votes/my-votes', authenticateToken, async (req, res) => {
     }
 });
 
+
+// ============================================
+// GET REVIEWS BY USER ID (Public)
+// ============================================
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId, 10);
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '12', 10);
+    const offset = (page - 1) * limit;
+
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid user ID'
+      });
+    }
+
+    // Check if user exists
+    const userCheck = await pool.query(
+      'SELECT display_name FROM Users WHERE id = $1 AND is_active = true',
+      [userId]
+    );
+
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    const displayName = userCheck.rows[0].display_name;
+
+    // Get user's reviews with product info
+    const result = await pool.query(`
+      SELECT 
+        r.id, r.rating, r.review_text, r.review_images,
+        r.helpful_count, r.not_helpful_count,
+        r.helpfulness_score, r.created_at, r.updated_at,
+        p.id as product_id, p.name as product_name, 
+        p.image_urls as product_images
+      FROM Reviews r
+      JOIN Products p ON r.product_id = p.id
+      WHERE r.user_id = $1
+      ORDER BY r.created_at DESC
+      OFFSET $2 LIMIT $3
+    `, [userId, offset, limit]);
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) as total FROM Reviews WHERE user_id = $1',
+      [userId]
+    );
+
+    const total = parseInt(countResult.rows[0].total, 10);
+    const totalPages = Math.ceil(total / limit);
+
+    res.json({
+      status: 'success',
+      message: `Reviews by ${displayName} retrieved successfully`,
+      data: {
+        reviews: result.rows,
+        user: {
+          id: userId,
+          display_name: displayName
+        },
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get user reviews error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve user reviews',
+      error: error.message
+    });
+  }
+});
+
+
 module.exports = router;

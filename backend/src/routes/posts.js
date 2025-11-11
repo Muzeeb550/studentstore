@@ -470,5 +470,93 @@ router.get('/post/:id', async (req, res) => {
   }
 });
 
+// ============================================
+// GET POSTS BY USER ID (Public)
+// ============================================
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId, 10);
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '12', 10);
+    const offset = (page - 1) * limit;
+
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid user ID'
+      });
+    }
+
+    // Get user's email for querying posts
+    const userResult = await pool.query(
+      'SELECT email, display_name FROM Users WHERE id = $1 AND is_active = true',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    const userEmail = userResult.rows[0].email;
+    const displayName = userResult.rows[0].display_name;
+
+    // Get posts created from user's recommendations OR with user's email
+    const postsResult = await pool.query(`
+      SELECT 
+        sp.*,
+        u.display_name as admin_name
+      FROM student_posts sp
+      LEFT JOIN product_recommendations pr ON sp.recommendation_id = pr.id
+      LEFT JOIN Users u ON sp.admin_id = u.id
+      WHERE (pr.user_id = $1 OR sp.user_email = $2)
+        AND sp.is_approved = true
+      ORDER BY sp.created_at DESC
+      OFFSET $3 LIMIT $4
+    `, [userId, userEmail, offset, limit]);
+
+    const countResult = await pool.query(`
+      SELECT COUNT(*) as total
+      FROM student_posts sp
+      LEFT JOIN product_recommendations pr ON sp.recommendation_id = pr.id
+      WHERE (pr.user_id = $1 OR sp.user_email = $2)
+        AND sp.is_approved = true
+    `, [userId, userEmail]);
+
+    const total = parseInt(countResult.rows[0].total, 10);
+    const totalPages = Math.ceil(total / limit);
+
+    res.json({
+      status: 'success',
+      message: `Posts by ${displayName} retrieved successfully`,
+      data: {
+        posts: postsResult.rows,
+        user: {
+          id: userId,
+          display_name: displayName
+        },
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get user posts error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve user posts',
+      error: error.message
+    });
+  }
+});
+
+
 
 module.exports = router;

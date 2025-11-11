@@ -2,6 +2,7 @@
 
 import React, { memo, useState, useEffect } from 'react';
 import { usePosts } from '../context/PostsContext';
+import Link from 'next/link';
 
 interface Post {
   id: number;
@@ -22,6 +23,7 @@ interface Post {
 }
 
 interface UserProfile {
+  user_id?: number; // ✅ NEW: User ID for profile link
   display_name: string;
   profile_picture: string | null;
   exists: boolean;
@@ -89,7 +91,7 @@ const PostCard = memo(({ post }: { post: Post }) => {
   const [reactionDisabled, setReactionDisabled] = useState(false);
 
   const handleReaction = async (reactionType: 'like' | 'dislike') => {
-    if (reactionDisabled) return;  // prevent rapid clicks
+    if (reactionDisabled) return;
     const token = localStorage.getItem('studentstore_token');
     if (!token) {
       alert('Please sign in to react to posts');
@@ -101,12 +103,13 @@ const PostCard = memo(({ post }: { post: Post }) => {
     } catch (e) {
       // Optionally handle error feedback here
     } finally {
-      setTimeout(() => setReactionDisabled(false), 1000); // 1 second cooldown
+      setTimeout(() => setReactionDisabled(false), 1000);
     }
   };
 
   const displayName = userProfile?.display_name || post.username;
   const profilePicture = userProfile?.profile_picture;
+  const userId = userProfile?.user_id; // ✅ Get user_id from profile
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -120,10 +123,10 @@ const PostCard = memo(({ post }: { post: Post }) => {
     setCurrentImageIndex(prev => (prev === 0 ? post.product_images.length - 1 : prev - 1));
   };
 
-  return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-      {/* User Info Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center gap-3 bg-gradient-to-r from-purple-50 via-blue-50 to-purple-50">
+  // ✅ Render clickable or non-clickable header based on userId availability
+  const UserHeader = () => {
+    const content = (
+      <>
         {loadingProfile ? (
           <div className="w-12 h-12 rounded-full bg-gray-300 animate-pulse"></div>
         ) : profilePicture && !imageError ? (
@@ -158,7 +161,36 @@ const PostCard = memo(({ post }: { post: Post }) => {
             )}
           </div>
         </div>
+      </>
+    );
+
+    // ✅ If we have userId and user exists, make it clickable
+    if (userId && userProfile?.exists) {
+      return (
+        <Link 
+          href={`/profile/${userId}`}
+          className="p-4 border-b border-gray-200 flex items-center gap-3 bg-gradient-to-r from-purple-50 via-blue-50 to-purple-50 hover:from-purple-100 hover:via-blue-100 hover:to-purple-100 transition-all cursor-pointer group"
+        >
+          {content}
+          <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      );
+    }
+
+    // ✅ Otherwise, render non-clickable
+    return (
+      <div className="p-4 border-b border-gray-200 flex items-center gap-3 bg-gradient-to-r from-purple-50 via-blue-50 to-purple-50">
+        {content}
       </div>
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+      {/* User Info Header - Now Clickable if user exists */}
+      <UserHeader />
 
       {/* Product Images Carousel */}
       {post.product_images && post.product_images.length > 0 && (
