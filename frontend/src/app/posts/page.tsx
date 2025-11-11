@@ -2,8 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PostsProvider, usePosts } from '../context/PostsContext';
 import PostCard from '../components/PostCard';
@@ -37,123 +36,122 @@ function PostsContent() {
   }, [searchParams]);
 
   // ✅ FIXED: Proper async handling in useEffect
-useEffect(() => {
-  const highlightedPostId = searchParams.get('highlight');
-  
-  // Mode 1: Highlight specific post (with fetch if needed)
-  if (highlightedPostId && !searchQuery.trim()) {
-    const highlightId = parseInt(highlightedPostId);
-    let highlightedPost = posts.find(p => p.id === highlightId);
+  useEffect(() => {
+    const highlightedPostId = searchParams.get('highlight');
     
-    // If post not found in current posts, fetch it from backend
-    if (!highlightedPost) {
-      const fetchAndHighlight = async () => {
-        try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-          const response = await fetch(`${apiUrl}/api/posts/post/${highlightId}`);
-          const data = await response.json();
-          
-          if (data.status === 'success') {
-            const fetchedPost = data.data.post;
-            // Add to posts and put at top
-            const otherPosts = posts.filter(p => p.id !== highlightId);
-            setFilteredPosts([fetchedPost, ...otherPosts]);
-            
-            // Scroll to top after a brief delay to ensure rendering
-            setTimeout(() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 100);
-            return;
-          }
-        } catch (error) {
-          console.error('Error fetching highlighted post:', error);
-          setFilteredPosts(posts);
-        }
-      };
+    // Mode 1: Highlight specific post (with fetch if needed)
+    if (highlightedPostId && !searchQuery.trim()) {
+      const highlightId = parseInt(highlightedPostId);
+      let highlightedPost = posts.find(p => p.id === highlightId);
       
-      fetchAndHighlight();
-      return; // Exit early while fetching
-    }
-    
-    // Normal highlighting (post already in array)
-    const otherPosts = posts.filter(p => p.id !== highlightId);
-    setFilteredPosts([highlightedPost, ...otherPosts]);
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
-    return;
-  }
-
-  // Mode 2: Regular search or no filter
-  if (!searchQuery.trim()) {
-    setFilteredPosts(posts);
-    return;
-  }
-
-  // Mode 3: Smart search with email priority
-  const query = searchQuery.toLowerCase().trim();
-  
-  // Extract user email if present (format: "user:email@example.com")
-  const userMatch = query.match(/user:(\S+)/);
-  const userEmail = userMatch ? userMatch[1] : null;
-  
-  // Remove "user:email" from query to get remaining search terms
-  const cleanQuery = query.replace(/user:\S+/g, '').trim();
-  const queryWords = cleanQuery ? cleanQuery.split(/\s+/) : [];
-  
-  // Create posts with match scores
-  const scoredPosts = posts.map(post => {
-    const username = (post.username || '').toLowerCase();
-    const productName = (post.product_name || '').toLowerCase();
-    const postEmail = (post.user_email || '').toLowerCase();
-    
-    let score = 0;
-    let matchedWords = 0;
-    
-    // HIGHEST PRIORITY: Exact user email match
-    const isExactUser = userEmail && postEmail === userEmail;
-    if (isExactUser) {
-      score += 100; // HUGE boost for exact user match
-    }
-    
-    // Check product name matches
-    if (queryWords.length > 0) {
-      queryWords.forEach(word => {
-        const matchesProductName = productName.includes(word);
-        const matchesUsername = username.includes(word);
+      // If post not found in current posts, fetch it from backend
+      if (!highlightedPost) {
+        const fetchAndHighlight = async () => {
+          try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiUrl}/api/posts/post/${highlightId}`);
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+              const fetchedPost = data.data.post;
+              // Add to posts and put at top
+              const otherPosts = posts.filter(p => p.id !== highlightId);
+              setFilteredPosts([fetchedPost, ...otherPosts]);
+              
+              // Scroll to top after a brief delay to ensure rendering
+              setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 100);
+              return;
+            }
+          } catch (error) {
+            console.error('Error fetching highlighted post:', error);
+            setFilteredPosts(posts);
+          }
+        };
         
-        if (matchesProductName) {
-          score += isExactUser ? 50 : 10; // Higher score if it's user's own post
-          matchedWords++;
-        }
-        if (matchesUsername) {
-          score += 5;
-          matchedWords++;
-        }
-      });
+        fetchAndHighlight();
+        return; // Exit early while fetching
+      }
+      
+      // Normal highlighting (post already in array)
+      const otherPosts = posts.filter(p => p.id !== highlightId);
+      setFilteredPosts([highlightedPost, ...otherPosts]);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+      return;
     }
-    
-    return {
-      post,
-      score,
-      matchedWords,
-      isMatch: score > 0
-    };
-  });
-  
-  // Sort by score (highest first)
-  scoredPosts.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return b.matchedWords - a.matchedWords;
-  });
-  
-  // Separate matched and non-matched posts
-  const matchingPosts = scoredPosts.filter(item => item.isMatch).map(item => item.post);
-  const nonMatchingPosts = scoredPosts.filter(item => !item.isMatch).map(item => item.post);
-  
-  setFilteredPosts([...matchingPosts, ...nonMatchingPosts]);
-}, [searchQuery, posts, searchParams]);
 
+    // Mode 2: Regular search or no filter
+    if (!searchQuery.trim()) {
+      setFilteredPosts(posts);
+      return;
+    }
+
+    // Mode 3: Smart search with email priority
+    const query = searchQuery.toLowerCase().trim();
+    
+    // Extract user email if present (format: "user:email@example.com")
+    const userMatch = query.match(/user:(\S+)/);
+    const userEmail = userMatch ? userMatch[1] : null;
+    
+    // Remove "user:email" from query to get remaining search terms
+    const cleanQuery = query.replace(/user:\S+/g, '').trim();
+    const queryWords = cleanQuery ? cleanQuery.split(/\s+/) : [];
+    
+    // Create posts with match scores
+    const scoredPosts = posts.map(post => {
+      const username = (post.username || '').toLowerCase();
+      const productName = (post.product_name || '').toLowerCase();
+      const postEmail = (post.user_email || '').toLowerCase();
+      
+      let score = 0;
+      let matchedWords = 0;
+      
+      // HIGHEST PRIORITY: Exact user email match
+      const isExactUser = userEmail && postEmail === userEmail;
+      if (isExactUser) {
+        score += 100; // HUGE boost for exact user match
+      }
+      
+      // Check product name matches
+      if (queryWords.length > 0) {
+        queryWords.forEach(word => {
+          const matchesProductName = productName.includes(word);
+          const matchesUsername = username.includes(word);
+          
+          if (matchesProductName) {
+            score += isExactUser ? 50 : 10; // Higher score if it's user's own post
+            matchedWords++;
+          }
+          if (matchesUsername) {
+            score += 5;
+            matchedWords++;
+          }
+        });
+      }
+      
+      return {
+        post,
+        score,
+        matchedWords,
+        isMatch: score > 0
+      };
+    });
+    
+    // Sort by score (highest first)
+    scoredPosts.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return b.matchedWords - a.matchedWords;
+    });
+    
+    // Separate matched and non-matched posts
+    const matchingPosts = scoredPosts.filter(item => item.isMatch).map(item => item.post);
+    const nonMatchingPosts = scoredPosts.filter(item => !item.isMatch).map(item => item.post);
+    
+    setFilteredPosts([...matchingPosts, ...nonMatchingPosts]);
+  }, [searchQuery, posts, searchParams]);
 
   // ✅ Clear search
   const clearSearch = () => {
@@ -461,7 +459,7 @@ useEffect(() => {
   );
 }
 
-export default function PostsPage() {
+function PostsPageContent() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -485,9 +483,7 @@ export default function PostsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-student-page">
-      <Navbar />
-      
+    <>
       {/* Products/Posts Navigation Tabs */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
@@ -510,7 +506,16 @@ export default function PostsPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <PostsProvider>
-          <PostsContent />
+          <Suspense fallback={
+            <div className="flex justify-center items-center py-20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading posts...</p>
+              </div>
+            </div>
+          }>
+            <PostsContent />
+          </Suspense>
         </PostsProvider>
       </div>
 
@@ -536,7 +541,15 @@ export default function PostsPage() {
           </svg>
         </button>
       )}
+    </>
+  );
+}
 
+export default function PostsPage() {
+  return (
+    <div className="min-h-screen bg-student-page">
+      <Navbar />
+      <PostsPageContent />
       <Footer />
     </div>
   );
