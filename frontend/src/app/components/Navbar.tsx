@@ -21,7 +21,6 @@ export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [wishlistCount, setWishlistCount] = useState(0);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string>('');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
@@ -237,15 +236,6 @@ export default function Navbar() {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('studentstore_token');
-    localStorage.removeItem('studentstore_user');
-    setUser(null);
-    setWishlistCount(0);
-    setProfilePicture('');
-    setDropdownOpen(false);
-  };
-
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
@@ -254,96 +244,106 @@ export default function Navbar() {
     return user?.name || user?.display_name || user?.email.split('@')[0] || 'Student';
   };
 
-  // ✅ StudentStoreLogo Component - FIXED for mobile click handling
+ // ✅ IMPROVED StudentStoreLogo Component - Reliable gestures on ALL devices
 const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [isSwipingRight, setIsSwipingRight] = useState(false);
   const [swipeProgress, setSwipeProgress] = useState(0);
-  const [lastTapTime, setLastTapTime] = useState(0);
+  const [clickCount, setClickCount] = useState(0);
+  const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
 
+  // ✅ SWIPE HANDLERS (Mobile/Touch devices)
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     setTouchStart(e.targetTouches[0].clientX);
+    setTouchEnd(e.targetTouches[0].clientX);
     setIsSwipingRight(false);
     setSwipeProgress(0);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     const currentX = e.targetTouches[0].clientX;
-    const distance = touchStart - currentX;
+    setTouchEnd(currentX);
+    const distance = currentX - touchStart;
     
-    if (touchStart - currentX < 0) {
+    // Right swipe detection
+    if (distance > 0) {
       setIsSwipingRight(true);
-      const progress = Math.min(Math.abs(distance) / 100, 1);
+      const progress = Math.min(distance / 100, 1);
       setSwipeProgress(progress);
     }
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    setTouchEnd(e.changedTouches[0].clientX);
-    const distance = touchStart - touchEnd;
-    const isRightSwipe = distance < -50;
+    const distance = touchEnd - touchStart;
+    const isRightSwipe = distance > 50; // Threshold: 50px
 
-    if (isRightSwipe && mobile) {
-      console.log('✨ Swiped right - going to SkillStore');
+    if (isRightSwipe) {
+      console.log('✨ Right swipe detected → SkillStore');
       window.location.href = '/skillstore';
     }
-    // ✅ FIXED: Only reset if it was a swipe
-    // If it's a tap, let onClick handler deal with it
-    if (!isRightSwipe) {
-      setIsSwipingRight(false);
-    }
+    
+    setIsSwipingRight(false);
     setSwipeProgress(0);
   };
 
-  // ✅ FIXED: Handle double click on desktop
-  const handleLogoDoubleClick = () => {
-    console.log('🎓 Double clicked - going to SkillStore');
-    window.location.href = '/skillstore';
-  };
+  // ✅ DOUBLE-CLICK HANDLER (All devices - unified)
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    
+    // Increment click count
+    setClickCount(prev => prev + 1);
 
-  // ✅ FIXED: Handle single click on mobile - redirect to home
-  const handleMobileClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // ✅ Prevent click if it's a swipe
-    if (isSwipingRight) {
-      return;
+    // Clear existing timer
+    if (clickTimer) {
+      clearTimeout(clickTimer);
     }
 
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTapTime;
+    // Set new timer
+    const timer = setTimeout(() => {
+      if (clickCount + 1 === 1) {
+        // Single click → Home
+        console.log('🏠 Single click → Home');
+        window.location.href = '/';
+      }
+      // Reset count
+      setClickCount(0);
+    }, 300); // 300ms window for double-click
 
-    if (tapLength < 300 && tapLength > 0) {
-      // Double tap detected
-      console.log('🎓 Double tapped - going to SkillStore');
+    setClickTimer(timer);
+
+    // Check for double-click
+    if (clickCount + 1 >= 2) {
+      // Double-click detected → SkillStore
+      console.log('🎓 Double-click detected → SkillStore');
+      if (clickTimer) clearTimeout(clickTimer);
+      setClickCount(0);
       window.location.href = '/skillstore';
-      setLastTapTime(0); // ✅ Reset to prevent triple-tap issues
-    } else {
-      // Single tap detected
-      console.log('🏠 Single tapped - going to Home');
-      window.location.href = '/';
     }
-
-    setLastTapTime(currentTime);
   };
 
-  // ✅ Mobile version with double-tap + swipe support
+  // ✅ Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimer) clearTimeout(clickTimer);
+    };
+  }, [clickTimer]);
+
+  // ✅ Mobile version with swipe + double-tap support
   if (mobile) {
     return (
-      <div 
-        style={{
-          perspective: '1000px'
-        }}
-      >
+      <div style={{ perspective: '1000px' }}>
         <div 
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onClick={handleMobileClick} // ✅ FIXED: Better click handler
-          className={`group flex flex-col items-start space-x-0 transition-all duration-300 active:scale-95 cursor-pointer select-none`}
+          onClick={handleClick}
+          className="group flex flex-col items-start space-x-0 transition-all duration-300 active:scale-95 cursor-pointer select-none"
           title="Swipe right → SkillStore | Double tap → SkillStore | Single tap → Home"
           style={{ 
             userSelect: 'none', 
             WebkitUserSelect: 'none',
+            WebkitTouchCallout: 'none',
             transform: `rotateY(${swipeProgress * 90}deg)`,
             transformStyle: 'preserve-3d',
             transition: isSwipingRight ? 'none' : 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
@@ -355,6 +355,7 @@ const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
               src="/favicon-96x96.png" 
               alt="StudentStore Logo" 
               className="w-10 sm:w-12 h-10 sm:h-12 object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105"
+              draggable={false}
             />
             <span className="logo-gradient text-lg sm:text-2xl">
               StudentStore
@@ -371,17 +372,20 @@ const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
   // ✅ Desktop version with double-click support
   return (
     <div
-      onDoubleClick={handleLogoDoubleClick}
-      onClick={() => window.location.href = '/'}
-      className={`group flex items-center space-x-3 transition-all duration-300 active:scale-95 cursor-pointer select-none`}
-      title="Click → Home | Double click → SkillStore"
-      style={{ userSelect: 'none' }}
+      onClick={handleClick}
+      className="group flex items-center space-x-3 transition-all duration-300 active:scale-95 cursor-pointer select-none"
+      title="Click → Home | Double-click → SkillStore"
+      style={{ 
+        userSelect: 'none',
+        WebkitUserSelect: 'none'
+      }}
     >
       <div className="flex items-center space-x-3">
         <img 
           src="/favicon-96x96.png" 
           alt="StudentStore Logo" 
           className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 group-active:scale-105"
+          draggable={false}
         />
         <span className="logo-gradient text-2xl">
           StudentStore
@@ -390,7 +394,6 @@ const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
     </div>
   );
 };
-
 
   const ProfileAvatar = ({ 
     size = 'w-12 h-12', 
@@ -488,119 +491,13 @@ const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
               {loading ? (
                 <div className="loading-shimmer w-12 h-12 rounded-full"></div>
               ) : user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="flex items-center space-x-4 bg-student-card hover:bg-student-light rounded-full py-3 px-5 border border-border-light transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-student-blue/30"
-                  >
-                    <ProfileAvatar />
-                    
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-student-primary">
-                        {getDisplayName()}
-                      </p>
-                      <p className="text-xs text-student-secondary capitalize font-medium">
-                        {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                      </p>
-                    </div>
-                    
-                    <svg 
-                      className={`w-5 h-5 text-student-secondary transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {/* ✅ Desktop Dropdown */}
-                  {dropdownOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setDropdownOpen(false)}
-                      ></div>
-                      
-                      <div 
-                        className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
-                          <div className="flex items-center gap-3">
-                            <ProfileAvatar />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-student-primary text-sm truncate">
-                                {getDisplayName()}
-                              </p>
-                              <p className="text-xs text-student-secondary truncate">
-                                {user.email}
-                              </p>
-                              <p className="text-xs text-student-blue font-medium capitalize mt-1">
-                                {user.role === 'admin' ? '👑 Admin Access' : '🎓 Student Member'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="py-2">
-                          <a
-                            href="/dashboard"
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-blue/10 transition-colors"
-                          >
-                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                            </svg>
-                            <span className="font-medium">My Dashboard</span>
-                          </a>
-
-                          <a
-                            href="/profile"
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-green/10 transition-colors"
-                          >
-                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            <span className="font-medium">My Profile</span>
-                          </a>
-
-                          <a
-                            href="/skillstore"
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-green/10 transition-colors"
-                          >
-                            <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            <span className="font-medium">Skill Store</span>
-                          </a>
-
-                          {user.role === 'admin' && (
-                            <a
-                              href="/admin"
-                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-orange/10 transition-colors"
-                            >
-                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              </svg>
-                              <span className="font-medium">Admin Panel</span>
-                            </a>
-                          )}
-
-                          <div className="border-t border-border-light my-2"></div>
-                          <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <svg className="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            <span className="font-medium">Sign Out</span>
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <button
+                  onClick={() => window.location.href = '/profile'}
+                  className="p-1 rounded-full hover:bg-student-light transition-all duration-200 hover:scale-110"
+                  title={`${getDisplayName()} - Go to Profile`}
+                >
+                  <ProfileAvatar />
+                </button>
               ) : (
                 <button 
                   onClick={() => {
@@ -669,97 +566,13 @@ const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
                 {loading ? (
                   <div className="loading-shimmer w-10 h-10 rounded-full"></div>
                 ) : user ? (
-                  <div className="relative">
-                    <button
-                      onClick={() => setDropdownOpen(!dropdownOpen)}
-                      className="p-1 rounded-full hover:bg-student-light active:bg-student-light transition-all duration-200"
-                    >
-                      <ProfileAvatar mobile={true} />
-                    </button>
-
-                    {dropdownOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setDropdownOpen(false)}
-                        ></div>
-
-                        <div 
-                          className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="px-4 py-4 bg-gradient-to-r from-student-blue/10 via-student-green/10 to-student-orange/10 border-b border-border-light">
-                            <div className="flex items-center space-x-3">
-                              <ProfileAvatar size="w-12 h-12" textSize="text-base" />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-bold text-student-primary truncate text-sm">{getDisplayName()}</p>
-                                <p className="text-xs text-student-secondary truncate">{user.email}</p>
-                                <p className="text-xs text-student-blue font-medium capitalize mt-1">
-                                  {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="py-2">
-                            <a
-                              href="/profile"
-                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-blue/10 transition-colors"
-                            >
-                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              <span className="font-medium">My Profile</span>
-                            </a>
-
-                            <a
-                              href="/dashboard"
-                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-blue/10 transition-colors"
-                            >
-                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                              </svg>
-                              <span className="font-medium">Dashboard</span>
-                            </a>
-
-                            <a
-                              href="/skillstore"
-                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-green/10 transition-colors"
-                            >
-                              <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                              </svg>
-                              <span className="font-medium">Skill Store</span>
-                            </a>
-
-                            {user.role === 'admin' && (
-                              <a
-                                href="/admin"
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-student-orange/10 transition-colors"
-                              >
-                                <svg className="w-5 h-5 text-student-secondary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                </svg>
-                                <span className="font-medium">Admin Panel</span>
-                              </a>
-                            )}
-
-                            <div className="border-t border-border-light mt-2 pt-2">
-                              <button
-                                onClick={handleLogout}
-                                className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                              >
-                                <svg className="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                                <span className="font-medium">Sign Out</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <button
+                    onClick={() => window.location.href = '/profile'}
+                    className="p-1 rounded-full hover:bg-student-light active:bg-student-light transition-all duration-200"
+                    title="Go to Profile"
+                  >
+                    <ProfileAvatar mobile={true} />
+                  </button>
                 ) : (
                   <button 
                     onClick={() => {
@@ -781,7 +594,7 @@ const StudentStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
         </div>
       </nav>
 
-      {/* PWA Install Modal */}
+{/* PWA Install Modal */}
       {showInstallModal && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBookmarks } from '../context/BookmarkContext';
-import SkillstoreSearchBar from './SkillstoreSearchBar'; // ✅ ADD THIS LINE
+import SkillstoreSearchBar from './SkillstoreSearchBar';
 
 interface User {
   id: number;
@@ -17,8 +17,6 @@ interface User {
 export default function SkillstoreNavbar() {
   const [user, setUser] = useState<User | null>(null);
   const [profilePicture, setProfilePicture] = useState<string>('');
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [lastTapTime, setLastTapTime] = useState(0);
   const router = useRouter();
   const { bookmarkCount } = useBookmarks();
 
@@ -114,29 +112,6 @@ export default function SkillstoreNavbar() {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('studentstore_token');
-    localStorage.removeItem('studentstore_user');
-    setUser(null);
-    setProfilePicture('');
-    setProfileOpen(false);
-  };
-
-  const handleLogoDoubleClick = () => {
-    window.location.href = '/';
-  };
-
-  const handleLogoTap = () => {
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTapTime;
-
-    if (tapLength < 300 && tapLength > 0) {
-      handleLogoDoubleClick();
-    }
-
-    setLastTapTime(currentTime);
-  };
-
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
@@ -145,34 +120,142 @@ export default function SkillstoreNavbar() {
     return user?.display_name || user?.email.split('@')[0] || 'Student';
   };
 
-  const SkillStoreLogo = ({ mobile = false }: { mobile?: boolean }) => (
-    <Link
-      href="/skillstore"
-      onDoubleClick={handleLogoDoubleClick}
-      onTouchEnd={mobile ? handleLogoTap : undefined}
-      className={`group flex ${mobile ? 'flex-col items-start' : 'items-center'} ${mobile ? 'space-x-0' : 'space-x-3'} transition-all duration-300 active:scale-95 cursor-pointer`}
-    >
-      <div className="flex items-center space-x-2">
-        <div 
-          className="skillstore-icon-badge" 
-          style={{ width: mobile ? '36px' : '48px', height: mobile ? '36px' : '48px', fontSize: mobile ? '1.125rem' : '1.5rem' }}
-        >
-          🎓
+  // ✅ IMPROVED SkillStoreLogo Component - Same as StudentStore
+  const SkillStoreLogo = ({ mobile = false }: { mobile?: boolean }) => {
+    const [touchStart, setTouchStart] = useState(0);
+    const [touchEnd, setTouchEnd] = useState(0);
+    const [isSwipingRight, setIsSwipingRight] = useState(false);
+    const [swipeProgress, setSwipeProgress] = useState(0);
+    const [clickCount, setClickCount] = useState(0);
+    const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
+
+    // ✅ SWIPE HANDLERS (Mobile/Touch devices)
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+      setTouchStart(e.targetTouches[0].clientX);
+      setTouchEnd(e.targetTouches[0].clientX);
+      setIsSwipingRight(false);
+      setSwipeProgress(0);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+      const currentX = e.targetTouches[0].clientX;
+      setTouchEnd(currentX);
+      const distance = currentX - touchStart;
+      
+      if (distance > 0) {
+        setIsSwipingRight(true);
+        const progress = Math.min(distance / 100, 1);
+        setSwipeProgress(progress);
+      }
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+      const distance = touchEnd - touchStart;
+      const isRightSwipe = distance > 50;
+
+      if (isRightSwipe) {
+        console.log('✨ Right swipe detected → StudentStore');
+        window.location.href = '/';
+      }
+      
+      setIsSwipingRight(false);
+      setSwipeProgress(0);
+    };
+
+    // ✅ DOUBLE-CLICK HANDLER
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      
+      setClickCount(prev => prev + 1);
+
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+      }
+
+      const timer = setTimeout(() => {
+        if (clickCount + 1 === 1) {
+          console.log('🎓 Single click → SkillStore home');
+          window.location.href = '/skillstore';
+        }
+        setClickCount(0);
+      }, 300);
+
+      setClickTimer(timer);
+
+      if (clickCount + 1 >= 2) {
+        console.log('🏠 Double-click detected → StudentStore');
+        if (clickTimer) clearTimeout(clickTimer);
+        setClickCount(0);
+        window.location.href = '/';
+      }
+    };
+
+    useEffect(() => {
+      return () => {
+        if (clickTimer) clearTimeout(clickTimer);
+      };
+    }, [clickTimer]);
+
+    if (mobile) {
+      return (
+        <div style={{ perspective: '1000px' }}>
+          <div 
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onClick={handleClick}
+            className="group flex flex-col items-start space-x-0 transition-all duration-300 active:scale-95 cursor-pointer select-none"
+            title="Swipe right → StudentStore | Double tap → StudentStore | Single tap → SkillStore"
+            style={{ 
+              userSelect: 'none', 
+              WebkitUserSelect: 'none',
+              WebkitTouchCallout: 'none',
+              transform: `rotateY(${swipeProgress * 90}deg)`,
+              transformStyle: 'preserve-3d',
+              transition: isSwipingRight ? 'none' : 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+              transformOrigin: 'center'
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <div 
+                className="skillstore-icon-badge" 
+                style={{ width: '36px', height: '36px', fontSize: '1.125rem' }}
+              >
+                🎓
+              </div>
+              <span className="skillstore-logo-gradient" style={{ fontSize: '1.25rem' }}>
+                SkillStore
+              </span>
+            </div>
+            <div className="text-xs text-gray-600 font-medium mt-1">
+              By Students, For Students
+            </div>
+          </div>
         </div>
-        <span 
-          className="skillstore-logo-gradient" 
-          style={{ fontSize: mobile ? '1.25rem' : '1.5rem' }}
-        >
-          SkillStore
-        </span>
+      );
+    }
+
+    return (
+      <div
+        onClick={handleClick}
+        className="group flex items-center space-x-3 transition-all duration-300 active:scale-95 cursor-pointer select-none"
+        title="Click → SkillStore | Double-click → StudentStore"
+        style={{ 
+          userSelect: 'none',
+          WebkitUserSelect: 'none'
+        }}
+      >
+        <div className="flex items-center space-x-3">
+          <div className="skillstore-icon-badge" style={{ width: '48px', height: '48px', fontSize: '1.5rem' }}>
+            🎓
+          </div>
+          <span className="skillstore-logo-gradient" style={{ fontSize: '1.5rem' }}>
+            SkillStore
+          </span>
+        </div>
       </div>
-      {mobile && (
-        <div className="text-xs text-gray-600 font-medium mt-1">
-          By Students, For Students
-        </div>
-      )}
-    </Link>
-  );
+    );
+  };
 
   const ProfileAvatar = ({ 
     size = 'w-12 h-12', 
@@ -223,7 +306,7 @@ export default function SkillstoreNavbar() {
               </div>
             </div>
 
-            {/* Center: Search Bar (✅ ADD THIS) */}
+            {/* Center: Search Bar */}
             <SkillstoreSearchBar mobile={false} />
 
             {/* Right: Actions */}
@@ -244,92 +327,15 @@ export default function SkillstoreNavbar() {
                 </Link>
               ) : null}
 
-              {/* Profile Dropdown */}
+              {/* Profile Avatar - Just Icon (Like StudentStore) */}
               {user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setProfileOpen(!profileOpen)}
-                    className="flex items-center space-x-3 bg-white hover:bg-purple-50 rounded-full py-3 px-5 border border-purple-200 transition-all duration-200 hover:shadow-lg hover:scale-[1.02]"
-                  >
-                    <ProfileAvatar />
-                    
-                    <div className="text-left hidden sm:block">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {getDisplayName()}
-                      </p>
-                      <p className="text-xs text-gray-500 capitalize font-medium">
-                        {user?.role === 'admin' ? '👑 Admin' : '🎓 Student'}
-                      </p>
-                    </div>
-                    
-                    <svg 
-                      className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {profileOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setProfileOpen(false)}
-                      ></div>
-                      
-                      <div 
-                        className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="px-4 py-4 bg-gradient-to-r from-purple-50 via-blue-50 to-purple-50 border-b border-gray-200">
-                          <div className="flex items-center gap-3">
-                            <ProfileAvatar />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-gray-900 text-sm truncate">
-                                {getDisplayName()}
-                              </p>
-                              <p className="text-xs text-gray-600 truncate">
-                                {user.email}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="py-2">
-                          <a
-                            href="/"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition-colors"
-                          >
-                            🛍️ StudentStore
-                          </a>
-
-                          {user?.role === 'admin' && (
-                            <>
-                              <div className="border-t border-gray-200 my-2"></div>
-                              <a
-                                href="/admin"
-                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition-colors"
-                              >
-                                🛠️ Admin Panel
-                              </a>
-                            </>
-                          )}
-
-                          <div className="border-t border-gray-200 my-2"></div>
-                          <button
-                            onClick={handleLogout}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            🚪 Logout
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <button
+                  onClick={() => window.location.href = '/profile'}
+                  className="p-1 rounded-full hover:bg-purple-50 transition-all duration-200 hover:scale-110"
+                  title={`${getDisplayName()} - Go to Profile`}
+                >
+                  <ProfileAvatar />
+                </button>
               ) : (
                 <button 
                   onClick={() => {
@@ -365,73 +371,15 @@ export default function SkillstoreNavbar() {
                   </Link>
                 )}
 
-                {/* Profile Button */}
+                {/* Profile Button - Just Icon */}
                 {user ? (
-                  <div className="relative">
-                    <button
-                      onClick={() => setProfileOpen(!profileOpen)}
-                      className="p-1 rounded-full hover:bg-purple-50 transition-all"
-                    >
-                      <ProfileAvatar mobile={true} />
-                    </button>
-
-                    {profileOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setProfileOpen(false)}
-                        ></div>
-
-                        <div 
-                          className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="px-4 py-3 bg-gradient-to-r from-purple-50 via-blue-50 to-purple-50 border-b border-gray-200">
-                            <div className="flex items-center gap-2">
-                              <ProfileAvatar />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-bold text-gray-900 text-xs truncate">
-                                  {getDisplayName()}
-                                </p>
-                                <p className="text-xs text-gray-600 truncate">
-                                  {user.email}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="py-2">
-                            <a
-                              href="/"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition-colors"
-                            >
-                              🛍️ StudentStore
-                            </a>
-
-                            {user?.role === 'admin' && (
-                              <>
-                                <div className="border-t border-gray-200 my-2"></div>
-                                <a
-                                  href="/admin"
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 transition-colors"
-                                >
-                                  🛠️ Admin Panel
-                                </a>
-                              </>
-                            )}
-
-                            <div className="border-t border-gray-200 my-2"></div>
-                            <button
-                              onClick={handleLogout}
-                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              🚪 Logout
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <button
+                    onClick={() => window.location.href = '/profile'}
+                    className="p-1 rounded-full hover:bg-purple-50 transition-all duration-200"
+                    title="Go to Profile"
+                  >
+                    <ProfileAvatar mobile={true} />
+                  </button>
                 ) : (
                   <button 
                     onClick={() => {
@@ -446,7 +394,7 @@ export default function SkillstoreNavbar() {
               </div>
             </div>
 
-            {/* Mobile Search Bar (✅ ADD THIS) - Full Width Below Navbar */}
+            {/* Mobile Search Bar - Full Width Below Navbar */}
             <SkillstoreSearchBar mobile={true} />
           </div>
         </div>
