@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface UserPost {
   id: number;
@@ -23,6 +23,24 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [dislikesCount, setDislikesCount] = useState(post.dislikes_count);
   const [reacting, setReacting] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Lightbox states
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImageIndex, setLightboxImageIndex] = useState(0);
+  const [lightboxZoom, setLightboxZoom] = useState(1);
+  const [lightboxPosition, setLightboxPosition] = useState({ x: 0, y: 0 });
+  
+  // Touch gesture states
+  const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
+  const [touchEnd, setTouchEnd] = useState({ x: 0, y: 0 });
+  const [lastTap, setLastTap] = useState(0);
+  
+  // Pinch zoom states
+  const [initialPinchDistance, setInitialPinchDistance] = useState(0);
+  const [initialZoom, setInitialZoom] = useState(1);
+  
+  const imageRef = useRef<HTMLDivElement>(null);
 
   // Parse images
   const parseImages = (imageString: string): string[] => {
@@ -52,6 +70,169 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     setCurrentImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
+  // SWIPE GESTURE for Card Images
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    });
+  };
+
+  const handleTouchEnd = () => {
+    const deltaX = touchStart.x - touchEnd.x;
+    const deltaY = Math.abs(touchStart.y - touchEnd.y);
+    
+    if (Math.abs(deltaX) > 50 && deltaY < 100) {
+      if (deltaX > 0) {
+        nextImage();
+      } else {
+        prevImage();
+      }
+    }
+  };
+
+  // Lightbox functions
+  const openLightbox = (index: number) => {
+    setLightboxImageIndex(index);
+    setLightboxOpen(true);
+    setLightboxZoom(1);
+    setLightboxPosition({ x: 0, y: 0 });
+    
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setLightboxZoom(1);
+    setLightboxPosition({ x: 0, y: 0 });
+    
+    const scrollY = document.body.style.top;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo(0, parseInt(scrollY || '0') * -1);
+  };
+
+  const nextLightboxImage = () => {
+    setLightboxImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1));
+    setLightboxZoom(1);
+    setLightboxPosition({ x: 0, y: 0 });
+  };
+
+  const prevLightboxImage = () => {
+    setLightboxImageIndex(prev => (prev === 0 ? images.length - 1 : prev - 1));
+    setLightboxZoom(1);
+    setLightboxPosition({ x: 0, y: 0 });
+  };
+
+  const zoomIn = () => {
+    setLightboxZoom(prev => Math.min(prev + 0.5, 3));
+  };
+
+  const zoomOut = () => {
+    setLightboxZoom(prev => Math.max(prev - 0.5, 1));
+    if (lightboxZoom <= 1.5) {
+      setLightboxPosition({ x: 0, y: 0 });
+    }
+  };
+
+  // DOUBLE TAP to Zoom
+  const handleLightboxTap = (e: React.TouchEvent) => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTap;
+    
+    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+      if (lightboxZoom === 1) {
+        setLightboxZoom(2);
+      } else {
+        setLightboxZoom(1);
+        setLightboxPosition({ x: 0, y: 0 });
+      }
+    }
+    setLastTap(now);
+  };
+
+  // PINCH to Zoom
+  const getPinchDistance = (touches: React.TouchList) => {
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) +
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+  };
+
+  const handleLightboxTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      setInitialPinchDistance(getPinchDistance(e.touches));
+      setInitialZoom(lightboxZoom);
+    } else if (e.touches.length === 1) {
+      setTouchStart({
+        x: e.touches[0].clientX - lightboxPosition.x,
+        y: e.touches[0].clientY - lightboxPosition.y
+      });
+    }
+  };
+
+  const handleLightboxTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const currentDistance = getPinchDistance(e.touches);
+      const scale = currentDistance / initialPinchDistance;
+      const newZoom = Math.min(Math.max(initialZoom * scale, 1), 3);
+      setLightboxZoom(newZoom);
+    } else if (e.touches.length === 1 && lightboxZoom > 1) {
+      const newX = e.touches[0].clientX - touchStart.x;
+      const newY = e.touches[0].clientY - touchStart.y;
+      setLightboxPosition({ x: newX, y: newY });
+    }
+  };
+
+  const handleLightboxTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length === 0 && lightboxZoom === 1) {
+      setLightboxPosition({ x: 0, y: 0 });
+    }
+  };
+
+  // SWIPE to Navigate in Lightbox
+  const handleLightboxSwipe = (e: React.TouchEvent) => {
+    if (lightboxZoom > 1) return;
+    
+    const deltaX = touchStart.x - e.changedTouches[0].clientX;
+    
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX > 0) {
+        nextLightboxImage();
+      } else {
+        prevLightboxImage();
+      }
+    }
+  };
+
+  // Close lightbox on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!lightboxOpen) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') prevLightboxImage();
+      if (e.key === 'ArrowRight') nextLightboxImage();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen]);
+
   const handleReaction = async (reactionType: 'like' | 'dislike') => {
     if (reacting) return;
     
@@ -80,7 +261,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
         const action = result.data.action;
 
         if (action === 'removed') {
-          // Reaction removed
           setUserReaction(null);
           if (reactionType === 'like') {
             setLikesCount(prev => Math.max(0, prev - 1));
@@ -88,7 +268,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
             setDislikesCount(prev => Math.max(0, prev - 1));
           }
         } else if (action === 'updated') {
-          // Changed reaction
           setUserReaction(reactionType);
           if (reactionType === 'like') {
             setLikesCount(prev => prev + 1);
@@ -98,7 +277,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
             setLikesCount(prev => Math.max(0, prev - 1));
           }
         } else {
-          // Added new reaction
           setUserReaction(reactionType);
           if (reactionType === 'like') {
             setLikesCount(prev => prev + 1);
@@ -115,51 +293,101 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     }
   };
 
+  const isLongReview = post.product_review.length > 150;
+
   return (
-    <div className="bg-white rounded-lg border border-border-light overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-      {/* Product Images Carousel */}
-      <div className="relative aspect-square overflow-hidden bg-student-light group">
-        {images.length > 0 ? (
-          <>
+    <>
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #d1d5db;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #9ca3af;
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+      `}</style>
+
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 flex flex-col relative">
+        {/* Product Images Carousel with Touch Swipe */}
+        {images.length > 0 && (
+          <div 
+            ref={imageRef}
+            className="relative bg-gray-100 aspect-square cursor-pointer group select-none"
+            onClick={() => !isExpanded && openLightbox(currentImageIndex)}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            style={{ touchAction: 'pan-y pinch-zoom' }}
+          >
             <img
               src={images[currentImageIndex]}
               alt={post.product_name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover pointer-events-none"
+              loading="lazy"
+              decoding="async"
+              draggable={false}
             />
             
+            {/* Zoom indicator */}
+            <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/60 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 sm:gap-2 z-10">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+              </svg>
+              {/* <span className="hidden sm:inline">Tap to zoom</span> */}
+            </div>
+            
             {/* Navigation Arrows */}
-            {images.length > 1 && (
+            {images.length > 1 && !isExpanded && (
               <>
                 <button
-                  onClick={prevImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full w-8 h-8 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                  className="absolute left-1.5 sm:left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10"
                   aria-label="Previous image"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 
                 <button
-                  onClick={nextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full w-8 h-8 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                  className="absolute right-1.5 sm:right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10"
                   aria-label="Next image"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
                 
                 {/* Image Indicators */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-1.5 z-10">
                   {images.map((_, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`w-2 h-2 rounded-full transition-all ${
+                      onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
+                      className={`h-1 sm:h-1.5 rounded-full transition-all ${
                         idx === currentImageIndex 
-                          ? 'bg-white w-6' 
-                          : 'bg-white/50 hover:bg-white/75'
+                          ? 'bg-white w-4 sm:w-6' 
+                          : 'bg-white/50 hover:bg-white/75 w-1 sm:w-1.5'
                       }`}
                       aria-label={`Go to image ${idx + 1}`}
                     />
@@ -167,73 +395,215 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
                 </div>
               </>
             )}
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl">
-            📦
+
+            {/* Expanded Review Overlay */}
+            {isExpanded && (
+              <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-20 overflow-y-auto custom-scrollbar p-3 sm:p-4 md:p-6 animate-fadeIn">
+                <div className="max-w-2xl mx-auto">
+                  <p className="text-white text-xs sm:text-sm leading-relaxed">
+                    {post.product_review}
+                  </p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
+                    className="mt-3 sm:mt-4 text-white/80 hover:text-white text-xs sm:text-sm font-medium flex items-center gap-1 transition-colors"
+                  >
+                    Show less
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
-      </div>
 
-      {/* Post Info */}
-      <div className="p-3 sm:p-4">
-        <h3 className="font-semibold text-student-primary text-sm sm:text-base mb-2 line-clamp-2">
-          {post.product_name}
-        </h3>
-        
-        <p className="text-xs sm:text-sm text-student-secondary line-clamp-2 mb-3">
-          {post.product_review}
-        </p>
-
-        {/* Price & Reactions Row */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-lg font-bold text-indigo-600">
-            ₹{parseFloat(post.product_price).toFixed(0)}
-          </div>
-          
-          {/* Reaction Buttons */}
-          <div className="flex items-center gap-2">
+        {/* Reactions Bar - Instagram Style */}
+        <div className="flex-shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-gray-200">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={() => handleReaction('like')}
               disabled={reacting}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all text-xs font-medium ${
+              className={`flex items-center gap-1 sm:gap-1.5 transition-all ${
                 userReaction === 'like'
-                  ? 'bg-green-100 text-green-700 ring-2 ring-green-500'
-                  : 'bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-600'
+                  ? 'text-green-600'
+                  : 'text-gray-700 hover:text-green-600'
               } ${reacting ? 'opacity-50 cursor-not-allowed' : ''}`}
-              aria-label="Like post"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558-.641 1.038-1.09 1.408-.558.482-1.2.879-1.915 1.164-1.299.518-2.582 1.184-3.736 1.966.35.485.611 1.026.76 1.604.149.579.195 1.185.14 1.785-.13 1.434-.65 2.768-1.5 3.846a4.488 4.488 0 01-3.393 1.536z" />
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill={userReaction === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
-              <span>{likesCount}</span>
+              <span className="text-xs sm:text-sm font-semibold">{likesCount}</span>
             </button>
             
             <button
               onClick={() => handleReaction('dislike')}
               disabled={reacting}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all text-xs font-medium ${
+              className={`flex items-center gap-1 sm:gap-1.5 transition-all ${
                 userReaction === 'dislike'
-                  ? 'bg-red-100 text-red-700 ring-2 ring-red-500'
-                  : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
+                  ? 'text-red-600'
+                  : 'text-gray-700 hover:text-red-600'
               } ${reacting ? 'opacity-50 cursor-not-allowed' : ''}`}
-              aria-label="Dislike post"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M15.73 5.25h1.035A7.465 7.465 0 0118 9.375a7.465 7.465 0 01-1.235 4.125h-.148c-.806 0-1.534.446-2.031 1.08a9.04 9.04 0 01-2.861 2.4c-.723.384-1.35.956-1.653 1.715a4.498 4.498 0 00-.322 1.672V21a.75.75 0 01-.75.75 2.25 2.25 0 01-2.25-2.25c0-1.152.26-2.243.723-3.218.266-.558.641-1.038 1.09-1.408.558-.482 1.2-.879 1.915-1.164 1.299-.518 2.582-1.184 3.736-1.966-.35-.485-.611-1.026-.76-1.604-.149-.579-.195-1.185-.14-1.785.13-1.434.65-2.768 1.5-3.846a4.488 4.488 0 013.393-1.536z" />
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill={userReaction === 'dislike' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
-              <span>{dislikesCount}</span>
+              <span className="text-xs sm:text-sm font-semibold">{dislikesCount}</span>
             </button>
           </div>
         </div>
 
-        {/* Date */}
-        <div className="pt-2 border-t border-border-light">
-          <p className="text-xs text-student-secondary">
-            Posted {formatDate(post.created_at)}
-          </p>
+        {/* Post Info - Compact */}
+        <div className="flex-shrink-0 px-3 sm:px-4 pb-3 sm:pb-4 pt-2 sm:pt-3">
+          <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 mb-1.5 sm:mb-2 line-clamp-2">
+            {post.product_name}
+          </h3>
+          
+          <div className="mb-2 sm:mb-3">
+            <p className="text-xs sm:text-sm text-gray-700 leading-relaxed line-clamp-2">
+              {post.product_review}
+            </p>
+            
+            {isLongReview && !isExpanded && (
+              <button
+                onClick={() => setIsExpanded(true)}
+                className="mt-0.5 sm:mt-1 text-gray-500 hover:text-gray-700 text-xs sm:text-sm font-medium transition-colors"
+              >
+                Show more
+              </button>
+            )}
+          </div>
+
+          {/* Price & Date */}
+          <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-gray-100">
+            <div>
+              <div className="text-xs text-gray-500 font-medium mb-0.5">Price</div>
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-indigo-600">
+                ₹{parseFloat(post.product_price).toLocaleString('en-IN')}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500 font-medium mb-0.5">Posted</div>
+              <div className="text-xs sm:text-sm text-gray-700 font-medium">
+                {formatDate(post.created_at)}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Lightbox Modal with Touch Gestures */}
+      {lightboxOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeLightbox();
+            }
+          }}
+        >
+          <button
+            onClick={closeLightbox}
+            className="absolute top-2 sm:top-4 right-2 sm:right-4 text-white bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3 transition-all z-20"
+            aria-label="Close lightbox"
+          >
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex gap-1.5 sm:gap-2 z-20">
+            <button
+              onClick={(e) => { e.stopPropagation(); zoomOut(); }}
+              className="text-white bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3 transition-all"
+              aria-label="Zoom out"
+            >
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+              </svg>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); zoomIn(); }}
+              className="text-white bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3 transition-all"
+              aria-label="Zoom in"
+            >
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+              </svg>
+            </button>
+            <div className="text-white bg-black/50 rounded-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 font-medium text-xs sm:text-sm md:text-base">
+              {Math.round(lightboxZoom * 100)}%
+            </div>
+          </div>
+
+          {/* Image with Touch Gestures */}
+          <div 
+            className="relative w-full h-full flex items-center justify-center overflow-hidden" 
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                closeLightbox();
+              }
+            }}
+            onTouchStart={handleLightboxTouchStart}
+            onTouchMove={handleLightboxTouchMove}
+            onTouchEnd={(e) => {
+              handleLightboxTouchEnd(e);
+              handleLightboxTap(e);
+              if (e.changedTouches.length === 1) {
+                handleLightboxSwipe(e);
+              }
+            }}
+            style={{ touchAction: 'none' }}
+          >
+            <img
+              src={images[lightboxImageIndex]}
+              alt={post.product_name}
+              className="max-w-full max-h-full object-contain transition-transform duration-200 select-none"
+              style={{ 
+                transform: `scale(${lightboxZoom}) translate(${lightboxPosition.x / lightboxZoom}px, ${lightboxPosition.y / lightboxZoom}px)`,
+                cursor: lightboxZoom > 1 ? 'move' : 'default',
+                pointerEvents: 'none'
+              }}
+              draggable={false}
+            />
+          </div>
+
+          {lightboxZoom === 1 && (
+            <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 text-white/60 text-xs sm:text-sm text-center z-10 pointer-events-none">
+              <p className="hidden sm:block">Swipe • zoom • Click to close</p>
+              <p className="sm:hidden">Swipe • Zoom • Tap to close</p>
+            </div>
+          )}
+
+          {images.length > 1 && lightboxZoom === 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); prevLightboxImage(); }}
+                className="absolute left-1 sm:left-2 md:left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3 md:p-4 transition-all z-20"
+                aria-label="Previous image"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={(e) => { e.stopPropagation(); nextLightboxImage(); }}
+                className="absolute right-1 sm:right-2 md:right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3 md:p-4 transition-all z-20"
+                aria-label="Next image"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/50 px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-full font-medium text-xs sm:text-sm md:text-base pointer-events-none">
+                {lightboxImageIndex + 1} / {images.length}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
   );
 }
