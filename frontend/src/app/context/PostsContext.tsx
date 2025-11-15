@@ -74,7 +74,6 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // ✅ CHANGED: limit=20 instead of 12
       const response = await fetch(`${apiUrl}/api/posts?page=${page}&limit=20`, { 
         headers,
         credentials: 'include'
@@ -92,12 +91,24 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
           product_images: parseProductImages(post.product_images)
         }));
 
-        // ✅ KEY CHANGE: Append posts when page > 1, replace when page = 1
-        setPosts(prevPosts => page === 1 ? parsedPosts : [...prevPosts, ...parsedPosts]);
+        // ✅ FIXED: Deduplicate posts to prevent duplicate key errors
+        setPosts(prevPosts => {
+          if (page === 1) {
+            // First page: Replace all posts
+            return parsedPosts;
+          } else {
+            // Subsequent pages: Add only unique posts
+            const existingIds = new Set(prevPosts.map(p => p.id));
+            const uniqueNewPosts = parsedPosts.filter((post: Post) => !existingIds.has(post.id));
+            return [...prevPosts, ...uniqueNewPosts];
+          }
+        });
+        
         setCurrentPage(result.data.pagination.current_page);
         setTotalPages(result.data.pagination.total_pages);
         
-        console.log(`📝 Loaded ${parsedPosts.length} posts (page ${page}/${result.data.pagination.total_pages}), Total posts on screen: ${page === 1 ? parsedPosts.length : posts.length + parsedPosts.length}`);
+        const totalOnScreen = page === 1 ? parsedPosts.length : posts.length + parsedPosts.length;
+        console.log(`📝 Loaded ${parsedPosts.length} posts (page ${page}/${result.data.pagination.total_pages}), Total posts on screen: ${totalOnScreen}`);
       } else {
         setError(result.message || 'Failed to fetch posts');
       }
@@ -108,7 +119,7 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [parseProductImages]);
+  }, [parseProductImages, posts.length]);
 
   const reactToPost = useCallback(async (postId: number, reactionType: 'like' | 'dislike') => {
     try {
@@ -173,7 +184,7 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshPosts = useCallback(async () => {
-    setPosts([]); // Clear existing posts
+    setPosts([]);
     setCurrentPage(1);
     await fetchPosts(1);
   }, [fetchPosts]);

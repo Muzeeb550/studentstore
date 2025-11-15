@@ -102,6 +102,31 @@ export default function ChatAssistant() {
   }, [isOpen, isAuthenticated, messages.length, addBotMessage]);
 
   // ============================================
+  // ✅ HANDLE BACK BUTTON - Close chat instead of navigating away
+  // ============================================
+
+useEffect(() => {
+  if (isOpen) {
+    // Push a state to history when chat opens
+    window.history.pushState({ chatOpen: true }, '');
+    
+    const handlePopState = (e: PopStateEvent) => {
+      // If chat is open and back button pressed, close the chat
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }
+}, [isOpen]);
+
+
+  // ============================================
   // HANDLE SEND MESSAGE
   // ============================================
   

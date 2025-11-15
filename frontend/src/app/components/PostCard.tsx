@@ -90,18 +90,15 @@ const PostCard = memo(({ post }: { post: Post }) => {
   const [reactionDisabled, setReactionDisabled] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Lightbox states
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImageIndex, setLightboxImageIndex] = useState(0);
   const [lightboxZoom, setLightboxZoom] = useState(1);
   const [lightboxPosition, setLightboxPosition] = useState({ x: 0, y: 0 });
   
-  // Touch gesture states
   const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
   const [touchEnd, setTouchEnd] = useState({ x: 0, y: 0 });
   const [lastTap, setLastTap] = useState(0);
   
-  // Pinch zoom states
   const [initialPinchDistance, setInitialPinchDistance] = useState(0);
   const [initialZoom, setInitialZoom] = useState(1);
   
@@ -140,7 +137,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
     setCurrentImageIndex(prev => (prev === 0 ? post.product_images.length - 1 : prev - 1));
   };
 
-  // SWIPE GESTURE for Card Images
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart({
       x: e.touches[0].clientX,
@@ -168,24 +164,26 @@ const PostCard = memo(({ post }: { post: Post }) => {
     }
   };
 
-  // ✅ FIXED: Lightbox with Browser Back Button Support
+  // ✅ UPDATED: Save both scroll position AND post ID
+  const handleProfileClick = () => {
+    sessionStorage.setItem('postsScrollPosition', window.scrollY.toString());
+    sessionStorage.setItem('lastViewedPostId', post.id.toString());
+  };
+
   const openLightbox = (index: number) => {
     setLightboxImageIndex(index);
     setLightboxOpen(true);
     setLightboxZoom(1);
     setLightboxPosition({ x: 0, y: 0 });
     
-    // Save scroll position
     const scrollY = window.scrollY;
     sessionStorage.setItem('scrollY', scrollY.toString());
     
-    // Lock body scroll
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
     
-    // ✅ Push a fake history state so back button closes lightbox
     window.history.pushState({ lightboxOpen: true }, '');
   };
 
@@ -194,14 +192,12 @@ const PostCard = memo(({ post }: { post: Post }) => {
     setLightboxZoom(1);
     setLightboxPosition({ x: 0, y: 0 });
     
-    // Restore body scroll
     const scrollY = sessionStorage.getItem('scrollY') || '0';
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';
     document.body.style.overflow = '';
     
-    // Restore scroll position
     window.scrollTo(0, parseInt(scrollY));
     sessionStorage.removeItem('scrollY');
   };
@@ -229,7 +225,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
     }
   };
 
-  // DOUBLE TAP to Zoom
   const handleLightboxTap = (e: React.TouchEvent) => {
     const now = Date.now();
     const timeSinceLastTap = now - lastTap;
@@ -245,7 +240,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
     setLastTap(now);
   };
 
-  // PINCH to Zoom
   const getPinchDistance = (touches: React.TouchList) => {
     const touch1 = touches[0];
     const touch2 = touches[1];
@@ -287,7 +281,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
     }
   };
 
-  // SWIPE to Navigate in Lightbox
   const handleLightboxSwipe = (e: React.TouchEvent) => {
     if (lightboxZoom > 1) return;
     
@@ -302,7 +295,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
     }
   };
 
-  // ✅ Handle browser back button and keyboard
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       if (lightboxOpen) {
@@ -332,7 +324,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
     };
   }, [lightboxOpen]);
 
-  // ✅ Cleanup on unmount
   useEffect(() => {
     return () => {
       if (lightboxOpen) {
@@ -390,6 +381,7 @@ const PostCard = memo(({ post }: { post: Post }) => {
       return (
         <Link 
           href={`/profile/${userId}`}
+          onClick={handleProfileClick}
           className="p-3 sm:p-4 border-b border-gray-200 flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-purple-50 via-blue-50 to-purple-50 hover:from-purple-100 hover:via-blue-100 hover:to-purple-100 transition-all cursor-pointer group"
         >
           {content}
@@ -443,7 +435,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
           <UserHeader />
         </div>
 
-        {/* Product Images with Touch Swipe */}
         {post.product_images && post.product_images.length > 0 && (
           <div 
             ref={imageRef}
@@ -602,7 +593,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
         </div>
       </div>
 
-      {/* ✅ Lightbox with Back Button Support */}
       {lightboxOpen && (
         <div 
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"

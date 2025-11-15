@@ -2,13 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PostsProvider, usePosts } from '../context/PostsContext';
 import PostCard from '../components/PostCard';
 import RecommendModal from '../components/modals/RecommendModal';
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import Link from 'next/link';
 
 function PostsContent() {
@@ -19,14 +18,80 @@ function PostsContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mounted, setMounted] = useState(false);
   
-  // ✅ FIX: Prevent hydration mismatch
   const [isClientLoading, setIsClientLoading] = useState(true);
   
-  // ✅ Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
+  
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // ✅ FIX: Set client loaded
+  // ✅ IMPROVED SCROLL RESTORATION - Instant jump with flash highlight
+  useEffect(() => {
+    const savedPostId = sessionStorage.getItem('lastViewedPostId');
+    const savedScroll = sessionStorage.getItem('postsScrollPosition');
+    
+    if (savedPostId && posts.length > 0) {
+      const postId = parseInt(savedPostId);
+      
+      const timer = setTimeout(() => {
+        const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+        
+        if (postElement) {
+          // ✅ Instant scroll (no animation)
+          postElement.scrollIntoView({ 
+            behavior: 'instant',
+            block: 'center' 
+          });
+          
+          // ✅ Add flash highlight effect
+          postElement.classList.add('flash-highlight');
+          setTimeout(() => {
+            postElement.classList.remove('flash-highlight');
+          }, 1500);
+          
+          sessionStorage.removeItem('lastViewedPostId');
+          sessionStorage.removeItem('postsScrollPosition');
+        } else if (hasMore && !loading) {
+          // ⏳ Post not found - load next page automatically
+          console.log(`📦 Post #${postId} not found, loading page ${currentPage + 1}...`);
+          fetchPosts(currentPage + 1);
+        } else if (savedScroll && !hasMore) {
+          // ⚠️ Post not found and no more pages - fallback
+          console.log(`⚠️ Post #${postId} not found, using scroll position fallback`);
+          window.scrollTo({
+            top: parseInt(savedScroll),
+            behavior: 'instant'
+          });
+          sessionStorage.removeItem('postsScrollPosition');
+          sessionStorage.removeItem('lastViewedPostId');
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [posts, hasMore, loading, currentPage, fetchPosts]);
+
+  // ✅ INFINITE SCROLL - Auto-load when near bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isLoadingMore || !hasMore || loading) return;
+      
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const bottomPosition = document.documentElement.scrollHeight - 800;
+      
+      if (scrollPosition >= bottomPosition) {
+        setIsLoadingMore(true);
+        fetchPosts(currentPage + 1).finally(() => {
+          setIsLoadingMore(false);
+        });
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [currentPage, hasMore, loading, isLoadingMore, fetchPosts]);
+
   useEffect(() => {
     setIsClientLoading(false);
   }, []);
@@ -36,23 +101,19 @@ function PostsContent() {
     const token = localStorage.getItem('studentstore_token');
     setIsAuthenticated(!!token);
     
-    // ✅ Auto-fill search from URL param
     const searchParam = searchParams.get('search');
     if (searchParam) {
       setSearchQuery(decodeURIComponent(searchParam));
     }
   }, [searchParams]);
 
-  // ✅ FIXED: Proper async handling in useEffect
   useEffect(() => {
     const highlightedPostId = searchParams.get('highlight');
     
-    // Mode 1: Highlight specific post (with fetch if needed)
     if (highlightedPostId && !searchQuery.trim()) {
       const highlightId = parseInt(highlightedPostId);
       let highlightedPost = posts.find(p => p.id === highlightId);
       
-      // If post not found in current posts, fetch it from backend
       if (!highlightedPost) {
         const fetchAndHighlight = async () => {
           try {
@@ -62,11 +123,9 @@ function PostsContent() {
             
             if (data.status === 'success') {
               const fetchedPost = data.data.post;
-              // Add to posts and put at top
               const otherPosts = posts.filter(p => p.id !== highlightId);
               setFilteredPosts([fetchedPost, ...otherPosts]);
               
-              // Scroll to top after a brief delay to ensure rendering
               setTimeout(() => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }, 100);
@@ -79,10 +138,9 @@ function PostsContent() {
         };
         
         fetchAndHighlight();
-        return; // Exit early while fetching
+        return;
       }
       
-      // Normal highlighting (post already in array)
       const otherPosts = posts.filter(p => p.id !== highlightId);
       setFilteredPosts([highlightedPost, ...otherPosts]);
       setTimeout(() => {
@@ -91,24 +149,19 @@ function PostsContent() {
       return;
     }
 
-    // Mode 2: Regular search or no filter
     if (!searchQuery.trim()) {
       setFilteredPosts(posts);
       return;
     }
 
-    // Mode 3: Smart search with email priority
     const query = searchQuery.toLowerCase().trim();
     
-    // Extract user email if present (format: "user:email@example.com")
     const userMatch = query.match(/user:(\S+)/);
     const userEmail = userMatch ? userMatch[1] : null;
     
-    // Remove "user:email" from query to get remaining search terms
     const cleanQuery = query.replace(/user:\S+/g, '').trim();
     const queryWords = cleanQuery ? cleanQuery.split(/\s+/) : [];
     
-    // Create posts with match scores
     const scoredPosts = posts.map(post => {
       const username = (post.username || '').toLowerCase();
       const productName = (post.product_name || '').toLowerCase();
@@ -117,20 +170,18 @@ function PostsContent() {
       let score = 0;
       let matchedWords = 0;
       
-      // HIGHEST PRIORITY: Exact user email match
       const isExactUser = userEmail && postEmail === userEmail;
       if (isExactUser) {
-        score += 100; // HUGE boost for exact user match
+        score += 100;
       }
       
-      // Check product name matches
       if (queryWords.length > 0) {
         queryWords.forEach(word => {
           const matchesProductName = productName.includes(word);
           const matchesUsername = username.includes(word);
           
           if (matchesProductName) {
-            score += isExactUser ? 50 : 10; // Higher score if it's user's own post
+            score += isExactUser ? 50 : 10;
             matchedWords++;
           }
           if (matchesUsername) {
@@ -148,26 +199,22 @@ function PostsContent() {
       };
     });
     
-    // Sort by score (highest first)
     scoredPosts.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return b.matchedWords - a.matchedWords;
     });
     
-    // Separate matched and non-matched posts
     const matchingPosts = scoredPosts.filter(item => item.isMatch).map(item => item.post);
     const nonMatchingPosts = scoredPosts.filter(item => !item.isMatch).map(item => item.post);
     
     setFilteredPosts([...matchingPosts, ...nonMatchingPosts]);
   }, [searchQuery, posts, searchParams]);
 
-  // ✅ Clear search
   const clearSearch = () => {
     setSearchQuery('');
     window.history.replaceState({}, '', '/posts');
   };
 
-  // ✅ FIXED: Initial loading state with hydration safety
   if (isClientLoading || (loading && posts.length === 0)) {
     return (
       <div className="flex justify-center items-center py-20">
@@ -179,7 +226,6 @@ function PostsContent() {
     );
   }
   
-  // Error state
   if (error && posts.length === 0) {
     return (
       <div className="text-center py-20">
@@ -199,7 +245,6 @@ function PostsContent() {
     );
   }
   
-  // Empty state
   if (posts.length === 0) {
     return (
       <>
@@ -257,7 +302,6 @@ function PostsContent() {
     );
   }
 
-  // ✅ UPDATED: Match counting with both modes
   const highlightedPostId = searchParams.get('highlight');
   const matchingCount = highlightedPostId 
     ? 1 
@@ -284,7 +328,28 @@ function PostsContent() {
 
   return (
     <div className="space-y-8">
-      {/* Header with description and Add Post button */}
+      {/* ✅ Flash Highlight CSS */}
+      <style jsx>{`
+        @keyframes flashHighlight {
+          0% {
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
+            transform: scale(1.02);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            transform: scale(1);
+          }
+        }
+
+        :global(.flash-highlight) {
+          animation: flashHighlight 1.5s ease-out;
+        }
+      `}</style>
+
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex-1">
@@ -310,7 +375,6 @@ function PostsContent() {
         </div>
       </div>
 
-      {/* ✅ Search Bar */}
       <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
@@ -347,7 +411,6 @@ function PostsContent() {
           )}
         </div>
         
-        {/* Search Info */}
         {(searchQuery.trim() || highlightedPostId) && matchingCount > 0 && (
           <div className={`mt-3 p-3 rounded-lg border ${
             highlightedPostId 
@@ -364,14 +427,11 @@ function PostsContent() {
         )}
       </div>
 
-      {/* Posts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPosts.map((post, index) => {
-          // ✅ UPDATED: Check for both highlight and search match
           const highlightedPostId = searchParams.get('highlight');
           const isHighlighted = highlightedPostId && post.id === parseInt(highlightedPostId);
           
-          // Regular search match
           const query = searchQuery.toLowerCase().trim();
           const userMatch = query.match(/user:(\S+)/);
           const userEmail = userMatch ? userMatch[1] : null;
@@ -391,8 +451,7 @@ function PostsContent() {
           const isMatch = isHighlighted || isSearchMatch;
           
           return (
-            <div key={post.id} className="relative">
-              {/* Highlight matching posts */}
+            <div key={post.id} className="relative" data-post-id={post.id}>
               {isMatch && (
                 <div className={`absolute -top-2 -left-2 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-10 ${
                   isHighlighted 
@@ -410,11 +469,26 @@ function PostsContent() {
         })}
       </div>
 
-      {/* Load More Button */}
-      {hasMore && (
+      {isLoadingMore && hasMore && (
+        <div className="flex justify-center items-center py-8">
+          <div className="flex items-center gap-3">
+            <svg className="animate-spin h-8 w-8 text-indigo-600" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <p className="text-gray-600 font-medium">Loading more posts...</p>
+          </div>
+        </div>
+      )}
+
+      {hasMore && !isLoadingMore && (
         <div className="flex flex-col items-center gap-4 mt-12 mb-8">
+          <p className="text-xs text-gray-500 italic">Scroll down to load more, or click the button</p>
           <button
-            onClick={() => fetchPosts(currentPage + 1)}
+            onClick={() => {
+              setIsLoadingMore(true);
+              fetchPosts(currentPage + 1).finally(() => setIsLoadingMore(false));
+            }}
             disabled={loading}
             className={`px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 ${
               loading 
@@ -422,22 +496,12 @@ function PostsContent() {
                 : 'hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 hover:-translate-y-1'
             }`}
           >
-            {loading ? (
-              <span className="flex items-center gap-3">
-                <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Loading More Posts...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                Load More Posts
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </span>
-            )}
+            <span className="flex items-center gap-2">
+              Load More Posts
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
           </button>
           
           <p className="text-sm text-gray-500">
@@ -446,7 +510,6 @@ function PostsContent() {
         </div>
       )}
 
-      {/* End of Posts Message */}
       {!hasMore && posts.length > 0 && (
         <div className="text-center py-12 border-t border-gray-200">
           <div className="text-gray-500">
@@ -457,7 +520,6 @@ function PostsContent() {
         </div>
       )}
 
-      {/* Add Post Modal */}
       <RecommendModal 
         isOpen={showAddPostModal} 
         onClose={() => setShowAddPostModal(false)} 
@@ -492,7 +554,6 @@ function PostsPageContent() {
 
   return (
     <>
-      {/* Products/Posts Navigation Tabs */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-center gap-2 py-4">
@@ -527,7 +588,6 @@ function PostsPageContent() {
         </PostsProvider>
       </div>
 
-      {/* Scroll to Top Button */}
       {showScrollTop && (
         <button
           onClick={scrollToTop}
@@ -558,7 +618,6 @@ export default function PostsPage() {
     <div className="min-h-screen bg-student-page">
       <Navbar />
       <PostsPageContent />
-      <Footer />
     </div>
   );
 }
