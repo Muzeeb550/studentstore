@@ -98,18 +98,25 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     }
   };
 
-  // Lightbox functions
+  // ✅ FIXED: Lightbox with Browser Back Button Support
   const openLightbox = (index: number) => {
     setLightboxImageIndex(index);
     setLightboxOpen(true);
     setLightboxZoom(1);
     setLightboxPosition({ x: 0, y: 0 });
     
+    // Save scroll position
     const scrollY = window.scrollY;
+    sessionStorage.setItem('scrollY', scrollY.toString());
+    
+    // Lock body scroll
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
+    
+    // ✅ Push a fake history state so back button closes lightbox
+    window.history.pushState({ lightboxOpen: true }, '');
   };
 
   const closeLightbox = () => {
@@ -117,12 +124,16 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     setLightboxZoom(1);
     setLightboxPosition({ x: 0, y: 0 });
     
-    const scrollY = document.body.style.top;
+    // Restore body scroll
+    const scrollY = sessionStorage.getItem('scrollY') || '0';
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';
     document.body.style.overflow = '';
-    window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    
+    // Restore scroll position
+    window.scrollTo(0, parseInt(scrollY));
+    sessionStorage.removeItem('scrollY');
   };
 
   const nextLightboxImage = () => {
@@ -221,17 +232,47 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     }
   };
 
-  // Close lightbox on ESC key
+  // ✅ Handle browser back button and keyboard
   useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (lightboxOpen) {
+        e.preventDefault();
+        closeLightbox();
+      }
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!lightboxOpen) return;
-      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'Escape') {
+        closeLightbox();
+        if (window.history.state?.lightboxOpen) {
+          window.history.back();
+        }
+      }
       if (e.key === 'ArrowLeft') prevLightboxImage();
       if (e.key === 'ArrowRight') nextLightboxImage();
     };
+
+    window.addEventListener('popstate', handlePopState);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [lightboxOpen]);
+
+  // ✅ Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (lightboxOpen) {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+      }
+    };
+  }, []);
 
   const handleReaction = async (reactionType: 'like' | 'dislike') => {
     if (reacting) return;
@@ -347,15 +388,12 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
               draggable={false}
             />
             
-            {/* Zoom indicator */}
             <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/60 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 sm:gap-2 z-10">
               <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
               </svg>
-              {/* <span className="hidden sm:inline">Tap to zoom</span> */}
             </div>
             
-            {/* Navigation Arrows */}
             {images.length > 1 && !isExpanded && (
               <>
                 <button
@@ -378,7 +416,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
                   </svg>
                 </button>
                 
-                {/* Image Indicators */}
                 <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-1.5 z-10">
                   {images.map((_, idx) => (
                     <button
@@ -396,7 +433,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
               </>
             )}
 
-            {/* Expanded Review Overlay */}
             {isExpanded && (
               <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-20 overflow-y-auto custom-scrollbar p-3 sm:p-4 md:p-6 animate-fadeIn">
                 <div className="max-w-2xl mx-auto">
@@ -418,7 +454,7 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
           </div>
         )}
 
-        {/* Reactions Bar - Instagram Style */}
+        {/* Reactions Bar */}
         <div className="flex-shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-gray-200">
           <div className="flex items-center gap-3 sm:gap-4">
             <button
@@ -453,7 +489,7 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
           </div>
         </div>
 
-        {/* Post Info - Compact */}
+        {/* Post Info */}
         <div className="flex-shrink-0 px-3 sm:px-4 pb-3 sm:pb-4 pt-2 sm:pt-3">
           <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 mb-1.5 sm:mb-2 line-clamp-2">
             {post.product_name}
@@ -474,7 +510,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
             )}
           </div>
 
-          {/* Price & Date */}
           <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-gray-100">
             <div>
               <div className="text-xs text-gray-500 font-medium mb-0.5">Price</div>
@@ -492,18 +527,26 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
         </div>
       </div>
 
-      {/* Lightbox Modal with Touch Gestures */}
+      {/* ✅ Lightbox with Back Button Support */}
       {lightboxOpen && (
         <div 
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               closeLightbox();
+              if (window.history.state?.lightboxOpen) {
+                window.history.back();
+              }
             }
           }}
         >
           <button
-            onClick={closeLightbox}
+            onClick={() => {
+              closeLightbox();
+              if (window.history.state?.lightboxOpen) {
+                window.history.back();
+              }
+            }}
             className="absolute top-2 sm:top-4 right-2 sm:right-4 text-white bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3 transition-all z-20"
             aria-label="Close lightbox"
           >
@@ -536,12 +579,14 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
             </div>
           </div>
 
-          {/* Image with Touch Gestures */}
           <div 
             className="relative w-full h-full flex items-center justify-center overflow-hidden" 
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 closeLightbox();
+                if (window.history.state?.lightboxOpen) {
+                  window.history.back();
+                }
               }
             }}
             onTouchStart={handleLightboxTouchStart}
@@ -570,7 +615,7 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
 
           {lightboxZoom === 1 && (
             <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 text-white/60 text-xs sm:text-sm text-center z-10 pointer-events-none">
-              <p className="hidden sm:block">Swipe • zoom • Click to close</p>
+              <p className="hidden sm:block">Swipe • Zoom • Click to close</p>
               <p className="sm:hidden">Swipe • Zoom • Tap to close</p>
             </div>
           )}
