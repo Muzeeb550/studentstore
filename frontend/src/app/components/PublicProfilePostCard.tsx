@@ -8,6 +8,8 @@ interface UserPost {
   product_review: string;
   product_images: string;
   product_price: string;
+  buy_link: string;
+  buy_button_text: string;
   likes_count: number;
   dislikes_count: number;
   created_at: string;
@@ -15,6 +17,48 @@ interface UserPost {
 
 interface PublicProfilePostCardProps {
   post: UserPost;
+}
+
+// ✅ HELPER FUNCTION: Get relative time with auto-update support
+function getRelativeTime(dateString: string): string {
+  const now = new Date();
+  const postDate = new Date(dateString);
+  const diffMs = now.getTime() - postDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffMonths = Math.floor(diffDays / 30);
+  
+  // Just now (less than 1 minute)
+  if (diffMins < 1) {
+    return 'Just now';
+  }
+  
+  // Minutes ago (1-59 minutes)
+  if (diffMins < 60) {
+    return `${diffMins} ${diffMins === 1 ? 'min' : 'mins'} ago`;
+  }
+  
+  // Hours ago (1-23 hours)
+  if (diffHours < 24) {
+    return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  // Days ago (1-29 days)
+  if (diffDays < 30) {
+    return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  // Months ago (1-11 months)
+  if (diffMonths < 12) {
+    return `${diffMonths} ${diffMonths === 1 ? 'month' : 'months'} ago`;
+  }
+  
+  // Over 12 months - show exact date (21-Aug-2025 format)
+  const day = postDate.getDate();
+  const month = postDate.toLocaleDateString('en-US', { month: 'short' });
+  const year = postDate.getFullYear();
+  return `${day}-${month}-${year}`;
 }
 
 export default function PublicProfilePostCard({ post }: PublicProfilePostCardProps) {
@@ -40,7 +84,19 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
   const [initialPinchDistance, setInitialPinchDistance] = useState(0);
   const [initialZoom, setInitialZoom] = useState(1);
   
+  // ✅ AUTO-UPDATE STATE: Forces re-render every minute
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  
   const imageRef = useRef<HTMLDivElement>(null);
+
+  // ✅ AUTO-UPDATE EFFECT: Update time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60000); // Update every 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Parse images
   const parseImages = (imageString: string): string[] => {
@@ -52,15 +108,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
   };
 
   const images = parseImages(post.product_images);
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   const nextImage = () => {
     setCurrentImageIndex(prev => (prev === images.length - 1 ? 0 : prev + 1));
@@ -98,24 +145,20 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     }
   };
 
-  // ✅ FIXED: Lightbox with Browser Back Button Support
   const openLightbox = (index: number) => {
     setLightboxImageIndex(index);
     setLightboxOpen(true);
     setLightboxZoom(1);
     setLightboxPosition({ x: 0, y: 0 });
     
-    // Save scroll position
     const scrollY = window.scrollY;
     sessionStorage.setItem('scrollY', scrollY.toString());
     
-    // Lock body scroll
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
     
-    // ✅ Push a fake history state so back button closes lightbox
     window.history.pushState({ lightboxOpen: true }, '');
   };
 
@@ -124,14 +167,12 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     setLightboxZoom(1);
     setLightboxPosition({ x: 0, y: 0 });
     
-    // Restore body scroll
     const scrollY = sessionStorage.getItem('scrollY') || '0';
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';
     document.body.style.overflow = '';
     
-    // Restore scroll position
     window.scrollTo(0, parseInt(scrollY));
     sessionStorage.removeItem('scrollY');
   };
@@ -159,7 +200,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     }
   };
 
-  // DOUBLE TAP to Zoom
   const handleLightboxTap = (e: React.TouchEvent) => {
     const now = Date.now();
     const timeSinceLastTap = now - lastTap;
@@ -175,7 +215,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     setLastTap(now);
   };
 
-  // PINCH to Zoom
   const getPinchDistance = (touches: React.TouchList) => {
     const touch1 = touches[0];
     const touch2 = touches[1];
@@ -217,7 +256,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     }
   };
 
-  // SWIPE to Navigate in Lightbox
   const handleLightboxSwipe = (e: React.TouchEvent) => {
     if (lightboxZoom > 1) return;
     
@@ -232,7 +270,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     }
   };
 
-  // ✅ Handle browser back button and keyboard
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       if (lightboxOpen) {
@@ -262,7 +299,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
     };
   }, [lightboxOpen]);
 
-  // ✅ Cleanup on unmount
   useEffect(() => {
     return () => {
       if (lightboxOpen) {
@@ -368,7 +404,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
       `}</style>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 flex flex-col relative">
-        {/* Product Images Carousel with Touch Swipe */}
         {images.length > 0 && (
           <div 
             ref={imageRef}
@@ -454,7 +489,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
           </div>
         )}
 
-        {/* Reactions Bar */}
         <div className="flex-shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-gray-200">
           <div className="flex items-center gap-3 sm:gap-4">
             <button
@@ -489,7 +523,6 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
           </div>
         </div>
 
-        {/* Post Info */}
         <div className="flex-shrink-0 px-3 sm:px-4 pb-3 sm:pb-4 pt-2 sm:pt-3">
           <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 mb-1.5 sm:mb-2 line-clamp-2">
             {post.product_name}
@@ -510,24 +543,45 @@ export default function PublicProfilePostCard({ post }: PublicProfilePostCardPro
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-gray-100">
-            <div>
-              <div className="text-xs text-gray-500 font-medium mb-0.5">Price</div>
-              <div className="text-lg sm:text-xl md:text-2xl font-bold text-indigo-600">
-                ₹{parseFloat(post.product_price).toLocaleString('en-IN')}
+          {/* ✅ UPDATED: Price & Buy Section with Vertical Layout */}
+          <div className="pt-2 sm:pt-3 border-t border-gray-100 space-y-2 sm:space-y-3">
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-xs text-gray-500 font-medium mb-0.5">Price</div>
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-indigo-600">
+                  ₹{parseFloat(post.product_price).toLocaleString('en-IN')}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 font-medium mb-0.5">Posted</div>
+                <div 
+                  className="text-xs sm:text-sm text-gray-700 font-medium cursor-help"
+                  title={new Date(post.created_at).toLocaleString('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                  })}
+                >
+                  {getRelativeTime(post.created_at)}
+                </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-gray-500 font-medium mb-0.5">Posted</div>
-              <div className="text-xs sm:text-sm text-gray-700 font-medium">
-                {formatDate(post.created_at)}
-              </div>
-            </div>
+
+            {/* ✅ BUY BUTTON - Full Width, Compact, Responsive */}
+            {post.buy_link && (
+              <a
+                href={post.buy_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg transform hover:scale-105 text-xs sm:text-sm text-center"
+              >
+                {post.buy_button_text || 'Buy Now'} →
+              </a>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ✅ Lightbox with Back Button Support */}
+      {/* Lightbox (unchanged) */}
       {lightboxOpen && (
         <div 
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"

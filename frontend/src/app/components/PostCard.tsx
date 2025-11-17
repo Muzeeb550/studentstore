@@ -32,6 +32,48 @@ interface UserProfile {
 
 const profileCache: Record<string, UserProfile> = {};
 
+// ✅ HELPER FUNCTION: Get relative time with auto-update support
+function getRelativeTime(dateString: string): string {
+  const now = new Date();
+  const postDate = new Date(dateString);
+  const diffMs = now.getTime() - postDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffMonths = Math.floor(diffDays / 30);
+  
+  // Just now (less than 1 minute)
+  if (diffMins < 1) {
+    return 'Just now';
+  }
+  
+  // Minutes ago (1-59 minutes)
+  if (diffMins < 60) {
+    return `${diffMins} ${diffMins === 1 ? 'min' : 'mins'} ago`;
+  }
+  
+  // Hours ago (1-23 hours)
+  if (diffHours < 24) {
+    return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  // Days ago (1-29 days)
+  if (diffDays < 30) {
+    return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  // Months ago (1-11 months)
+  if (diffMonths < 12) {
+    return `${diffMonths} ${diffMonths === 1 ? 'month' : 'months'} ago`;
+  }
+  
+  // Over 12 months - show exact date (21-Aug-2025 format)
+  const day = postDate.getDate();
+  const month = postDate.toLocaleDateString('en-US', { month: 'short' });
+  const year = postDate.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
 function useUserProfile(email: string, fallbackUsername: string): [UserProfile | null, boolean] {
   const [profile, setProfile] = useState<UserProfile | null>(() => profileCache[email] || null);
   const [loading, setLoading] = useState(!profile);
@@ -102,7 +144,19 @@ const PostCard = memo(({ post }: { post: Post }) => {
   const [initialPinchDistance, setInitialPinchDistance] = useState(0);
   const [initialZoom, setInitialZoom] = useState(1);
   
+  // ✅ AUTO-UPDATE STATE: Forces re-render every minute
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  
   const imageRef = useRef<HTMLDivElement>(null);
+
+  // ✅ AUTO-UPDATE EFFECT: Update time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60000); // Update every 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleReaction = async (reactionType: 'like' | 'dislike') => {
     if (reactionDisabled) return;
@@ -164,7 +218,6 @@ const PostCard = memo(({ post }: { post: Post }) => {
     }
   };
 
-  // ✅ UPDATED: Save both scroll position AND post ID
   const handleProfileClick = () => {
     sessionStorage.setItem('postsScrollPosition', window.scrollY.toString());
     sessionStorage.setItem('lastViewedPostId', post.id.toString());
@@ -360,12 +413,15 @@ const PostCard = memo(({ post }: { post: Post }) => {
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-gray-900 truncate text-sm sm:text-base">{displayName}</h3>
           <div className="flex items-center gap-2">
-            <p className="text-xs text-gray-500">
-              {new Date(post.created_at).toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
+            {/* ✅ AUTO-UPDATING RELATIVE TIME with tooltip */}
+            <p 
+              className="text-xs text-gray-500 cursor-help" 
+              title={new Date(post.created_at).toLocaleString('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
               })}
+            >
+              {getRelativeTime(post.created_at)}
             </p>
             {userProfile?.exists && (
               <span className="text-xs bg-green-100 text-green-700 px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
