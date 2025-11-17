@@ -14,6 +14,7 @@ interface PublicUser {
   id: number;
   display_name: string;
   profile_picture: string | null;
+  bio: string | null;  // ✅ ADDED
   role: string;
   member_since: string;
   member_since_days: number;
@@ -33,13 +34,12 @@ interface UserPost {
   product_review: string;
   product_images: string;
   product_price: string;
-  buy_link: string;  // ✅ ADDED
-  buy_button_text: string;  // ✅ ADDED
+  buy_link: string;
+  buy_button_text: string;
   likes_count: number;
   dislikes_count: number;
   created_at: string;
 }
-
 
 interface Review {
   id: number;
@@ -267,13 +267,24 @@ export default function PublicProfilePage() {
             <p className="text-sm sm:text-base text-student-secondary mb-1">
               Member since {formatDate(user.member_since)} ({user.member_since_days} days)
             </p>
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mb-3 ${
               user.role === 'admin' 
                 ? 'bg-student-orange/20 text-student-orange' 
                 : 'bg-student-blue/20 text-student-blue'
             }`}>
               {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
             </span>
+
+            {/* ✅ NEW: Bio Section */}
+          {user.bio && (
+            <div className="w-full max-w-md mt-2">
+              <div className="bg-gradient-to-br from-student-light/80 to-student-blue/5 rounded-xl p-4 border-2 border-student-blue/20 shadow-sm">
+                <p className="text-sm text-student-primary leading-relaxed whitespace-pre-wrap font-medium">
+                  {user.bio}
+                </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -519,8 +530,6 @@ export default function PublicProfilePage() {
 
         </div>
       </div>
-
-      {/* <Footer /> */}
     </div>
   );
 }

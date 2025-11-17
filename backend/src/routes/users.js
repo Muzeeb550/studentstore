@@ -4,10 +4,9 @@ const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/adminAuth');
 const imagekit = require('../config/imagekit');
 const { createCacheMiddleware } = require('../middleware/cache');
-const { addDefaultTransformations } = require('../utils/imagekitHelper'); // ✅ NEW IMPORT
+const { addDefaultTransformations } = require('../utils/imagekitHelper');
 const router = express.Router();
 const logger = require('../utils/logger');
-
 
 // Profile upload rate limiting - ONLY for profile pictures (5 per hour)
 const profileUploadLimit = rateLimit({
@@ -27,7 +26,6 @@ const profileUploadLimit = rateLimit({
     }
 });
 
-
 // Review image upload rate limiting - MORE generous (30 per hour)
 const reviewImageUploadLimit = rateLimit({
     windowMs: 60 * 60 * 1000,
@@ -43,17 +41,14 @@ const reviewImageUploadLimit = rateLimit({
     legacyHeaders: false
 });
 
-
 // General API rate limiting - 100 requests per 15 minutes per user
 const generalApiLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
     keyGenerator: (req) => {
-        // Always use user ID for authenticated requests
         if (req.user?.id) {
             return `user:${req.user.id}`;
         }
-        // For unauthenticated, use 'anonymous' key (no IP tracking)
         return 'anonymous';
     },
     message: {
@@ -63,31 +58,25 @@ const generalApiLimit = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting in development
     skip: (req) => process.env.NODE_ENV === 'development'
 });
-
-
 
 // Cache configurations
 const dashboardStatsCache = createCacheMiddleware(
     (req) => `dashboard:user:${req.user.id}`,
-    300,   // ✅ 5 minutes instead of 10
+    300,
     (req) => !req.user
 );
-
 
 const userProfileCache = createCacheMiddleware(
     (req) => `profile:user:${req.user.id}`,
     600
 );
 
-
 const userStatsCache = createCacheMiddleware(
     (req) => `stats:user:${req.user.id}`,
     300
 );
-
 
 // Get all users (admin only)
 router.get('/', generalApiLimit, async (req, res) => {
@@ -105,12 +94,10 @@ router.get('/', generalApiLimit, async (req, res) => {
     }
 });
 
-
 // ImageKit authentication endpoint
 router.get('/imagekit-auth', authenticateToken, async (req, res) => {
     try {
-        logger.debug('ImageKit auth request'); // Removed user ID for security
-
+        logger.debug('ImageKit auth request');
         
         const usage = req.query.usage || req.headers['x-upload-type'] || 'review';
         
@@ -129,13 +116,13 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
         function proceedWithAuth() {
             try {
                 const authenticationParameters = imagekit.getAuthenticationParameters();
-             if (process.env.NODE_ENV !== 'production') {
-                console.log('🔐 ImageKit auth params generated for:', usage, {
-                    token: authenticationParameters.token.substring(0, 10) + '...',
-                    expire: authenticationParameters.expire,
-                    signature: authenticationParameters.signature.substring(0, 10) + '...'
-                });
-             }
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log('🔐 ImageKit auth params generated for:', usage, {
+                        token: authenticationParameters.token.substring(0, 10) + '...',
+                        expire: authenticationParameters.expire,
+                        signature: authenticationParameters.signature.substring(0, 10) + '...'
+                    });
+                }
                 
                 res.json(authenticationParameters);
             } catch (error) {
@@ -157,15 +144,14 @@ router.get('/imagekit-auth', authenticateToken, async (req, res) => {
     }
 });
 
-
-// Get user profile (protected route) - WITH CACHING
+// ✅ UPDATED: Get user profile (protected route) - WITH BIO
 router.get('/profile', authenticateToken, userProfileCache, generalApiLimit, async (req, res) => {
     try {
         const userId = req.user.id;
         
         const result = await pool.query(`
             SELECT id, google_id, name, display_name, email, 
-                   profile_picture, role, is_active, created_at
+                   profile_picture, bio, role, is_active, created_at
             FROM Users 
             WHERE id = $1 AND is_active = true
         `, [userId]);
@@ -192,15 +178,163 @@ router.get('/profile', authenticateToken, userProfileCache, generalApiLimit, asy
     }
 });
 
+// ✅ NEW: Update user profile (display_name and bio)
+router.put('/profile', authenticateToken, generalApiLimit, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { display_name, bio } = req.body;
+        
+        logger.debug('Profile update request');
+        
+        const updates = [];
+        const values = [];
+        let paramIndex = 1;
+        
+        // Validate and add display_name if provided
+        if (display_name !== undefined) {
+            if (typeof display_name !== 'string') {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Display name must be a string',
+                    code: 'INVALID_DISPLAY_NAME_TYPE'
+                });
+            }
+            
+            const trimmedName = display_name.trim();
+            
+            if (trimmedName.length < 2) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Display name must be at least 2 characters long',
+                    code: 'DISPLAY_NAME_TOO_SHORT'
+                });
+            }
+            
+            if (trimmedName.length > 120) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Display name must be 120 characters or less',
+                    code: 'DISPLAY_NAME_TOO_LONG'
+                });
+            }
+            
+            // Check if display name is already taken
+            const nameCheck = await pool.query(
+                'SELECT id FROM Users WHERE display_name = $1 AND id != $2',
+                [trimmedName, userId]
+            );
+            
+            if (nameCheck.rows.length > 0) {
+                return res.status(409).json({
+                    status: 'error',
+                    message: 'This display name is already taken. Please choose another.',
+                    code: 'DISPLAY_NAME_TAKEN'
+                });
+            }
+            
+            updates.push(`display_name = $${paramIndex}`);
+            values.push(trimmedName);
+            paramIndex++;
+        }
+        
+        // Validate and add bio if provided
+        if (bio !== undefined) {
+            if (bio === null || bio === '') {
+                updates.push(`bio = NULL`);
+            } else {
+                if (typeof bio !== 'string') {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'Bio must be a string',
+                        code: 'INVALID_BIO_TYPE'
+                    });
+                }
+                
+                const trimmedBio = bio.trim();
+                
+                if (trimmedBio.length > 300) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'Bio must be 300 characters or less',
+                        code: 'BIO_TOO_LONG',
+                        current_length: trimmedBio.length,
+                        max_length: 300
+                    });
+                }
+                
+                // Minimal XSS protection - only block HTML tags
+                const sanitizedBio = trimmedBio
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                
+                updates.push(`bio = $${paramIndex}`);
+                values.push(sanitizedBio);
+                paramIndex++;
+            }
+        }
+        
+        if (updates.length === 0) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'No fields to update. Provide display_name or bio.',
+                code: 'NO_UPDATES'
+            });
+        }
+        
+        updates.push('updated_at = NOW()');
+        values.push(userId);
+        
+        const query = `
+            UPDATE Users 
+            SET ${updates.join(', ')}
+            WHERE id = $${paramIndex} AND is_active = true
+            RETURNING id, display_name, bio, updated_at
+        `;
+        
+        const result = await pool.query(query, values);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'User not found or account deactivated'
+            });
+        }
+        
+        logger.debug('Profile updated successfully');
+        
+        // Clear cached data
+        const { deleteCache } = require('../config/redis');
+        await deleteCache(`profile:user:${userId}`);
+        await deleteCache(`dashboard:user:${userId}`);
+        await deleteCache(`stats:user:${userId}`);
+        
+        res.json({
+            status: 'success',
+            message: 'Profile updated successfully',
+            data: {
+                display_name: result.rows[0].display_name,
+                bio: result.rows[0].bio,
+                updated_at: result.rows[0].updated_at
+            }
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to update profile',
+            code: 'DATABASE_ERROR',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+});
 
-// ✅ UPDATED: Update user profile picture with optimization
+// Update user profile picture with optimization
 router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req, res) => {
     try {
         const userId = req.user.id;
         const { profile_picture } = req.body;
         
-        logger.debug('Profile picture update request'); // Removed user ID for security
-
+        logger.debug('Profile picture update request');
         
         if (!profile_picture) {
             return res.status(400).json({
@@ -223,7 +357,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         const isValidImageExtension = allowedExtensions.some(ext => urlLower.includes(ext));
         
         if (!isValidImageExtension) {
-            logger.warn('Invalid file type attempt'); // Removed user ID for security
+            logger.warn('Invalid file type attempt');
             return res.status(400).json({
                 status: 'error',
                 message: 'Invalid file type. Only JPG, PNG, GIF, and WebP images are allowed.',
@@ -233,7 +367,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         }
         
         if (!profile_picture.includes('ik.imagekit.io')) {
-            logger.warn('Invalid image source attempt'); // Removed user ID for security
+            logger.warn('Invalid image source attempt');
             return res.status(400).json({
                 status: 'error',
                 message: 'Invalid image source. Images must be uploaded through the official upload system.',
@@ -268,16 +402,14 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
 
-        // ✅ NEW: Optimize profile picture URL before storing
         const optimizedProfilePicture = addDefaultTransformations(profile_picture, 'profile');
-        logger.debug('Profile picture optimized'); // Removed user ID for security
-
+        logger.debug('Profile picture optimized');
         
         const result = await pool.query(`
             UPDATE Users 
             SET profile_picture = $1, updated_at = NOW()
             WHERE id = $2 AND is_active = true
-        `, [optimizedProfilePicture, userId]); // ✅ Use optimized URL
+        `, [optimizedProfilePicture, userId]);
         
         if (result.rowCount === 0) {
             return res.status(404).json({
@@ -286,9 +418,8 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             });
         }
         
-        logger.debug('Profile picture updated successfully'); // Removed user ID for security
+        logger.debug('Profile picture updated successfully');
         
-        // Clear user's cached data
         const { deleteCache } = require('../config/redis');
         await deleteCache(`profile:user:${userId}`);
         await deleteCache(`dashboard:user:${userId}`);
@@ -298,7 +429,7 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
             status: 'success',
             message: 'Profile picture updated successfully with optimization',
             data: {
-                profile_picture: optimizedProfilePicture, // ✅ Return optimized URL
+                profile_picture: optimizedProfilePicture,
                 updated_at: new Date().toISOString()
             }
         });
@@ -312,8 +443,6 @@ router.put('/profile/picture', authenticateToken, profileUploadLimit, async (req
         });
     }
 });
-
-
 
 // Get user stats for dashboard - WITH CACHING
 router.get('/stats', authenticateToken, userStatsCache, generalApiLimit, async (req, res) => {
@@ -359,18 +488,16 @@ router.get('/stats', authenticateToken, userStatsCache, generalApiLimit, async (
     }
 });
 
-
-// Get enhanced user stats for dashboard (protected route) - WITH CACHING  
+// ✅ UPDATED: Get enhanced user stats for dashboard - WITH BIO
 router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalApiLimit, async (req, res) => {
     try {
         const userId = req.user.id;
         
-        logger.debug('Dashboard stats fetched'); // Removed user ID for security
-
+        logger.debug('Dashboard stats fetched');
         
         const userResult = await pool.query(`
             SELECT id, name, display_name, email, profile_picture, 
-                   role, created_at, is_active
+                   bio, role, created_at, is_active
             FROM Users 
             WHERE id = $1 AND is_active = true
         `, [userId]);
@@ -389,7 +516,6 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
             [userId]
         );
         
-        // ✅ ENHANCED: Include vote statistics
         const reviewStatsResult = await pool.query(`
             SELECT 
                 COUNT(*) as total_reviews,
@@ -402,7 +528,6 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
             WHERE user_id = $1
         `, [userId]);
 
-        // ✅ NEW: Get vote statistics (votes given by user)
         const votesGivenResult = await pool.query(`
             SELECT 
                 COUNT(*) as total_votes_given,
@@ -434,7 +559,6 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
         const totalReviews = parseInt(reviewStats.total_reviews) || 0;
         const avgRatingGiven = parseFloat(reviewStats.average_rating_given) || 0;
 
-        // ✅ NEW: Parse vote statistics
         const votesGiven = votesGivenResult.rows[0];
         const totalVotesGiven = parseInt(votesGiven.total_votes_given) || 0;
         const helpfulVotesGiven = parseInt(votesGiven.helpful_votes_given) || 0;
@@ -442,12 +566,10 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
         const totalHelpfulReceived = parseInt(reviewStats.total_helpful_votes_received) || 0;
         const totalNotHelpfulReceived = parseInt(reviewStats.total_not_helpful_votes_received) || 0;
 
-        // Calculate helpfulness ratio (for badges)
         const helpfulnessRatio = totalReviews > 0 
             ? ((totalHelpfulReceived / (totalHelpfulReceived + totalNotHelpfulReceived + 1)) * 100).toFixed(1)
             : 0;
         
-        // Calculate achievement badges
         const badges = [];
         
         if (totalReviews >= 1) {
@@ -510,7 +632,6 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
             });
         }
 
-        // ✅ NEW: Voting engagement badges
         if (totalVotesGiven >= 10) {
             badges.push({
                 id: 'active_voter',
@@ -531,7 +652,6 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
             });
         }
 
-        // ✅ NEW: Helpful reviewer badges
         if (totalHelpfulReceived >= 10) {
             badges.push({
                 id: 'helpful_reviewer',
@@ -562,7 +682,6 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
             });
         }
 
-        // ✅ NEW: High helpfulness ratio badge
         if (totalReviews >= 5 && parseFloat(helpfulnessRatio) >= 80) {
             badges.push({
                 id: 'quality_contributor',
@@ -583,6 +702,7 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
                     display_name: user.display_name,
                     email: user.email,
                     profile_picture: user.profile_picture,
+                    bio: user.bio,
                     role: user.role
                 },
                 stats: {
@@ -595,7 +715,6 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
                     average_rating_given: parseFloat(avgRatingGiven.toFixed(1)),
                     first_review_date: reviewStats.first_review_date,
                     latest_review_date: reviewStats.latest_review_date,
-                    // ✅ NEW: Vote statistics
                     voting: {
                         total_votes_given: totalVotesGiven,
                         helpful_votes_given: helpfulVotesGiven,
@@ -620,8 +739,7 @@ router.get('/dashboard-stats', authenticateToken, dashboardStatsCache, generalAp
     }
 });
 
-
-// ✅ NEW: Get user profile by email (public endpoint for posts)
+// Get user profile by email (public endpoint for posts)
 router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
   try {
     const { email } = req.params;
@@ -671,7 +789,7 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
     res.json({
       status: 'success',
       data: {
-        user_id: user.id,  // ✅ ADD THIS
+        user_id: user.id,
         display_name: user.display_name,
         profile_picture: optimizedProfilePicture,
         exists: true,
@@ -688,10 +806,7 @@ router.get('/profile-by-email/:email', generalApiLimit, async (req, res) => {
   }
 });
 
-
-// ============================================
-// GET PUBLIC PROFILE BY USER ID
-// ============================================
+// ✅ UPDATED: GET PUBLIC PROFILE BY USER ID - WITH BIO
 router.get('/public-profile/:userId', generalApiLimit, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId, 10);
@@ -705,13 +820,13 @@ router.get('/public-profile/:userId', generalApiLimit, async (req, res) => {
 
     logger.debug(`Fetching public profile for user ID: ${userId}`);
 
-    // Get user basic info (NO EMAIL)
     const userResult = await pool.query(`
       SELECT 
         id, 
         display_name, 
         name,
         profile_picture,
+        bio,
         role,
         created_at
       FROM Users 
@@ -727,14 +842,12 @@ router.get('/public-profile/:userId', generalApiLimit, async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Get user's email (for internal queries only, not exposed)
     const emailResult = await pool.query(
       'SELECT email FROM Users WHERE id = $1',
       [userId]
     );
     const userEmail = emailResult.rows[0]?.email;
 
-    // Get posts count (from student_posts via email OR recommendation_id)
     const postsResult = await pool.query(`
       SELECT COUNT(*) as count
       FROM student_posts sp
@@ -743,13 +856,11 @@ router.get('/public-profile/:userId', generalApiLimit, async (req, res) => {
         AND sp.is_approved = true
     `, [userId, userEmail]);
 
-    // Get reviews count
     const reviewsResult = await pool.query(
       'SELECT COUNT(*) as count FROM Reviews WHERE user_id = $1',
       [userId]
     );
 
-    // Get total likes/dislikes on user's posts
     const likesResult = await pool.query(`
       SELECT 
         SUM(sp.likes_count) as total_likes,
@@ -760,18 +871,15 @@ router.get('/public-profile/:userId', generalApiLimit, async (req, res) => {
         AND sp.is_approved = true
     `, [userId, userEmail]);
 
-    // Get member since info
     const memberSince = user.created_at;
     const memberSinceFormatted = memberSince.toISOString().split('T')[0];
     const daysSinceJoining = Math.floor((new Date().getTime() - memberSince.getTime()) / (1000 * 60 * 60 * 24));
 
-    // Get average rating given by user
     const avgRatingResult = await pool.query(
       'SELECT AVG(rating::DECIMAL(3,2)) as avg_rating FROM Reviews WHERE user_id = $1',
       [userId]
     );
 
-    // ✅ Optimize profile picture URL
     const optimizedProfilePicture = user.profile_picture 
       ? addDefaultTransformations(user.profile_picture, 'profile')
       : null;
@@ -786,6 +894,7 @@ router.get('/public-profile/:userId', generalApiLimit, async (req, res) => {
           id: user.id,
           display_name: user.display_name || user.name,
           profile_picture: optimizedProfilePicture,
+          bio: user.bio,
           role: user.role,
           member_since: memberSinceFormatted,
           member_since_days: daysSinceJoining
@@ -808,6 +917,5 @@ router.get('/public-profile/:userId', generalApiLimit, async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;

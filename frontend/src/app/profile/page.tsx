@@ -11,6 +11,7 @@ import ActivityModal from '../components/modals/ActivityModal';
 import AccountModal from '../components/modals/AccountModal';
 import UploadModal from '../components/modals/UploadModal';
 import PublicProfilePostCard from '../components/PublicProfilePostCard';
+import BioModal from '../components/modals/BioModal';
 
 // ===== INTERFACES =====
 
@@ -21,6 +22,7 @@ interface User {
   name?: string;
   display_name?: string;
   profile_picture?: string;
+  bio?: string;
   iat: number;
   exp: number;
 }
@@ -31,13 +33,12 @@ interface UserPost {
   product_review: string;
   product_images: string;
   product_price: string;
-  buy_link: string;  // ✅ ADDED
-  buy_button_text: string;  // ✅ ADDED
+  buy_link: string;
+  buy_button_text: string;
   likes_count: number;
   dislikes_count: number;
   created_at: string;
 }
-
 
 interface Review {
   id: number;
@@ -82,6 +83,10 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [profilePicture, setProfilePicture] = useState<string>('');
   const [loading, setLoading] = useState(true);
+
+  // ===== BIO STATE =====
+  const [bio, setBio] = useState<string>('');
+  const [showBioModal, setShowBioModal] = useState(false);
 
   // ===== TAB STATE =====
   const [activeTab, setActiveTab] = useState<'posts' | 'reviews'>('posts');
@@ -128,6 +133,10 @@ export default function ProfilePage() {
           setProfilePicture(parsedUser.profile_picture);
         }
         
+        if (parsedUser.bio) {
+          setBio(parsedUser.bio);
+        }
+        
         // Fetch all data
         fetchUserProfile();
         fetchDashboardStats();
@@ -167,7 +176,8 @@ export default function ProfilePage() {
             ...prev!,
             name: userData.name,
             display_name: userData.display_name,
-            profile_picture: userData.profile_picture
+            profile_picture: userData.profile_picture,
+            bio: userData.bio
           }));
           
           if (userData.profile_picture && 
@@ -178,6 +188,12 @@ export default function ProfilePage() {
             setProfilePicture(userData.profile_picture);
           } else {
             setProfilePicture('');
+          }
+          
+          if (userData.bio) {
+            setBio(userData.bio);
+          } else {
+            setBio('');
           }
           
           const currentUser = JSON.parse(localStorage.getItem('studentstore_user') || '{}');
@@ -276,6 +292,47 @@ export default function ProfilePage() {
       fetchMyReviews(1);
     }
   }, [activeTab]);
+
+  // ===== BIO FUNCTIONS =====
+  const openBioModal = () => {
+    setShowBioModal(true);
+  };
+
+  const saveBio = async (newBio: string) => {
+    try {
+      const token = localStorage.getItem('studentstore_token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+      const response = await fetch(`${apiUrl}/api/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ bio: newBio || null })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.status === 'success') {
+        setBio(result.data.bio || '');
+        
+        // Update user state
+        if (user) {
+          const updatedUser = { ...user, bio: result.data.bio };
+          setUser(updatedUser);
+          localStorage.setItem('studentstore_user', JSON.stringify(updatedUser));
+        }
+
+        alert('Bio updated successfully! ✅');
+      } else {
+        throw new Error(result.message || 'Failed to update bio');
+      }
+    } catch (error: any) {
+      console.error('Error saving bio:', error);
+      throw error;
+    }
+  };
 
   // ===== HELPER FUNCTIONS =====
   const getInitials = (email: string) => {
@@ -764,13 +821,43 @@ export default function ProfilePage() {
             <p className="text-sm sm:text-base text-student-secondary mb-1">
               {user.email}
             </p>
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mb-3 ${
               user.role === 'admin' 
                 ? 'bg-student-orange/20 text-student-orange' 
                 : 'bg-student-blue/20 text-student-blue'
             }`}>
               {user.role === 'admin' ? '👑 Admin' : '🎓 Student'}
             </span>
+
+            {/* ✅ Bio Section */}
+            <div className="w-full max-w-md mt-3">
+              {bio ? (
+                <div className="bg-gradient-to-br from-student-light/80 to-student-blue/5 rounded-xl p-4 border-2 border-student-blue/20 shadow-sm">
+                  <p className="text-sm text-student-primary leading-relaxed mb-2 whitespace-pre-wrap font-medium">
+                    {bio}
+                  </p>
+                  <button
+                    onClick={openBioModal}
+                    className="text-xs text-student-blue hover:text-student-green transition-colors font-medium flex items-center gap-1 mx-auto"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Bio
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={openBioModal}
+                  className="text-sm text-student-secondary hover:text-student-blue transition-colors flex items-center gap-2 mx-auto px-4 py-2 rounded-lg hover:bg-student-light"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add a bio
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -890,7 +977,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Posts Grid - ✅ FIXED: Changed userPosts to myPosts */}
+                  {/* Posts Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {myPosts.map((post) => (
                       <PublicProfilePostCard key={post.id} post={post} />
@@ -1184,7 +1271,12 @@ export default function ProfilePage() {
         rateLimitInfo={rateLimitInfo}
       />
 
-      {/* <Footer /> */}
+      <BioModal
+        isOpen={showBioModal}
+        onClose={() => setShowBioModal(false)}
+        currentBio={bio}
+        onSave={saveBio}
+      />
     </div>
   );
 }
