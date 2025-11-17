@@ -20,6 +20,7 @@ interface Post {
   updated_at?: string;
 }
 
+// ✅ UPDATED: Added sortBy and setSortBy
 interface PostsContextType {
   posts: Post[];
   loading: boolean;
@@ -27,7 +28,9 @@ interface PostsContextType {
   currentPage: number;
   totalPages: number;
   hasMore: boolean;
-  fetchPosts: (page?: number) => Promise<void>;
+  sortBy: 'hot' | 'new' | 'top'; // ✅ NEW
+  setSortBy: (sort: 'hot' | 'new' | 'top') => void; // ✅ NEW
+  fetchPosts: (page?: number, sort?: string) => Promise<void>; // ✅ UPDATED
   reactToPost: (postId: number, reactionType: 'like' | 'dislike') => Promise<void>;
   refreshPosts: () => Promise<void>;
 }
@@ -40,6 +43,7 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [sortBy, setSortBy] = useState<'hot' | 'new' | 'top'>('hot'); // ✅ NEW: Default to 'hot'
   const hasFetched = useRef(false);
 
   const parseProductImages = useCallback((images: string[] | string): string[] => {
@@ -55,8 +59,11 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
     return [];
   }, []);
 
-  const fetchPosts = useCallback(async (page = 1) => {
+  // ✅ UPDATED: Accept sort parameter
+  const fetchPosts = useCallback(async (page = 1, sort?: string) => {
     if (loading) return;
+    
+    const currentSort = sort || sortBy; // Use provided sort or current state
     
     setLoading(true);
     setError(null);
@@ -74,10 +81,14 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${apiUrl}/api/posts?page=${page}&limit=20`, { 
-        headers,
-        credentials: 'include'
-      });
+      // ✅ NEW: Add sort parameter to URL
+      const response = await fetch(
+        `${apiUrl}/api/posts?page=${page}&limit=20&sort=${currentSort}`, 
+        { 
+          headers,
+          credentials: 'include'
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: Failed to fetch posts`);
@@ -108,7 +119,7 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
         setTotalPages(result.data.pagination.total_pages);
         
         const totalOnScreen = page === 1 ? parsedPosts.length : posts.length + parsedPosts.length;
-        console.log(`📝 Loaded ${parsedPosts.length} posts (page ${page}/${result.data.pagination.total_pages}), Total posts on screen: ${totalOnScreen}`);
+        console.log(`📝 Loaded ${parsedPosts.length} posts (${currentSort} sort, page ${page}/${result.data.pagination.total_pages}), Total: ${totalOnScreen}`);
       } else {
         setError(result.message || 'Failed to fetch posts');
       }
@@ -119,7 +130,7 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [parseProductImages, posts.length]);
+  }, [parseProductImages, posts.length, sortBy, loading]);
 
   const reactToPost = useCallback(async (postId: number, reactionType: 'like' | 'dislike') => {
     try {
@@ -183,11 +194,12 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // ✅ UPDATED: Pass sortBy when refreshing
   const refreshPosts = useCallback(async () => {
     setPosts([]);
     setCurrentPage(1);
-    await fetchPosts(1);
-  }, [fetchPosts]);
+    await fetchPosts(1, sortBy);
+  }, [fetchPosts, sortBy]);
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -206,6 +218,8 @@ export function PostsProvider({ children }: { children: React.ReactNode }) {
         currentPage, 
         totalPages, 
         hasMore,
+        sortBy, // ✅ NEW
+        setSortBy, // ✅ NEW
         fetchPosts, 
         reactToPost,
         refreshPosts

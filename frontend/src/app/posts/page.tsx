@@ -12,7 +12,8 @@ import Link from 'next/link';
 
 function PostsContent() {
   const searchParams = useSearchParams();
-  const { posts, loading, error, fetchPosts, currentPage, totalPages, hasMore } = usePosts();
+  // ✅ UPDATED: Added sortBy and setSortBy
+  const { posts, loading, error, fetchPosts, currentPage, totalPages, hasMore, sortBy, setSortBy } = usePosts();
   
   const [showAddPostModal, setShowAddPostModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,6 +26,22 @@ function PostsContent() {
   
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // ✅ NEW: Handle sort changes
+  const handleSortChange = async (newSort: 'hot' | 'new' | 'top') => {
+    if (newSort === sortBy) return; // Already on this sort
+    
+    setSortBy(newSort);
+    setFilteredPosts([]);
+    
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Wait a bit for scroll, then fetch posts with new sort
+    setTimeout(async () => {
+      await fetchPosts(1, newSort);
+    }, 100);
+  };
 
   // ✅ IMPROVED SCROLL RESTORATION - Instant jump with flash highlight
   useEffect(() => {
@@ -55,7 +72,7 @@ function PostsContent() {
         } else if (hasMore && !loading) {
           // ⏳ Post not found - load next page automatically
           console.log(`📦 Post #${postId} not found, loading page ${currentPage + 1}...`);
-          fetchPosts(currentPage + 1);
+          fetchPosts(currentPage + 1, sortBy);
         } else if (savedScroll && !hasMore) {
           // ⚠️ Post not found and no more pages - fallback
           console.log(`⚠️ Post #${postId} not found, using scroll position fallback`);
@@ -70,7 +87,7 @@ function PostsContent() {
       
       return () => clearTimeout(timer);
     }
-  }, [posts, hasMore, loading, currentPage, fetchPosts]);
+  }, [posts, hasMore, loading, currentPage, fetchPosts, sortBy]);
 
   // ✅ INFINITE SCROLL - Auto-load when near bottom
   useEffect(() => {
@@ -82,7 +99,7 @@ function PostsContent() {
       
       if (scrollPosition >= bottomPosition) {
         setIsLoadingMore(true);
-        fetchPosts(currentPage + 1).finally(() => {
+        fetchPosts(currentPage + 1, sortBy).finally(() => { // ✅ UPDATED: Pass sortBy
           setIsLoadingMore(false);
         });
       }
@@ -90,7 +107,7 @@ function PostsContent() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [currentPage, hasMore, loading, isLoadingMore, fetchPosts]);
+  }, [currentPage, hasMore, loading, isLoadingMore, fetchPosts, sortBy]);
 
   useEffect(() => {
     setIsClientLoading(false);
@@ -375,6 +392,53 @@ function PostsContent() {
         </div>
       </div>
 
+      {/* ✅ NEW: Sort Tabs */}
+      <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-gray-600">Sort by:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleSortChange('hot')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                  sortBy === 'hot'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md transform scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                }`}
+              >
+                🔥 Hot
+              </button>
+              <button
+                onClick={() => handleSortChange('new')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                  sortBy === 'new'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md transform scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                }`}
+              >
+                ⭐ New
+              </button>
+              <button
+                onClick={() => handleSortChange('top')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                  sortBy === 'top'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md transform scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                }`}
+              >
+                👑 Top
+              </button>
+            </div>
+          </div>
+          
+          <div className="text-xs text-gray-500 text-center sm:text-right">
+            {sortBy === 'hot' && '🔥 Popular + Recent posts'}
+            {sortBy === 'new' && '⭐ Newest posts first'}
+            {sortBy === 'top' && '👑 Most liked posts'}
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
@@ -487,7 +551,7 @@ function PostsContent() {
           <button
             onClick={() => {
               setIsLoadingMore(true);
-              fetchPosts(currentPage + 1).finally(() => setIsLoadingMore(false));
+              fetchPosts(currentPage + 1, sortBy).finally(() => setIsLoadingMore(false)); // ✅ UPDATED
             }}
             disabled={loading}
             className={`px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 ${

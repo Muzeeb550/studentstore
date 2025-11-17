@@ -40,6 +40,7 @@ router.get('/', async (req, res) => {
     const page = parseInt(req.query.page || '1', 10);
     const limit = parseInt(req.query.limit || '12', 10);
     const offset = (page - 1) * limit;
+    const sortBy = req.query.sort || 'hot'; // ✅ NEW: Default to 'hot'
     const userToken = req.headers.authorization?.split(' ')[1];
     let currentUserId = null;
 
@@ -54,13 +55,39 @@ router.get('/', async (req, res) => {
       }
     }
 
+    // ✅ NEW: Build ORDER BY clause based on sort parameter
+    let orderByClause;
+    
+    switch (sortBy) {
+      case 'new':
+        // ⭐ NEW - Chronological (newest first)
+        orderByClause = 'ORDER BY sp.created_at DESC';
+        break;
+        
+      case 'top':
+        // 👑 TOP - Most liked (all-time)
+        orderByClause = 'ORDER BY (sp.likes_count - sp.dislikes_count) DESC, sp.created_at DESC';
+        break;
+        
+      case 'hot':
+      default:
+        // 🔥 HOT - Balanced algorithm (default)
+        orderByClause = `
+          ORDER BY (
+            (CAST(sp.likes_count AS FLOAT) - CAST(sp.dislikes_count AS FLOAT)) / 
+            POWER((EXTRACT(EPOCH FROM (NOW() - sp.created_at)) / 3600) + 2, 1.5)
+          ) DESC, sp.created_at DESC
+        `;
+        break;
+    }
+
     // Get approved posts with admin info
     const postsResult = await pool.query(`
       SELECT sp.*, u.display_name as admin_name
       FROM student_posts sp
       JOIN Users u ON sp.admin_id = u.id
       WHERE sp.is_approved = true
-      ORDER BY sp.created_at DESC
+      ${orderByClause}
       OFFSET $1 LIMIT $2
     `, [offset, limit]);
 
@@ -103,7 +130,8 @@ router.get('/', async (req, res) => {
           total_pages: totalPages,
           has_next: page < totalPages,
           has_prev: page > 1
-        }
+        },
+        sort: sortBy // ✅ NEW: Return current sort
       }
     });
   } catch (error) {
@@ -115,6 +143,7 @@ router.get('/', async (req, res) => {
     });
   }
 });
+
 
 // POST react to a post (like/dislike toggle)
 router.post('/:postId/reaction', authenticateToken, postLimit, async (req, res) => {
