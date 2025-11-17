@@ -31,12 +31,13 @@ interface UserPost {
   product_review: string;
   product_images: string;
   product_price: string;
+  buy_link: string;  // ✅ ADDED
+  buy_button_text: string;  // ✅ ADDED
   likes_count: number;
   dislikes_count: number;
   created_at: string;
-  recommendation_id?: number;
-  recommended_at?: string;
 }
+
 
 interface Review {
   id: number;
