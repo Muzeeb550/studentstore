@@ -69,6 +69,10 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/manifest.webmanifest',
+
+  other: {
+    "google-site-verification": "kOm2zyD3ogvHmu9TWLALV0_8kP5R84QQixItir-Tfkc",
+  },
 };
 
 
