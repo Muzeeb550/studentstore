@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.studentstore.app",
+    "sha256_cert_fingerprints": [
+      "C0:32:49:2B:F5:99:89:51:DD:92:A6:02:71:E8:A0:4F:5A:AF:72:A4:E5:45:62:52:D1:3C:B6:8E:E0:86:51:38"
+    ]
+  }
+}]
