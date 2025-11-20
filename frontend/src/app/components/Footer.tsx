@@ -228,7 +228,7 @@ export default function Footer() {
                   </li>
                   <li>
                     <a 
-                      href="mailto:support@studentstore.app"
+                      href="mailto:studentstoreforstudents@gmail.com"
                       className="text-gray-300 hover:text-student-green transition-colors flex items-center justify-center sm:justify-start text-sm sm:text-base"
                     >
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
