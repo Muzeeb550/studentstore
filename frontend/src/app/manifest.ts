@@ -12,41 +12,69 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#3b82f6',
     orientation: 'portrait-primary',
     icons: [
-      {
-        src: '/web-app-manifest-192x192.png',
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'maskable',
-      },
-      {
-        src: '/web-app-manifest-192x192.png',
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'any',
-      },
-      {
-        src: '/web-app-manifest-512x512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'maskable',
-      },
-      {
-        src: '/web-app-manifest-512x512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any',
-      },
-      {
-        src: '/favicon-96x96.png',
-        sizes: '96x96',
-        type: 'image/png',
-      },
-      {
-        src: '/apple-touch-icon.png',
-        sizes: '180x180',
-        type: 'image/png',
-      },
-    ],
+  // All sizes with 'any' purpose
+  {
+    src: '/web-app-manifest-72x72.png',
+    sizes: '72x72',
+    type: 'image/png',
+    purpose: 'any'
+  },
+  {
+    src: '/web-app-manifest-96x96.png',
+    sizes: '96x96',
+    type: 'image/png',
+    purpose: 'any'
+  },
+  {
+    src: '/web-app-manifest-128x128.png',
+    sizes: '128x128',
+    type: 'image/png',
+    purpose: 'any'
+  },
+  {
+    src: '/web-app-manifest-144x144.png',
+    sizes: '144x144',
+    type: 'image/png',
+    purpose: 'any'
+  },
+  {
+    src: '/web-app-manifest-152x152.png',
+    sizes: '152x152',
+    type: 'image/png',
+    purpose: 'any'
+  },
+  {
+    src: '/web-app-manifest-192x192.png',
+    sizes: '192x192',
+    type: 'image/png',
+    purpose: 'any'
+  },
+  {
+    src: '/web-app-manifest-384x384.png',
+    sizes: '384x384',
+    type: 'image/png',
+    purpose: 'any'
+  },
+  {
+    src: '/web-app-manifest-512x512.png',
+    sizes: '512x512',
+    type: 'image/png',
+    purpose: 'any'
+  },
+  // Maskable versions (for adaptive icons)
+  {
+    src: '/web-app-manifest-192x192.png',
+    sizes: '192x192',
+    type: 'image/png',
+    purpose: 'maskable'
+  },
+  {
+    src: '/web-app-manifest-512x512.png',
+    sizes: '512x512',
+    type: 'image/png',
+    purpose: 'maskable'
+  }
+],
     categories: ['shopping', 'education', 'lifestyle'],
     prefer_related_applications: false,
     shortcuts: [
