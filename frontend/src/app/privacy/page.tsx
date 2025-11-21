@@ -37,7 +37,7 @@ export default function PrivacyPage() {
               Welcome to <strong className="text-student-blue">StudentStore</strong>! We're students just like you, and we take your privacy seriously. This Privacy Policy explains what data we collect, how we use it, and your rights.
             </p>
             <p className="text-base md:text-lg text-gray-600">
-              We've written this in plain English – no confusing. If you have questions, email us at <a href="mailto:support@studentstore.app" className="text-student-blue hover:underline font-semibold">support@studentstore.app</a>
+              We've written this in plain English – no confusing. If you have questions, email us at <a href="mailto:support@studentstore.app" className="text-student-blue hover:underline font-semibold">studentstoreforstudents@gmail.com</a>
             </p>
           </div>
         </section>
