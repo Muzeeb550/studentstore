@@ -173,7 +173,7 @@ export default function PrivacyPage() {
               </div>
               <div className="bg-orange-50 rounded-xl p-5 border border-orange-200">
                 <p className="font-bold text-student-orange mb-2">☁️ Cloud Storage</p>
-                <p className="text-gray-700 text-sm">Images stored on Cloudflare R2</p>
+                <p className="text-gray-700 text-sm">Images stored on ImageKit.io</p>
               </div>
               <div className="bg-purple-50 rounded-xl p-5 border border-purple-200">
                 <p className="font-bold text-purple-600 mb-2">🔐 OAuth 2.0</p>
