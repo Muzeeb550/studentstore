@@ -37,7 +37,7 @@ export default function PrivacyPage() {
               Welcome to <strong className="text-student-blue">StudentStore</strong>! We're students just like you, and we take your privacy seriously. This Privacy Policy explains what data we collect, how we use it, and your rights.
             </p>
             <p className="text-base md:text-lg text-gray-600">
-              We've written this in plain English – no confusing. If you have questions, email us at <a href="mailto:support@studentstore.app" className="text-student-blue hover:underline font-semibold">studentstoreforstudents@gmail.com</a>
+              We've written this in plain English – no confusing. If you have questions, email us at <a href="mailto:studentstoreforstudents@gmail.com" className="text-student-blue hover:underline font-semibold">studentstoreforstudents@gmail.com</a>
             </p>
           </div>
         </section>
@@ -173,7 +173,7 @@ export default function PrivacyPage() {
               </div>
               <div className="bg-orange-50 rounded-xl p-5 border border-orange-200">
                 <p className="font-bold text-student-orange mb-2">☁️ Cloud Storage</p>
-                <p className="text-gray-700 text-sm">Images safely stored on ImageKit.io</p>
+                <p className="text-gray-700 text-sm">Images stored on Cloudflare R2</p>
               </div>
               <div className="bg-purple-50 rounded-xl p-5 border border-purple-200">
                 <p className="font-bold text-purple-600 mb-2">🔐 OAuth 2.0</p>
@@ -241,7 +241,7 @@ export default function PrivacyPage() {
               </div>
               <div className="bg-green-50 rounded-xl p-5 border border-green-200">
                 <h3 className="font-bold text-lg text-student-green mb-2">✅ Request Your Data</h3>
-                <p className="text-sm">Email us at <a href="mailto:support@studentstore.app" className="underline">support@studentstore.app</a> and we'll send you all your data within 7 days.</p>
+                <p className="text-sm">Email us at <a href="mailto:studentstoreforstudents@gmail.com" className="underline">studentstoreforstudents@gmail.com</a> and we'll send you all your data within 7 days.</p>
               </div>
               <div className="bg-orange-50 rounded-xl p-5 border border-orange-200">
                 <h3 className="font-bold text-lg text-student-orange mb-2">✅ Stop Using the App</h3>
