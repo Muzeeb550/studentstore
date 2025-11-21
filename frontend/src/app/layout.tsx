@@ -30,9 +30,10 @@ export const viewport: Viewport = {
 
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://studentstore-zeta.vercel.app'),
   title: "StudentStore - Smart Shopping for Students",
   description: "Your ultimate shopping companion for student life. Discover the best products with reviews and recommendations from fellow students.",
-  keywords: "student products, campus deals, student reviews, college marketplace, academic supplies, student shopping",
+  keywords: "studentstore, student products, campus deals, student reviews, college marketplace, academic supplies, student shopping",
   authors: [{ name: "StudentStore Team" }],
   creator: "StudentStore",
   publisher: "StudentStore",
@@ -49,14 +50,24 @@ export const metadata: Metadata = {
   openGraph: {
     title: "StudentStore - Smart Shopping for Students",
     description: "Discover student-verified products, deals, and reviews for campus life",
+    url: 'https://studentstore-zeta.vercel.app', 
+    siteName: "StudentStore",
+    images: [
+      {
+        url: '/web-app-manifest-512x512.png', 
+        width: 512,
+        height: 512,
+        alt: 'StudentStore Logo',
+      },
+    ],
     type: "website",
     locale: "en_US",
-    siteName: "StudentStore",
   },
   twitter: {
     card: "summary_large_image",
     title: "StudentStore - Smart Shopping for Students", 
     description: "Your ultimate shopping companion for student life",
+    images: ['/web-app-manifest-512x512.png'],
   },
   icons: {
     icon: [
