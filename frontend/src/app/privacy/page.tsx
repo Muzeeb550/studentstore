@@ -271,7 +271,7 @@ export default function PrivacyPage() {
         </section>
 
         {/* GDPR Compliance */}
-        <section className="mb-12">
+        {/* <section className="mb-12">
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl shadow-xl p-6 md:p-10 border border-blue-200">
             <h2 className="text-3xl md:text-4xl font-black mb-6 text-gray-900">
               🇪🇺 GDPR Compliance
@@ -304,7 +304,7 @@ export default function PrivacyPage() {
               To exercise any of these rights, email <a href="mailto:studentstoreforstudents@gmail.com" className="text-student-blue hover:underline font-semibold">studentstoreforstudents@gmail.com</a>
             </p>
           </div>
-        </section>
+        </section> */}
 
         {/* Contact */}
         <section className="mb-12">
