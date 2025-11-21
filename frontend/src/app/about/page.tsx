@@ -280,7 +280,7 @@ export default function AboutPage() {
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a 
-                href="mailto:support@studentstore.app"
+                href="mailto:studentstoreforstudents@gmail.com"
                 className="flex items-center justify-center bg-gradient-to-r from-student-green to-student-blue text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
