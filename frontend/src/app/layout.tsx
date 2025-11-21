@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://studentstore-zeta.vercel.app'),
   title: "StudentStore - Smart Shopping for Students",
   description: "Your ultimate shopping companion for student life. Discover the best products with reviews and recommendations from fellow students.",
-  keywords: "studentstore, student products, campus deals, student reviews, college marketplace, academic supplies, student shopping",
+  keywords: "studentstore, student store india, student shopping india, student products, campus deals, student reviews, college marketplace, academic supplies, student shopping",
   authors: [{ name: "StudentStore Team" }],
   creator: "StudentStore",
   publisher: "StudentStore",
